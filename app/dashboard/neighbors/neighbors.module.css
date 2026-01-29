@@ -1,0 +1,195 @@
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 1.5rem;
+}
+
+.card {
+    background-color: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+}
+
+.header {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+}
+
+.avatar {
+    width: 3.5rem;
+    height: 3.5rem;
+    background-color: var(--primary);
+    color: var(--primary-foreground);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 1.25rem;
+    flex-shrink: 0;
+    position: relative;
+}
+
+.onlineIndicator {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: 0.875rem;
+    height: 0.875rem;
+    background-color: #22c55e;
+    border: 2px solid var(--card);
+    border-radius: 50%;
+}
+
+.info {
+    display: flex;
+    flex-direction: column;
+}
+
+.name {
+    font-weight: 600;
+    font-size: 1.125rem;
+    color: var(--foreground);
+}
+
+.role {
+    font-size: 0.875rem;
+    color: var(--muted-foreground);
+    margin-bottom: 0.25rem;
+}
+
+.address {
+    font-size: 0.875rem;
+    color: var(--muted-foreground);
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.sectionTitle {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--foreground);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.tag {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.625rem;
+    border-radius: 9999px;
+    background-color: var(--muted);
+    color: var(--muted-foreground);
+    font-weight: 500;
+}
+
+.skillTag {
+    background-color: rgba(79, 70, 229, 0.1);
+    /* Indigo tint */
+    color: var(--primary);
+    border: 1px solid rgba(79, 70, 229, 0.2);
+}
+
+.equipmentTag {
+    cursor: pointer;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    border: 1px solid transparent;
+}
+
+.equipmentAvailable {
+    background-color: rgba(16, 185, 129, 0.1);
+    /* Emerald tint */
+    color: #059669;
+    border-color: rgba(16, 185, 129, 0.2);
+}
+
+.equipmentAvailable:hover {
+    background-color: rgba(16, 185, 129, 0.2);
+    transform: translateY(-1px);
+}
+
+.equipmentUnavailable {
+    background-color: var(--muted);
+    color: var(--muted-foreground);
+    border-color: var(--border);
+    opacity: 0.8;
+    cursor: default;
+}
+
+.statusDot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background-color: currentColor;
+}
+
+.actions {
+    margin-top: auto;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border);
+    display: flex;
+    gap: 0.75rem;
+}
+
+.button {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.5rem;
+    border-radius: var(--radius);
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.primaryButton {
+    background-color: var(--primary);
+    color: var(--primary-foreground);
+}
+
+.primaryButton:hover {
+    background-color: var(--primary);
+    /* Ideally darken slightly */
+    opacity: 0.9;
+}
+
+.secondaryButton {
+    background-color: var(--secondary);
+    color: var(--secondary-foreground);
+}
+
+.secondaryButton:hover {
+    background-color: var(--muted);
+}

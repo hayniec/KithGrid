@@ -1,0 +1,240 @@
+.container {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    max-width: 800px;
+}
+
+.header {
+    margin-bottom: 1rem;
+}
+
+.title {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--foreground);
+}
+
+.subtitle {
+    color: var(--muted-foreground);
+}
+
+.section {
+    background-color: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+}
+
+.sectionHeader {
+    padding: 1.5rem;
+    border-bottom: 1px solid var(--border);
+    background-color: var(--muted);
+}
+
+.sectionTitle {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--foreground);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.sectionContent {
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.formGroup {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.label {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--foreground);
+}
+
+.input {
+    padding: 0.625rem;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    background-color: var(--background);
+    color: var(--foreground);
+    font-size: 0.95rem;
+}
+
+.input:focus {
+    outline: 2px solid var(--primary);
+    outline-offset: -1px;
+}
+
+.row {
+    display: flex;
+    gap: 1.5rem;
+}
+
+.col {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.avatarSection {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+.avatarPreview {
+    width: 5rem;
+    height: 5rem;
+    border-radius: 50%;
+    background-color: var(--primary);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    font-weight: 600;
+}
+
+.button {
+    padding: 0.625rem 1rem;
+    border-radius: var(--radius);
+    font-weight: 500;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: none;
+}
+
+.primaryButton {
+    background-color: var(--primary);
+    color: var(--primary-foreground);
+}
+
+.primaryButton:hover {
+    opacity: 0.9;
+}
+
+.outlineButton {
+    background-color: transparent;
+    border: 1px solid var(--border);
+    color: var(--foreground);
+}
+
+.outlineButton:hover {
+    background-color: var(--muted);
+}
+
+.toggleRow {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.5rem 0;
+}
+
+.toggleLabel {
+    display: flex;
+    flex-direction: column;
+}
+
+.toggleDescription {
+    font-size: 0.8rem;
+    color: var(--muted-foreground);
+}
+
+/* Simple Toggle Switch */
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 44px;
+    height: 24px;
+}
+
+.switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: var(--muted);
+    transition: .4s;
+    border-radius: 24px;
+    border: 1px solid var(--border);
+}
+
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 18px;
+    width: 18px;
+    left: 2px;
+    bottom: 2px;
+    background-color: white;
+    transition: .4s;
+    border-radius: 50%;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+input:checked+.slider {
+    background-color: var(--primary);
+    border-color: var(--primary);
+}
+
+input:checked+.slider:before {
+    transform: translateX(20px);
+}
+
+.tagsInput {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    padding: 0.5rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background-color: var(--background);
+    min-height: 2.5rem;
+}
+
+.tag {
+    background-color: var(--muted);
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.removeTag {
+    cursor: pointer;
+    opacity: 0.5;
+}
+
+.removeTag:hover {
+    opacity: 1;
+}
+
+.tagInputText {
+    border: none;
+    outline: none;
+    background: transparent;
+    flex: 1;
+    min-width: 60px;
+    color: var(--foreground);
+}

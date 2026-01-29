@@ -1,0 +1,19 @@
+export interface Equipment {
+    id: string;
+    name: string;
+    isAvailable: boolean;
+    dueDate?: string;
+    borrowerName?: string;
+}
+
+export interface Neighbor {
+    id: string;
+    name: string;
+    role: 'Resident' | 'Board Member' | 'Admin';
+    address: string;
+    avatar: string; // initials or image url
+    skills: string[];
+    equipment: Equipment[];
+    joinedDate: string;
+    isOnline?: boolean;
+}

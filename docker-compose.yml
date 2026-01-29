@@ -1,0 +1,23 @@
+version: '3.9'
+
+services:
+  neighbor-net:
+    build:
+      context: .
+      args:
+        NEXT_PUBLIC_COMMUNITY_NAME: ${NEXT_PUBLIC_COMMUNITY_NAME:-HOA NeighborNet}
+        NEXT_PUBLIC_DEFAULT_THEME: ${NEXT_PUBLIC_DEFAULT_THEME:-Indigo (Default)}
+    container_name: neighbor-net
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      # Initial Configuration (Optional)
+      # These set the default values for the first load.
+      - NEXT_PUBLIC_COMMUNITY_NAME=My Community HOA
+      - NEXT_PUBLIC_DEFAULT_THEME=Indigo (Default)
+    volumes:
+      # Optional: Persist local storage if we were using a real backend volume, 
+      # but strict local storage maps to the client browser, not server.
+      # This area is reserved for future backend integrations.
+      - ./public:/app/public/uploads
