@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import "./globals.css"; // Ensure global styles are applied
+import "../globals.css"; // Ensure global styles are applied
 import { useRouter } from "next/navigation";
 
 export default function JoinPage() {
