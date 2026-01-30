@@ -8,4 +8,5 @@ export interface Event {
     category: 'Social' | 'HOA' | 'Maintenance' | 'Security';
     organizer: string;
     attendees: number;
+    userRsvp?: number;
 }
