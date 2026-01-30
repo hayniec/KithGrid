@@ -66,7 +66,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                     <button
                         onClick={onClose}
                         className={styles.iconButton}
-                        style={{ marginLeft: 'auto', display: 'flex', md: 'none' }} // "md: 'none'" is pseudo-code here, we'll rely on CSS media query logic if needed or just keep it simple.
+                        style={{ marginLeft: 'auto', display: 'flex' }}
                         aria-label="Close Menu"
                     >
                         {/* We can conditionally render this or handle via CSS. For simplicity let's just use CSS to hide it on desktop if we want, or just rely on overlay click. */}
