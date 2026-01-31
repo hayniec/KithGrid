@@ -19,6 +19,10 @@ type Community = {
         documents: boolean;
     };
     isActive: boolean;
+    branding: {
+        logoUrl: string;
+        primaryColor: string;
+    };
 };
 
 const MOCK_COMMUNITIES: Community[] = [
@@ -28,7 +32,11 @@ const MOCK_COMMUNITIES: Community[] = [
         slug: 'oak-hills',
         plan: 'growth_250',
         features: { marketplace: true, resources: true, events: true, documents: true },
-        isActive: true
+        isActive: true,
+        branding: {
+            logoUrl: 'https://cdn-icons-png.flaticon.com/512/3590/3590453.png',
+            primaryColor: '#059669' // Forest green
+        }
     },
     {
         id: 'c2',
@@ -36,7 +44,11 @@ const MOCK_COMMUNITIES: Community[] = [
         slug: 'sunset-valley',
         plan: 'starter_100',
         features: { marketplace: false, resources: false, events: true, documents: true },
-        isActive: true
+        isActive: true,
+        branding: {
+            logoUrl: '',
+            primaryColor: '#ea580c' // Orange
+        }
     }
 ];
 
@@ -138,6 +150,40 @@ export default function SuperAdminPage() {
                             </span>
                         </div>
 
+                        <div style={{ borderTop: '1px solid #f3f4f6', paddingTop: '1.5rem', marginBottom: '1.5rem' }}>
+                            <h3 style={{ fontSize: '0.875rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#6b7280', marginBottom: '1rem', fontWeight: 600 }}>Branding</h3>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                                <div>
+                                    <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, color: '#374151', marginBottom: '0.5rem' }}>Primary Color</label>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                        <input
+                                            type="color"
+                                            value={comm.branding.primaryColor}
+                                            onChange={(e) => {
+                                                const newColor = e.target.value;
+                                                setCommunities(communities.map(c => c.id === comm.id ? { ...c, branding: { ...c.branding, primaryColor: newColor } } : c));
+                                            }}
+                                            style={{ width: '40px', height: '40px', padding: 0, border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+                                        />
+                                        <span style={{ fontSize: '0.875rem', color: '#6b7280', fontFamily: 'monospace' }}>{comm.branding.primaryColor}</span>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, color: '#374151', marginBottom: '0.5rem' }}>Logo URL</label>
+                                    <input
+                                        type="text"
+                                        value={comm.branding.logoUrl}
+                                        onChange={(e) => {
+                                            const newLogo = e.target.value;
+                                            setCommunities(communities.map(c => c.id === comm.id ? { ...c, branding: { ...c.branding, logoUrl: newLogo } } : c));
+                                        }}
+                                        placeholder="https://..."
+                                        style={{ width: '100%', padding: '0.5rem', borderRadius: '0.375rem', border: '1px solid #d1d5db', fontSize: '0.875rem' }}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
                         <div style={{ borderTop: '1px solid #f3f4f6', paddingTop: '1.5rem' }}>
                             <h3 style={{ fontSize: '0.875rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#6b7280', marginBottom: '1rem', fontWeight: 600 }}>Module Configuration</h3>
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '1rem' }}>
@@ -166,6 +212,13 @@ export default function SuperAdminPage() {
                                 onClick={() => {
                                     localStorage.setItem('neighborNet_communityName', comm.name);
                                     localStorage.setItem('neighborNet_modules', JSON.stringify(comm.features));
+                                    localStorage.setItem('neighborNet_communityLogo', comm.branding.logoUrl);
+                                    // We persist the color preference, which the ThemeContext will pick up if logic is adjusted there
+                                    // For now, let's create a new key or update how ThemeContext works if needed. 
+                                    // Actually, let's match the Theme structure or create a custom one.
+                                    // Simpler: Just override the CSS variables for now as a 'custom' theme simulation
+                                    localStorage.setItem('neighborNet_customPrimary', comm.branding.primaryColor);
+
                                     window.location.href = '/dashboard';
                                 }}
                                 style={{

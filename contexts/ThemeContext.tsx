@@ -72,6 +72,14 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         if (savedModules) {
             setEnabledModules(JSON.parse(savedModules));
         }
+
+        // Check for Custom Primary Color (Simulation)
+        const customPrimary = localStorage.getItem('neighborNet_customPrimary');
+        if (customPrimary) {
+            document.documentElement.style.setProperty("--primary", customPrimary);
+            // We might also want to set a lighter ring color
+            document.documentElement.style.setProperty("--ring", customPrimary);
+        }
     }, []);
 
     const [enabledModules, setEnabledModules] = useState({
