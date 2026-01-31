@@ -17,6 +17,10 @@ type Community = {
         resources: boolean;
         events: boolean;
         documents: boolean;
+        forum: boolean;
+        messages: boolean;
+        services: boolean; // service pros
+        local: boolean; // local guide
     };
     isActive: boolean;
     branding: {
@@ -33,7 +37,16 @@ const MOCK_COMMUNITIES: Community[] = [
         name: 'Oak Hills HOA',
         slug: 'oak-hills',
         plan: 'growth_250',
-        features: { marketplace: true, resources: true, events: true, documents: true },
+        features: {
+            marketplace: true,
+            resources: true,
+            events: true,
+            documents: true,
+            forum: true,
+            messages: true,
+            services: true,
+            local: true
+        },
         isActive: true,
         branding: {
             logoUrl: 'https://cdn-icons-png.flaticon.com/512/3590/3590453.png',
@@ -47,7 +60,16 @@ const MOCK_COMMUNITIES: Community[] = [
         name: 'Sunset Valley',
         slug: 'sunset-valley',
         plan: 'starter_100',
-        features: { marketplace: false, resources: false, events: true, documents: true },
+        features: {
+            marketplace: false,
+            resources: false,
+            events: true,
+            documents: true,
+            forum: false, // Default off for starter maybe?
+            messages: true,
+            services: false,
+            local: true
+        },
         isActive: true,
         branding: {
             logoUrl: '',
@@ -65,7 +87,10 @@ export default function SuperAdminPage() {
         name: '',
         slug: '',
         plan: 'starter_100',
-        features: { marketplace: true, resources: true, events: true, documents: true }
+        features: {
+            marketplace: true, resources: true, events: true, documents: true,
+            forum: true, messages: true, services: true, local: true
+        }
     });
 
     const toggleFeature = (id: string, feature: keyof Community['features']) => {
@@ -103,7 +128,13 @@ export default function SuperAdminPage() {
 
         setCommunities([...communities, newComm]);
         setShowAddModal(false);
-        setNewCommunity({ name: '', slug: '', plan: 'starter_100', features: { marketplace: true, resources: true, events: true, documents: true } });
+        setNewCommunity({
+            name: '', slug: '', plan: 'starter_100',
+            features: {
+                marketplace: true, resources: true, events: true, documents: true,
+                forum: true, messages: true, services: true, local: true
+            }
+        });
     };
 
     return (
