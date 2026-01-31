@@ -40,7 +40,72 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-    // ... (existing code)
+    const [theme, setThemeState] = useState<ThemeColor>(THEMES[0]);
+    const [communityName, setCommunityNameState] = useState("HOA NeighborNet");
+    const [communityLogo, setCommunityLogoState] = useState("");
+
+    // Helper to determine text color (black or white) based on background hex
+    const getContrastYIQ = (hexcolor: string) => {
+        hexcolor = hexcolor.replace("#", "");
+        var r = parseInt(hexcolor.substr(0, 2), 16);
+        var g = parseInt(hexcolor.substr(2, 2), 16);
+        var b = parseInt(hexcolor.substr(4, 2), 16);
+        var yiq = ((r * 299) + (g * 587) + (b * 114)) / 1000;
+        return (yiq >= 128) ? '#000000' : '#ffffff';
+    }
+
+    useEffect(() => {
+        const savedThemeName = localStorage.getItem("neighborNet_themeName");
+        const savedCommunityName = localStorage.getItem("neighborNet_communityName");
+        const savedCommunityLogo = localStorage.getItem("neighborNet_communityLogo");
+
+        // Environment defaults
+        const envTheme = process.env.NEXT_PUBLIC_DEFAULT_THEME;
+        const envCommunity = process.env.NEXT_PUBLIC_COMMUNITY_NAME;
+
+        if (savedThemeName) {
+            const foundTheme = THEMES.find(t => t.name === savedThemeName);
+            if (foundTheme) setThemeState(foundTheme);
+        } else if (envTheme) {
+            const foundTheme = THEMES.find(t => t.name === envTheme);
+            if (foundTheme) setThemeState(foundTheme);
+        }
+
+        if (savedCommunityName) {
+            setCommunityNameState(savedCommunityName);
+        } else if (envCommunity) {
+            setCommunityNameState(envCommunity);
+        }
+
+        if (savedCommunityLogo) {
+            setCommunityLogoState(savedCommunityLogo);
+        }
+
+        // Load modules
+        const savedModules = localStorage.getItem("neighborNet_modules");
+        if (savedModules) {
+            setEnabledModules(JSON.parse(savedModules));
+        }
+
+        // Check for Custom Branding (Simulation)
+        const customPrimary = localStorage.getItem('neighborNet_customPrimary');
+        const customSecondary = localStorage.getItem('neighborNet_customSecondary');
+        const customAccent = localStorage.getItem('neighborNet_customAccent');
+
+        if (customPrimary) {
+            document.documentElement.style.setProperty("--primary", customPrimary);
+            document.documentElement.style.setProperty("--ring", customPrimary);
+            document.documentElement.style.setProperty("--primary-foreground", getContrastYIQ(customPrimary));
+        }
+        if (customSecondary) {
+            document.documentElement.style.setProperty("--secondary", customSecondary);
+            document.documentElement.style.setProperty("--secondary-foreground", getContrastYIQ(customSecondary));
+        }
+        if (customAccent) {
+            document.documentElement.style.setProperty("--accent", customAccent);
+            document.documentElement.style.setProperty("--accent-foreground", getContrastYIQ(customAccent));
+        }
+    }, []);
 
     const [enabledModules, setEnabledModules] = useState({
         marketplace: true,
