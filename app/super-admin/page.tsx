@@ -213,26 +213,51 @@ export default function SuperAdminPage() {
                                         <span style={{ fontSize: '0.875rem', color: '#6b7280', fontFamily: 'monospace' }}>{comm.branding.accentColor}</span>
                                     </div>
                                 </div>
-                                {/* Logo URL */}
-                                <div>
-                                    <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, color: '#374151', marginBottom: '0.5rem' }}>Logo URL</label>
-                                    <input
-                                        type="text"
-                                        value={comm.branding.logoUrl}
-                                        onChange={(e) => {
-                                            const newLogo = e.target.value;
-                                            setCommunities(communities.map(c => c.id === comm.id ? { ...c, branding: { ...c.branding, logoUrl: newLogo } } : c));
-                                        }}
-                                        placeholder="https://..."
-                                        style={{ width: '100%', padding: '0.5rem', borderRadius: '0.375rem', border: '1px solid #d1d5db', fontSize: '0.875rem' }}
-                                    />
+                                {/* Logo URL & Upload */}
+                                <div style={{ gridColumn: 'span 2' }}>
+                                    <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, color: '#374151', marginBottom: '0.5rem' }}>Logo (URL or Upload)</label>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                        <input
+                                            type="text"
+                                            value={comm.branding.logoUrl}
+                                            onChange={(e) => {
+                                                const newLogo = e.target.value;
+                                                setCommunities(communities.map(c => c.id === comm.id ? { ...c, branding: { ...c.branding, logoUrl: newLogo } } : c));
+                                            }}
+                                            placeholder="https://..."
+                                            style={{ width: '100%', padding: '0.5rem', borderRadius: '0.375rem', border: '1px solid #d1d5db', fontSize: '0.875rem' }}
+                                        />
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                            <input
+                                                type="file"
+                                                accept="image/*"
+                                                onChange={(e) => {
+                                                    const file = e.target.files?.[0];
+                                                    if (file) {
+                                                        const reader = new FileReader();
+                                                        reader.onloadend = () => {
+                                                            const base64 = reader.result as string;
+                                                            setCommunities(communities.map(c => c.id === comm.id ? { ...c, branding: { ...c.branding, logoUrl: base64 } } : c));
+                                                        };
+                                                        reader.readAsDataURL(file);
+                                                    }
+                                                }}
+                                                style={{ fontSize: '0.875rem' }}
+                                            />
+                                            {comm.branding.logoUrl && (
+                                                <div style={{ width: '32px', height: '32px', border: '1px solid #eee', borderRadius: '4px', overflow: 'hidden' }}>
+                                                    <img src={comm.branding.logoUrl} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
 
                         <div style={{ borderTop: '1px solid #f3f4f6', paddingTop: '1.5rem' }}>
                             <h3 style={{ fontSize: '0.875rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#6b7280', marginBottom: '1rem', fontWeight: 600 }}>Module Configuration</h3>
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '1rem' }}>
+                            <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
                                 {Object.entries(comm.features).map(([key, enabled]) => (
                                     <label key={key} style={{
                                         display: 'flex', alignItems: 'center', gap: '0.75rem',
@@ -258,14 +283,14 @@ export default function SuperAdminPage() {
                                 onClick={() => {
                                     localStorage.setItem('neighborNet_communityName', comm.name);
                                     localStorage.setItem('neighborNet_modules', JSON.stringify(comm.features));
-                                    localStorage.setItem('neighborNet_communityLogo', comm.branding.logoUrl);
                                     // We persist the color preference, which the ThemeContext will pick up if logic is adjusted there
-                                    // For now, let's create a new key or update how ThemeContext works if needed. 
+                                    // For now, let's create a new key or update how ThemeContext works if needed.
                                     // Actually, let's match the Theme structure or create a custom one.
                                     // Simpler: Just override the CSS variables for now as a 'custom' theme simulation
                                     localStorage.setItem('neighborNet_customPrimary', comm.branding.primaryColor);
                                     localStorage.setItem('neighborNet_customSecondary', comm.branding.secondaryColor);
                                     localStorage.setItem('neighborNet_customAccent', comm.branding.accentColor);
+                                    localStorage.setItem('neighborNet_communityLogo', comm.branding.logoUrl);
 
                                     alert(`Simulating login for ${comm.name}!\nPrimary: ${comm.branding.primaryColor}\nSecondary: ${comm.branding.secondaryColor}\nAccent: ${comm.branding.accentColor}`);
 
