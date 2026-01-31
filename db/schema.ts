@@ -13,6 +13,8 @@ export const communities = pgTable('communities', {
     // Branding
     logoUrl: text('logo_url'),
     primaryColor: text('primary_color').default('#4f46e5'),
+    secondaryColor: text('secondary_color').default('#1e1b4b'),
+    accentColor: text('accent_color').default('#f59e0b'),
 
     // Feature Flags (Modules)
     hasMarketplace: boolean('has_marketplace').default(true),

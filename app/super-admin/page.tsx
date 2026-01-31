@@ -22,6 +22,8 @@ type Community = {
     branding: {
         logoUrl: string;
         primaryColor: string;
+        secondaryColor: string;
+        accentColor: string;
     };
 };
 
@@ -35,7 +37,9 @@ const MOCK_COMMUNITIES: Community[] = [
         isActive: true,
         branding: {
             logoUrl: 'https://cdn-icons-png.flaticon.com/512/3590/3590453.png',
-            primaryColor: '#059669' // Forest green
+            primaryColor: '#059669', // Forest green
+            secondaryColor: '#064e3b', // Dark green
+            accentColor: '#fbbf24' // Amber
         }
     },
     {
@@ -47,7 +51,9 @@ const MOCK_COMMUNITIES: Community[] = [
         isActive: true,
         branding: {
             logoUrl: '',
-            primaryColor: '#ea580c' // Orange
+            primaryColor: '#ea580c', // Orange
+            secondaryColor: '#7c2d12', // Dark orange
+            accentColor: '#38bdf8' // Sky blue
         }
     }
 ];
@@ -89,7 +95,9 @@ export default function SuperAdminPage() {
             isActive: true,
             branding: {
                 logoUrl: '',
-                primaryColor: '#4f46e5' // Default indigo
+                primaryColor: '#4f46e5', // Default indigo
+                secondaryColor: '#1e1b4b', // Default dark indigo
+                accentColor: '#f59e0b' // Default amber
             }
         };
 
@@ -156,7 +164,8 @@ export default function SuperAdminPage() {
 
                         <div style={{ borderTop: '1px solid #f3f4f6', paddingTop: '1.5rem', marginBottom: '1.5rem' }}>
                             <h3 style={{ fontSize: '0.875rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#6b7280', marginBottom: '1rem', fontWeight: 600 }}>Branding</h3>
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem' }}>
+                                {/* Primary Color */}
                                 <div>
                                     <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, color: '#374151', marginBottom: '0.5rem' }}>Primary Color</label>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -172,6 +181,39 @@ export default function SuperAdminPage() {
                                         <span style={{ fontSize: '0.875rem', color: '#6b7280', fontFamily: 'monospace' }}>{comm.branding.primaryColor}</span>
                                     </div>
                                 </div>
+                                {/* Secondary Color */}
+                                <div>
+                                    <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, color: '#374151', marginBottom: '0.5rem' }}>Secondary Color</label>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                        <input
+                                            type="color"
+                                            value={comm.branding.secondaryColor}
+                                            onChange={(e) => {
+                                                const newColor = e.target.value;
+                                                setCommunities(communities.map(c => c.id === comm.id ? { ...c, branding: { ...c.branding, secondaryColor: newColor } } : c));
+                                            }}
+                                            style={{ width: '40px', height: '40px', padding: 0, border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+                                        />
+                                        <span style={{ fontSize: '0.875rem', color: '#6b7280', fontFamily: 'monospace' }}>{comm.branding.secondaryColor}</span>
+                                    </div>
+                                </div>
+                                {/* Accent Color */}
+                                <div>
+                                    <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, color: '#374151', marginBottom: '0.5rem' }}>Accent Color</label>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                        <input
+                                            type="color"
+                                            value={comm.branding.accentColor}
+                                            onChange={(e) => {
+                                                const newColor = e.target.value;
+                                                setCommunities(communities.map(c => c.id === comm.id ? { ...c, branding: { ...c.branding, accentColor: newColor } } : c));
+                                            }}
+                                            style={{ width: '40px', height: '40px', padding: 0, border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+                                        />
+                                        <span style={{ fontSize: '0.875rem', color: '#6b7280', fontFamily: 'monospace' }}>{comm.branding.accentColor}</span>
+                                    </div>
+                                </div>
+                                {/* Logo URL */}
                                 <div>
                                     <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, color: '#374151', marginBottom: '0.5rem' }}>Logo URL</label>
                                     <input
@@ -222,6 +264,8 @@ export default function SuperAdminPage() {
                                     // Actually, let's match the Theme structure or create a custom one.
                                     // Simpler: Just override the CSS variables for now as a 'custom' theme simulation
                                     localStorage.setItem('neighborNet_customPrimary', comm.branding.primaryColor);
+                                    localStorage.setItem('neighborNet_customSecondary', comm.branding.secondaryColor);
+                                    localStorage.setItem('neighborNet_customAccent', comm.branding.accentColor);
 
                                     window.location.href = '/dashboard';
                                 }}

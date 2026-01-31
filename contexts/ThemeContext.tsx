@@ -73,12 +73,20 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
             setEnabledModules(JSON.parse(savedModules));
         }
 
-        // Check for Custom Primary Color (Simulation)
+        // Check for Custom Branding (Simulation)
         const customPrimary = localStorage.getItem('neighborNet_customPrimary');
+        const customSecondary = localStorage.getItem('neighborNet_customSecondary');
+        const customAccent = localStorage.getItem('neighborNet_customAccent');
+
         if (customPrimary) {
             document.documentElement.style.setProperty("--primary", customPrimary);
-            // We might also want to set a lighter ring color
             document.documentElement.style.setProperty("--ring", customPrimary);
+        }
+        if (customSecondary) {
+            document.documentElement.style.setProperty("--secondary", customSecondary);
+        }
+        if (customAccent) {
+            document.documentElement.style.setProperty("--accent", customAccent);
         }
     }, []);
 
