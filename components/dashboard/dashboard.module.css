@@ -12,7 +12,8 @@
     grid-row: 1 / -1;
     grid-column: 1;
     background-color: var(--card);
-    border-right: 1px solid var(--secondary); /* Show Secondary as border */
+    border-right: 1px solid var(--secondary);
+    /* Show Secondary as border */
     padding: 1.5rem;
     display: flex;
     flex-direction: column;
@@ -25,7 +26,8 @@
 /* ... existing styles ... */
 
 .navItemActive {
-    background-color: var(--accent); /* Show Accent as Active Background */
+    background-color: var(--accent);
+    /* Show Accent as Active Background */
     color: var(--accent-foreground);
     /* Ensure icon color inherits this */
 }
@@ -122,9 +124,8 @@
     grid-column: 2;
     grid-row: 1;
     height: 4rem;
-    border-bottom: 1px solid var(--border);
+    /* border-bottom: 1px solid var(--border); removed for cleaner look */
     background-color: var(--background);
-    /* Or maybe glassmorphism? */
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -132,13 +133,10 @@
     position: sticky;
     top: 0;
     z-index: 10;
-    backdrop-filter: blur(8px);
-    background-color: rgba(255, 255, 255, 0.8);
+    /* Removed glassmorphism to blend in completely */
 }
 
-:global(.dark) .header {
-    background-color: rgba(2, 6, 23, 0.8);
-}
+/* Removed specific dark mode background to allow var(--background) to take over */
 
 .headerTitle {
     font-size: 1.5rem;
