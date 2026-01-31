@@ -81,14 +81,27 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         if (customPrimary) {
             document.documentElement.style.setProperty("--primary", customPrimary);
             document.documentElement.style.setProperty("--ring", customPrimary);
+            document.documentElement.style.setProperty("--primary-foreground", getContrastYIQ(customPrimary));
         }
         if (customSecondary) {
             document.documentElement.style.setProperty("--secondary", customSecondary);
+            document.documentElement.style.setProperty("--secondary-foreground", getContrastYIQ(customSecondary));
         }
         if (customAccent) {
             document.documentElement.style.setProperty("--accent", customAccent);
+            document.documentElement.style.setProperty("--accent-foreground", getContrastYIQ(customAccent));
         }
     }, []);
+
+    // Helper to determine text color (black or white) based on background hex
+    const getContrastYIQ = (hexcolor: string) => {
+        hexcolor = hexcolor.replace("#", "");
+        var r = parseInt(hexcolor.substr(0, 2), 16);
+        var g = parseInt(hexcolor.substr(2, 2), 16);
+        var b = parseInt(hexcolor.substr(4, 2), 16);
+        var yiq = ((r * 299) + (g * 587) + (b * 114)) / 1000;
+        return (yiq >= 128) ? '#000000' : '#ffffff';
+    }
 
     const [enabledModules, setEnabledModules] = useState({
         marketplace: true,
