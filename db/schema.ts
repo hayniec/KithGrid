@@ -10,6 +10,10 @@ export const communities = pgTable('communities', {
     maxHomes: integer('max_homes').default(100),
     isActive: boolean('is_active').default(true),
 
+    // Branding
+    logoUrl: text('logo_url'),
+    primaryColor: text('primary_color').default('#4f46e5'),
+
     // Feature Flags (Modules)
     hasMarketplace: boolean('has_marketplace').default(true),
     hasResources: boolean('has_resources').default(true),
