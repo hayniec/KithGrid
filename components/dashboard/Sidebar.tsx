@@ -32,14 +32,22 @@ interface SidebarProps {
 
 export function Sidebar({ isOpen, onClose }: SidebarProps) {
     const pathname = usePathname();
-    const { communityName } = useTheme();
+    const { communityName, enabledModules } = useTheme();
     const { user } = useUser();
 
-    // Filter navigation based on role
+    // Filter navigation based on role and enabled modules
     const filteredNavigation = navigation.filter(item => {
+        // Role check
         if (item.name === "Admin Console") {
             return user.role === "admin";
         }
+
+        // Module checks
+        if (item.name === "Marketplace" && !enabledModules?.marketplace) return false;
+        if (item.name === "Community Resources" && !enabledModules?.resources) return false;
+        if (item.name === "Events" && !enabledModules?.events) return false;
+        if (item.name === "Documents" && !enabledModules?.documents) return false;
+
         return true;
     });
 

@@ -24,6 +24,13 @@ interface ThemeContextType {
     setCommunityName: (name: string) => void;
     communityLogo: string;
     setCommunityLogo: (url: string) => void;
+    enabledModules: {
+        marketplace: boolean;
+        resources: boolean;
+        events: boolean;
+        documents: boolean;
+    };
+    toggleModule: (module: 'marketplace' | 'resources' | 'events' | 'documents', value: boolean) => void;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
@@ -59,7 +66,26 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         if (savedCommunityLogo) {
             setCommunityLogoState(savedCommunityLogo);
         }
+
+        // Load modules
+        const savedModules = localStorage.getItem("neighborNet_modules");
+        if (savedModules) {
+            setEnabledModules(JSON.parse(savedModules));
+        }
     }, []);
+
+    const [enabledModules, setEnabledModules] = useState({
+        marketplace: true,
+        resources: true,
+        events: true,
+        documents: true
+    });
+
+    const toggleModule = (module: 'marketplace' | 'resources' | 'events' | 'documents', value: boolean) => {
+        const newModules = { ...enabledModules, [module]: value };
+        setEnabledModules(newModules);
+        localStorage.setItem("neighborNet_modules", JSON.stringify(newModules));
+    };
 
     const setTheme = (newTheme: ThemeColor) => {
         setThemeState(newTheme);
@@ -86,7 +112,12 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     }, [theme]);
 
     return (
-        <ThemeContext.Provider value={{ theme, setTheme, communityName, setCommunityName, communityLogo, setCommunityLogo }}>
+        <ThemeContext.Provider value={{
+            theme, setTheme,
+            communityName, setCommunityName,
+            communityLogo, setCommunityLogo,
+            enabledModules, toggleModule
+        }}>
             {children}
         </ThemeContext.Provider>
     );

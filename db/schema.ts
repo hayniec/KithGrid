@@ -10,6 +10,12 @@ export const communities = pgTable('communities', {
     maxHomes: integer('max_homes').default(100),
     isActive: boolean('is_active').default(true),
 
+    // Feature Flags (Modules)
+    hasMarketplace: boolean('has_marketplace').default(true),
+    hasResources: boolean('has_resources').default(true),
+    hasEvents: boolean('has_events').default(true),
+    hasDocuments: boolean('has_documents').default(true),
+
     // Billing Fields (Stripe placeholders)
     stripeCustomerId: text('stripe_customer_id'),
     stripeSubscriptionId: text('stripe_subscription_id'),
