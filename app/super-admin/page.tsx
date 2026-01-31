@@ -267,6 +267,8 @@ export default function SuperAdminPage() {
                                     localStorage.setItem('neighborNet_customSecondary', comm.branding.secondaryColor);
                                     localStorage.setItem('neighborNet_customAccent', comm.branding.accentColor);
 
+                                    alert(`Simulating login for ${comm.name}!\nPrimary: ${comm.branding.primaryColor}\nSecondary: ${comm.branding.secondaryColor}\nAccent: ${comm.branding.accentColor}`);
+
                                     window.location.href = '/dashboard';
                                 }}
                                 style={{
