@@ -4,96 +4,15 @@
 import { useState } from "react";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { UserProvider } from "@/contexts/UserContext"; // Wrap if needed, or just standard html/body
-import { Shield, Plus, Settings, Check, X, Building } from "lucide-react";
+import { Shield, Plus, Settings, Check, X, Building, Download, Trash2, Power, PowerOff } from "lucide-react";
 
-// Mock Data for Communities (mimicking the DB schema)
-type Community = {
-    id: string;
-    name: string;
-    slug: string;
-    plan: 'starter_100' | 'growth_250' | 'pro_500';
-    features: {
-        marketplace: boolean;
-        resources: boolean;
-        events: boolean;
-        documents: boolean;
-        forum: boolean;
-        messages: boolean;
-        services: boolean; // service pros
-        local: boolean; // local guide
-    };
-    isActive: boolean;
-    branding: {
-        logoUrl: string;
-        primaryColor: string;
-        secondaryColor: string;
-        accentColor: string;
-    };
-};
-
-const MOCK_COMMUNITIES: Community[] = [
-    {
-        id: 'c1',
-        name: 'Oak Hills HOA',
-        slug: 'oak-hills',
-        plan: 'growth_250',
-        features: {
-            marketplace: true,
-            resources: true,
-            events: true,
-            documents: true,
-            forum: true,
-            messages: true,
-            services: true,
-            local: true
-        },
-        isActive: true,
-        branding: {
-            logoUrl: 'https://cdn-icons-png.flaticon.com/512/3590/3590453.png',
-            primaryColor: '#059669', // Forest green
-            secondaryColor: '#064e3b', // Dark green
-            accentColor: '#fbbf24' // Amber
-        }
-    },
-    {
-        id: 'c2',
-        name: 'Sunset Valley',
-        slug: 'sunset-valley',
-        plan: 'starter_100',
-        features: {
-            marketplace: false,
-            resources: false,
-            events: true,
-            documents: true,
-            forum: false, // Default off for starter maybe?
-            messages: true,
-            services: false,
-            local: true
-        },
-        isActive: true,
-        branding: {
-            logoUrl: '',
-            primaryColor: '#ea580c', // Orange
-            secondaryColor: '#7c2d12', // Dark orange
-            accentColor: '#38bdf8' // Sky blue
-        }
-    }
-];
+// ... (skipping type definitions) ...
 
 export default function SuperAdminPage() {
-    const [communities, setCommunities] = useState<Community[]>(MOCK_COMMUNITIES);
-    const [showAddModal, setShowAddModal] = useState(false);
-    const [newCommunity, setNewCommunity] = useState<Partial<Community>>({
-        name: '',
-        slug: '',
-        plan: 'starter_100',
-        features: {
-            marketplace: true, resources: true, events: true, documents: true,
-            forum: true, messages: true, services: true, local: true
-        }
-    });
+    // ... (skipping state) ...
 
     const toggleFeature = (id: string, feature: keyof Community['features']) => {
+        // ... (existing)
         setCommunities(communities.map(c => {
             if (c.id === id) {
                 return {
@@ -108,7 +27,28 @@ export default function SuperAdminPage() {
         }));
     };
 
+    const toggleActive = (id: string) => {
+        setCommunities(communities.map(c => c.id === id ? { ...c, isActive: !c.isActive } : c));
+    };
+
+    const deleteCommunity = (id: string) => {
+        if (confirm('Are you sure you want to delete this tenant? This action cannot be undone.')) {
+            setCommunities(communities.filter(c => c.id !== id));
+        }
+    };
+
+    const exportData = (community: Community) => {
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(community, null, 2));
+        const downloadAnchorNode = document.createElement('a');
+        downloadAnchorNode.setAttribute("href", dataStr);
+        downloadAnchorNode.setAttribute("download", `${community.slug}_export.json`);
+        document.body.appendChild(downloadAnchorNode); // required for firefox
+        downloadAnchorNode.click();
+        downloadAnchorNode.remove();
+    };
+
     const handleAddCommunity = () => {
+        // ... (existing) ...
         if (!newCommunity.name || !newCommunity.slug) return;
 
         const newComm: Community = {
@@ -139,6 +79,7 @@ export default function SuperAdminPage() {
 
     return (
         <div style={{ padding: '2rem', maxWidth: '1200px', margin: '0 auto', fontFamily: 'system-ui, sans-serif' }}>
+            {/* ... (Header) ... */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3rem' }}>
                 <div>
                     <h1 style={{ fontSize: '2rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '0.75rem', color: '#111827' }}>
@@ -164,8 +105,10 @@ export default function SuperAdminPage() {
                 {communities.map(comm => (
                     <div key={comm.id} style={{
                         border: '1px solid #e5e7eb', borderRadius: '1rem', padding: '1.5rem',
-                        backgroundColor: 'white', boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)'
+                        backgroundColor: 'white', boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
+                        opacity: comm.isActive ? 1 : 0.7 // Dim inactive tenants
                     }}>
+                        {/* Header Row */}
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
                             <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
                                 <div style={{
@@ -184,16 +127,33 @@ export default function SuperAdminPage() {
                                     </div>
                                 </div>
                             </div>
-                            <span style={{
-                                padding: '0.25rem 0.75rem', borderRadius: '9999px', fontSize: '0.75rem', fontWeight: 600,
-                                backgroundColor: comm.isActive ? '#dcfce7' : '#fee2e2',
-                                color: comm.isActive ? '#166534' : '#991b1b'
-                            }}>
-                                {comm.isActive ? 'Active' : 'Inactive'}
-                            </span>
+                            <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                <button
+                                    onClick={() => exportData(comm)}
+                                    title="Export Data"
+                                    style={{ padding: '0.5rem', borderRadius: '9999px', border: '1px solid #e5e7eb', background: 'white', cursor: 'pointer', color: '#4b5563' }}
+                                >
+                                    <Download size={16} />
+                                </button>
+                                <button
+                                    onClick={() => toggleActive(comm.id)}
+                                    title={comm.isActive ? "Disable Tenant" : "Enable Tenant"}
+                                    style={{
+                                        padding: '0.25rem 0.75rem', borderRadius: '9999px', fontSize: '0.75rem', fontWeight: 600,
+                                        backgroundColor: comm.isActive ? '#dcfce7' : '#fee2e2',
+                                        color: comm.isActive ? '#166534' : '#991b1b',
+                                        border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem'
+                                    }}
+                                >
+                                    {comm.isActive ? <Check size={12} /> : <PowerOff size={12} />}
+                                    {comm.isActive ? 'Active' : 'Disabled'}
+                                </button>
+                            </div>
                         </div>
 
+                        {/* Branding Section (Existing) */}
                         <div style={{ borderTop: '1px solid #f3f4f6', paddingTop: '1.5rem', marginBottom: '1.5rem' }}>
+                            {/* ... keep branding content same or rely on existing ... */}
                             <h3 style={{ fontSize: '0.875rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#6b7280', marginBottom: '1rem', fontWeight: 600 }}>Branding</h3>
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem' }}>
                                 {/* Primary Color */}
@@ -310,38 +270,53 @@ export default function SuperAdminPage() {
                         </div>
 
                         <div style={{ marginTop: '1.5rem', borderTop: '1px solid #f3f4f6', paddingTop: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <button
-                                onClick={() => {
-                                    localStorage.setItem('neighborNet_communityName', comm.name);
-                                    localStorage.setItem('neighborNet_modules', JSON.stringify(comm.features));
-                                    // We persist the color preference, which the ThemeContext will pick up if logic is adjusted there
-                                    // For now, let's create a new key or update how ThemeContext works if needed.
-                                    // Actually, let's match the Theme structure or create a custom one.
-                                    // Simpler: Just override the CSS variables for now as a 'custom' theme simulation
-                                    localStorage.setItem('neighborNet_customPrimary', comm.branding.primaryColor);
-                                    localStorage.setItem('neighborNet_customSecondary', comm.branding.secondaryColor);
-                                    localStorage.setItem('neighborNet_customAccent', comm.branding.accentColor);
-                                    localStorage.setItem('neighborNet_communityLogo', comm.branding.logoUrl);
+                            <div style={{ display: 'flex', gap: '1rem' }}>
+                                <button
+                                    onClick={() => {
+                                        localStorage.setItem('neighborNet_communityName', comm.name);
+                                        localStorage.setItem('neighborNet_modules', JSON.stringify(comm.features));
+                                        localStorage.setItem('neighborNet_customPrimary', comm.branding.primaryColor);
+                                        localStorage.setItem('neighborNet_customSecondary', comm.branding.secondaryColor);
+                                        localStorage.setItem('neighborNet_customAccent', comm.branding.accentColor);
+                                        localStorage.setItem('neighborNet_communityLogo', comm.branding.logoUrl);
 
-                                    alert(`Simulating login for ${comm.name}!\nPrimary: ${comm.branding.primaryColor}\nSecondary: ${comm.branding.secondaryColor}\nAccent: ${comm.branding.accentColor}`);
+                                        alert(`Simulating login for ${comm.name}!\nPrimary: ${comm.branding.primaryColor}\nSecondary: ${comm.branding.secondaryColor}\nAccent: ${comm.branding.accentColor}`);
 
-                                    window.location.href = '/dashboard';
-                                }}
-                                style={{
-                                    padding: '0.5rem 1rem',
-                                    borderRadius: '0.375rem',
-                                    backgroundColor: '#fff',
-                                    border: '1px solid #d1d5db',
-                                    color: '#374151',
-                                    fontSize: '0.875rem',
-                                    fontWeight: 600,
-                                    cursor: 'pointer',
-                                    display: 'flex', alignItems: 'center', gap: '0.5rem'
-                                }}
-                            >
-                                <Building size={16} />
-                                Simulate Login
-                            </button>
+                                        window.location.href = '/dashboard';
+                                    }}
+                                    style={{
+                                        padding: '0.5rem 1rem',
+                                        borderRadius: '0.375rem',
+                                        backgroundColor: '#fff',
+                                        border: '1px solid #d1d5db',
+                                        color: '#374151',
+                                        fontSize: '0.875rem',
+                                        fontWeight: 600,
+                                        cursor: 'pointer',
+                                        display: 'flex', alignItems: 'center', gap: '0.5rem'
+                                    }}
+                                >
+                                    <Building size={16} />
+                                    Simulate Login
+                                </button>
+                                <button
+                                    onClick={() => deleteCommunity(comm.id)}
+                                    style={{
+                                        padding: '0.5rem 1rem',
+                                        borderRadius: '0.375rem',
+                                        backgroundColor: '#fee2e2',
+                                        border: '1px solid #fecaca',
+                                        color: '#b91c1c',
+                                        fontSize: '0.875rem',
+                                        fontWeight: 600,
+                                        cursor: 'pointer',
+                                        display: 'flex', alignItems: 'center', gap: '0.5rem'
+                                    }}
+                                >
+                                    <Trash2 size={16} />
+                                    Delete
+                                </button>
+                            </div>
                             <span style={{ fontSize: '0.875rem', color: '#6b7280' }}>Current Plan: <strong style={{ color: '#111827' }}>{comm.plan.replace('_', ' ').toUpperCase()}</strong></span>
                         </div>
                     </div>
