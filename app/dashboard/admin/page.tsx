@@ -91,7 +91,11 @@ export default function AdminPage() {
             });
 
             if (result.success && result.data) {
-                alert(`Invitation generated!\n\nCode: ${result.data.code}\n\nSend this code to ${newInviteEmail}`);
+                // Construct a helpful message for the admin to copy/paste
+                const appUrl = window.location.origin; // e.g. https://neighborhoodnet.netlify.app
+                const message = `Invitation generated!\n\nSend this instructions to ${newInviteEmail}:\n\n"Hi! I've invited you to join our neighborhood portal.\n\n1. Go to: ${appUrl}/join\n2. Enter code: ${result.data.code}\n\nThis code expires in 7 days."`;
+
+                alert(message);
                 setNewInviteEmail("");
                 await loadInvites(); // Reload the list
             } else {
