@@ -7,8 +7,6 @@ import { Search, Filter, Mail, X } from "lucide-react";
 import { useUser } from "@/contexts/UserContext";
 import { getNeighbors } from "@/app/actions/neighbors";
 import { createInvitation } from "@/app/actions/invitations";
-// Import the Neighbor type locally or from a types file if available. 
-// Assuming NeighborCard expects the type from "@/types/neighbor" which matches MOCK.
 import { Neighbor } from "@/types/neighbor";
 
 export default function NeighborsPage() {
@@ -24,25 +22,21 @@ export default function NeighborsPage() {
     useEffect(() => {
         const fetchNeighbors = async () => {
             if (!user.communityId) {
-                // Fallback if no community (e.g. first admin login without setup)
-                // In a real app we'd redirect or show setup. For now, try fetching with a placeholder or handle empty.
-                setIsLoading(false);
+                // If user context is loaded but missing communityId, stop loading.
+                // We check user.id or role to ensure we aren't just briefly undefined during auth load
+                if (user.role) {
+                    setIsLoading(false);
+                }
                 return;
             }
 
             try {
-                // Determine if we need to pass communityId. 
-                // The action expects it. 
                 const result = await getNeighbors(user.communityId);
                 if (result.success && result.data) {
-                    // Map result to Neighbor type if needed (dates might be strings/Date objects)
-                    // The action returns objects that match reasonably well, need to ensure type safety.
                     const mapped: Neighbor[] = result.data.map((n: any) => ({
                         ...n,
-                        // Ensure arrays exist
                         skills: n.skills || [],
                         equipment: n.equipment || [],
-                        // Ensure string for date if component expects string
                         joinedDate: n.joinedDate ? new Date(n.joinedDate).toLocaleDateString() : 'Unknown',
                         isOnline: n.isOnline || false
                     }));
@@ -56,14 +50,14 @@ export default function NeighborsPage() {
         };
 
         fetchNeighbors();
-    }, [user.communityId]);
+    }, [user.communityId, user.role]);
 
     const filteredNeighbors = neighbors.filter((neighbor) => {
         const term = searchTerm.toLowerCase();
         return (
             neighbor.name.toLowerCase().includes(term) ||
             neighbor.skills.some((s) => s.toLowerCase().includes(term)) ||
-            neighbor.equipment.some((e) => e.name.toLowerCase().includes(term))
+            (neighbor.equipment || []).some((e) => e.name.toLowerCase().includes(term))
         );
     });
 
@@ -96,6 +90,24 @@ export default function NeighborsPage() {
             setIsSendingInvite(false);
         }
     };
+
+    if (!isLoading && !user.communityId) {
+        return (
+            <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--muted-foreground)' }}>
+                <h2>Session Information Missing</h2>
+                <p>We couldn't detect your community information.</p>
+                <p style={{ marginTop: '1rem' }}>
+                    Please <a href="/login" onClick={(e) => {
+                        e.preventDefault();
+                        localStorage.removeItem('neighborNet_user');
+                        window.location.href = '/login';
+                    }} style={{ color: 'var(--primary)', textDecoration: 'underline', cursor: 'pointer' }}>
+                        Sign Out
+                    </a> and sign in again to refresh your session.
+                </p>
+            </div>
+        );
+    }
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
@@ -184,7 +196,7 @@ export default function NeighborsPage() {
                     ))}
                     {filteredNeighbors.length === 0 && (
                         <div style={{ gridColumn: '1 / -1', padding: '3rem', textAlign: 'center', color: 'var(--muted-foreground)' }}>
-                            {searchTerm ? `No neighbors found matching "${searchTerm}".` : "No neighbors found. Invite some people!"}
+                            {searchTerm ? `No neighbors found matching "${searchTerm}".` : "No other neighbors found yet."}
                         </div>
                     )}
                 </div>
@@ -212,7 +224,7 @@ export default function NeighborsPage() {
                             </button>
                         </div>
                         <p style={{ color: 'var(--muted-foreground)', marginBottom: '1.5rem', fontSize: '0.9rem' }}>
-                            Send an invitation code to a new resident. They can use this code to join NeighborNet.
+                            Send an invitation to a resident of this community.
                         </p>
 
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
