@@ -170,8 +170,8 @@ export async function seedCommunitiesIfNeeded() {
             await db.insert(communities).values(m as any);
         }
         return { success: true, message: "Seeded mock data" };
-    } catch (e) {
+    } catch (e: any) {
         console.error("Seed failed", e);
-        return { success: false, error: "Seed failed" };
+        return { success: false, error: e.message || "Seed failed" };
     }
 }
