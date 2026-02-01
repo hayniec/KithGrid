@@ -11,6 +11,7 @@ export const MOCK_NEIGHBORS: Neighbor[] = [
         role: "Board Member",
         address: "124 Maple Drive",
         avatar: "SJ",
+        phone: "555-0101",
         skills: ["Gardening", "Event Planning", "Notary Public", "First Aid/CPR"],
         equipment: [
             { id: "e1", name: "Pressure Washer", isAvailable: true },
@@ -26,6 +27,7 @@ export const MOCK_NEIGHBORS: Neighbor[] = [
         role: "Resident",
         address: "128 Maple Drive",
         avatar: "MC",
+        phone: "555-0102",
         skills: ["Plumbing", "Electrical", "Auto Repair", "Generator Maint."],
         equipment: [
             { id: "e4", name: "Power Drill Set", isAvailable: true },
@@ -41,6 +43,7 @@ export const MOCK_NEIGHBORS: Neighbor[] = [
         role: "Resident",
         address: "135 Oak Lane",
         avatar: "ER",
+        phone: "555-0103",
         skills: ["Graphic Design", "Photography", "Pet Sitting", "Nurse"],
         equipment: [
             { id: "e7", name: "DSLR Camera", isAvailable: true },
@@ -56,6 +59,7 @@ export const MOCK_NEIGHBORS: Neighbor[] = [
         role: "Resident",
         address: "142 Oak Lane",
         avatar: "DK",
+        phone: "555-0104",
         skills: ["Coding", "Math Tutoring", "Piano"],
         equipment: [
             { id: "e10", name: "Pickup Truck", isAvailable: false, dueDate: "2024-02-14", borrowerName: "Mike" },
@@ -71,6 +75,7 @@ export const MOCK_NEIGHBORS: Neighbor[] = [
         role: "Resident",
         address: "119 Pine Street",
         avatar: "LT",
+        phone: "555-0105",
         skills: ["Baking", "Sewing", "Accounting"],
         equipment: [
             { id: "e13", name: "Stand Mixer", isAvailable: true },

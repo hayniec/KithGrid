@@ -135,8 +135,13 @@ export default function EmergencyPage() {
                                     <span className={styles.contactRole}>
                                         {neighbor.skills.find(s => ["Nurse", "Doctor", "First Aid", "CPR", "EMT", "First Aid/CPR"].some(term => s.includes(term)))}
                                     </span>
+                                    {neighbor.phone && (
+                                        <span style={{ fontSize: '0.85rem', color: 'var(--foreground)', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                            <Phone size={12} /> {neighbor.phone}
+                                        </span>
+                                    )}
                                 </div>
-                                <a href={`tel:${neighbor.id}`} className={styles.callButton} style={{ backgroundColor: '#fee2e2', color: '#dc2626' }}>
+                                <a href={`tel:${neighbor.phone || neighbor.id}`} className={styles.callButton} style={{ backgroundColor: '#fee2e2', color: '#dc2626' }}>
                                     <Phone size={14} />
                                     Alert
                                 </a>

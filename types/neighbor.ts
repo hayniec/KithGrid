@@ -12,6 +12,7 @@ export interface Neighbor {
     role: 'Resident' | 'Board Member' | 'Admin';
     address: string;
     avatar: string; // initials or image url
+    phone?: string; // Optional for privacy
     skills: string[];
     equipment: Equipment[];
     joinedDate: string;
