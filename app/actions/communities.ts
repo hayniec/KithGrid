@@ -72,7 +72,13 @@ export async function createCommunity(data: any) {
         return { success: true, data: mapToUI(inserted) };
     } catch (error: any) {
         console.error("Failed to create community:", error);
-        return { success: false, error: error.message || "Failed to create community" };
+        // Capture Postgres specific error fields if available
+        const detail = error.detail ? ` (Detail: ${error.detail})` : '';
+        const hint = error.hint ? ` (Hint: ${error.hint})` : '';
+        const code = error.code ? ` (Code: ${error.code})` : '';
+        // If the message is the query dump, getting the 'routine' or 'position' might helps, but let's try code/detail first.
+        const msg = error.message || "Failed to create community";
+        return { success: false, error: `${msg}${code}${detail}${hint}` };
     }
 }
 
