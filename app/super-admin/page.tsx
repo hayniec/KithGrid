@@ -9,6 +9,7 @@ import type { Community } from "@/types/community";
 export default function SuperAdminPage() {
     const [communities, setCommunities] = useState<Community[]>([]);
     const [loading, setLoading] = useState(true);
+    const [isCreating, setIsCreating] = useState(false);
     const [showAddModal, setShowAddModal] = useState(false);
     const [newCommunity, setNewCommunity] = useState<Partial<Community>>({
         name: '',
@@ -90,29 +91,36 @@ export default function SuperAdminPage() {
             return;
         }
 
-        const res = await createCommunity({
-            ...newCommunity,
-            // defaults
-            branding: {
-                logoUrl: '',
-                primaryColor: '#4f46e5',
-                secondaryColor: '#1e1b4b',
-                accentColor: '#f59e0b'
-            }
-        });
-
-        if (res.success && res.data) {
-            setCommunities([...communities, res.data]);
-            setShowAddModal(false);
-            setNewCommunity({
-                name: '', slug: '', plan: 'starter_100',
-                features: {
-                    marketplace: true, resources: true, events: true, documents: true,
-                    forum: true, messages: true, services: true, local: true
+        setIsCreating(true);
+        try {
+            const res = await createCommunity({
+                ...newCommunity,
+                // defaults
+                branding: {
+                    logoUrl: '',
+                    primaryColor: '#4f46e5',
+                    secondaryColor: '#1e1b4b',
+                    accentColor: '#f59e0b'
                 }
             });
-        } else {
-            alert(`Failed to create community: ${res.error || 'Unknown error'}`);
+
+            if (res.success && res.data) {
+                setCommunities([...communities, res.data]);
+                setShowAddModal(false);
+                setNewCommunity({
+                    name: '', slug: '', plan: 'starter_100',
+                    features: {
+                        marketplace: true, resources: true, events: true, documents: true,
+                        forum: true, messages: true, services: true, local: true
+                    }
+                });
+            } else {
+                alert(`Failed to create community: ${res.error || 'Unknown error'}`);
+            }
+        } catch (e) {
+            alert("Unexpected error creating community");
+        } finally {
+            setIsCreating(false);
         }
     };
 
@@ -309,8 +317,10 @@ export default function SuperAdminPage() {
                             aria-label="New Community Slug"
                         />
                         <div className={styles.modalActions}>
-                            <button onClick={() => setShowAddModal(false)} className={styles.cancelButton}>Cancel</button>
-                            <button onClick={handleAdd} className={styles.createButton}>Create Tenant</button>
+                            <button onClick={() => setShowAddModal(false)} className={styles.cancelButton} disabled={isCreating}>Cancel</button>
+                            <button onClick={handleAdd} className={styles.createButton} disabled={isCreating}>
+                                {isCreating ? 'Creating...' : 'Create Tenant'}
+                            </button>
                         </div>
                     </div>
                 </div>

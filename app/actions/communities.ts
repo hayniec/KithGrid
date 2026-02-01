@@ -72,7 +72,7 @@ export async function createCommunity(data: any) {
         return { success: true, data: mapToUI(inserted) };
     } catch (error: any) {
         console.error("Failed to create community:", error);
-        return { success: false, error: "Failed to create community" };
+        return { success: false, error: error.message || "Failed to create community" };
     }
 }
 
