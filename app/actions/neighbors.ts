@@ -100,3 +100,36 @@ export async function getNeighbors(communityId: string): Promise<NeighborActionS
         return { success: false, error: error.message || "Failed to fetch neighbors" };
     }
 }
+
+/**
+ * Delete a neighbor
+ */
+export async function deleteNeighbor(neighborId: string): Promise<NeighborActionState> {
+    try {
+        await db.delete(neighbors).where(eq(neighbors.id, neighborId));
+        return { success: true, message: "Neighbor removed successfully" };
+    } catch (error: any) {
+        console.error("Failed to delete neighbor:", error);
+        return { success: false, error: error.message || "Failed to delete neighbor" };
+    }
+}
+
+/**
+ * Update a neighbor's details
+ */
+export async function updateNeighbor(neighborId: string, data: {
+    name?: string;
+    role?: 'Admin' | 'Resident' | 'Board Member';
+    address?: string;
+}): Promise<NeighborActionState> {
+    try {
+        await db.update(neighbors)
+            .set(data)
+            .where(eq(neighbors.id, neighborId));
+
+        return { success: true, message: "Neighbor updated successfully" };
+    } catch (error: any) {
+        console.error("Failed to update neighbor:", error);
+        return { success: false, error: error.message || "Failed to update neighbor" };
+    }
+}
