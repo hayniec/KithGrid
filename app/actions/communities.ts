@@ -43,7 +43,10 @@ export async function getCommunities() {
         return { success: true, data: rows.map(mapToUI) };
     } catch (error: any) {
         console.error("Failed to fetch communities:", error);
-        return { success: false, error: "Failed to fetch communities" };
+        const detail = error.detail ? ` (Detail: ${error.detail})` : '';
+        const code = error.code ? ` (Code: ${error.code})` : '';
+        const msg = error.message || "Failed to fetch communities";
+        return { success: false, error: `${msg}${code}${detail}` };
     }
 }
 

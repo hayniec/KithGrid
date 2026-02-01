@@ -31,12 +31,13 @@ export default function SuperAdminPage() {
             const res = await getCommunities();
             if (res.success && res.data) {
                 setCommunities(res.data);
-            } else if (!res.success) {
+            } else {
                 console.error(res.error);
-                // Optionally show toast or error state
+                alert(`Failed to load communities: ${res.error}`);
             }
-        } catch (e) {
+        } catch (e: any) {
             console.error("Failed to load communities", e);
+            alert(`Unexpected error loading communities: ${e.message || e}`);
         } finally {
             setLoading(false);
         }
