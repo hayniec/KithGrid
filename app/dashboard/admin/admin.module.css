@@ -139,3 +139,29 @@
     color: var(--muted-foreground);
     font-size: 0.9rem;
 }
+
+.filterContainer {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border);
+}
+
+.filterButton {
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    background: transparent;
+    opacity: 0.6;
+    font-weight: 400;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s;
+    color: var(--foreground);
+}
+
+.filterButtonActive {
+    background: var(--muted);
+    opacity: 1;
+    font-weight: 600;
+}
