@@ -26,11 +26,19 @@ export default function SuperAdminPage() {
 
     const loadCommunities = async () => {
         setLoading(true);
-        const res = await getCommunities();
-        if (res.success && res.data) {
-            setCommunities(res.data);
+        try {
+            const res = await getCommunities();
+            if (res.success && res.data) {
+                setCommunities(res.data);
+            } else if (!res.success) {
+                console.error(res.error);
+                // Optionally show toast or error state
+            }
+        } catch (e) {
+            console.error("Failed to load communities", e);
+        } finally {
+            setLoading(false);
         }
-        setLoading(false);
     };
 
     const handleToggleFeature = async (id: string, feature: keyof Community['features']) => {
