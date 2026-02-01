@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useTheme, THEMES } from "@/contexts/ThemeContext";
 import styles from "./admin.module.css";
-import { Palette, Shield, Users, FileText, AlertTriangle, Key, Trash2, CheckCircle, UserPlus, Mail } from "lucide-react";
+import { Palette, Shield, Users, FileText, AlertTriangle, Key, Trash2, CheckCircle, UserPlus, Mail, X } from "lucide-react";
 import { MOCK_NEIGHBORS } from "@/lib/data";
 import { createInvitation, getInvitations, deleteInvitation } from "@/app/actions/invitations";
 import { getCommunities } from "@/app/actions/communities";
@@ -72,6 +72,9 @@ export default function AdminPage() {
         }
     };
 
+    const [showModal, setShowModal] = useState(false);
+    const [modalData, setModalData] = useState<{ code: string, email: string, message: string }>({ code: '', email: '', message: '' });
+
     const generateInvite = async () => {
         if (!newInviteEmail) {
             alert("Please enter an email address");
@@ -93,9 +96,15 @@ export default function AdminPage() {
             if (result.success && result.data) {
                 // Construct a helpful message for the admin to copy/paste
                 const appUrl = window.location.origin; // e.g. https://neighborhoodnet.netlify.app
-                const message = `Invitation generated!\n\nSend this instructions to ${newInviteEmail}:\n\n"Hi! I've invited you to join our neighborhood portal.\n\n1. Go to: ${appUrl}/join\n2. Enter code: ${result.data.code}\n\nThis code expires in 7 days."`;
+                const message = `Hi! I've invited you to join our neighborhood portal.\n\n1. Go to: ${appUrl}/join\n2. Enter code: ${result.data.code}\n\nThis code expires in 7 days.`;
 
-                alert(message);
+                setModalData({
+                    code: result.data.code,
+                    email: newInviteEmail,
+                    message: message
+                });
+                setShowModal(true);
+
                 setNewInviteEmail("");
                 await loadInvites(); // Reload the list
             } else {
@@ -107,6 +116,13 @@ export default function AdminPage() {
         } finally {
             setIsGenerating(false);
         }
+    };
+
+    const copyToClipboard = () => {
+        navigator.clipboard.writeText(modalData.message).then(() => {
+            alert("Message copied to clipboard!"); // Optional small feedback
+            setShowModal(false);
+        });
     };
 
     const handleDeleteInvite = async (id: string) => {
@@ -405,6 +421,119 @@ export default function AdminPage() {
                                     ))}
                                 </ul>
                             )}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Success Modal */}
+            {showModal && (
+                <div style={{
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    height: '100%',
+                    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    zIndex: 1000,
+                    backdropFilter: 'blur(4px)'
+                }}>
+                    <div style={{
+                        backgroundColor: 'var(--card)',
+                        borderRadius: '1rem',
+                        padding: '2rem',
+                        width: '90%',
+                        maxWidth: '500px',
+                        boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)',
+                        border: '1px solid var(--border)',
+                        position: 'relative'
+                    }}>
+                        <button
+                            onClick={() => setShowModal(false)}
+                            style={{
+                                position: 'absolute',
+                                top: '1rem',
+                                right: '1rem',
+                                background: 'transparent',
+                                border: 'none',
+                                color: 'var(--muted-foreground)',
+                                cursor: 'pointer'
+                            }}
+                        >
+                            <X size={20} />
+                        </button>
+
+                        <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
+                            <div style={{
+                                width: '3rem',
+                                height: '3rem',
+                                backgroundColor: 'var(--accent)',
+                                borderRadius: '50%',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                margin: '0 auto 1rem auto',
+                                color: 'var(--primary)'
+                            }}>
+                                <CheckCircle size={24} />
+                            </div>
+                            <h2 style={{ fontSize: '1.5rem', fontWeight: 600, marginBottom: '0.5rem' }}>Invitation Created!</h2>
+                            <p style={{ color: 'var(--muted-foreground)' }}>Share this with your neighbor.</p>
+                        </div>
+
+                        <div style={{
+                            backgroundColor: 'var(--muted)',
+                            padding: '1rem',
+                            borderRadius: '0.5rem',
+                            fontFamily: 'monospace',
+                            fontSize: '0.9rem',
+                            whiteSpace: 'pre-wrap',
+                            marginBottom: '1.5rem',
+                            border: '1px solid var(--border)',
+                            color: 'var(--foreground)'
+                        }}>
+                            {modalData.message}
+                        </div>
+
+                        <div style={{ display: 'flex', gap: '1rem' }}>
+                            <button
+                                onClick={() => setShowModal(false)}
+                                style={{
+                                    flex: 1,
+                                    padding: '0.75rem',
+                                    borderRadius: 'var(--radius)',
+                                    background: 'transparent',
+                                    border: '1px solid var(--border)',
+                                    color: 'var(--foreground)',
+                                    fontWeight: 600,
+                                    cursor: 'pointer'
+                                }}
+                            >
+                                Close
+                            </button>
+                            <button
+                                onClick={copyToClipboard}
+                                style={{
+                                    flex: 1,
+                                    padding: '0.75rem',
+                                    borderRadius: 'var(--radius)',
+                                    background: 'var(--primary)',
+                                    border: 'none',
+                                    color: 'white',
+                                    fontWeight: 600,
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    gap: '0.5rem'
+                                }}
+                            >
+                                <FileText size={18} />
+                                Copy Message
+                            </button>
                         </div>
                     </div>
                 </div>
