@@ -18,7 +18,7 @@ const navigation = [
     { name: "Service Pros", href: "/dashboard/services", icon: Wrench },
     { name: "Local Guide", href: "/dashboard/local", icon: MapPin },
     { name: "Community Resources", href: "/dashboard/resources", icon: BoxSelect },
-    { name: "HOA Documents & Info", href: "/dashboard/documents", icon: FileText },
+    { name: "HOA Info", href: "/dashboard/documents", icon: FileText },
     { name: "Emergency", href: "/dashboard/emergency", icon: Siren },
     { name: "Settings", href: "/dashboard/settings", icon: Settings },
     { name: "Admin Console", href: "/dashboard/admin", icon: Shield },

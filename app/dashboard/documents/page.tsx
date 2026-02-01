@@ -29,7 +29,7 @@ const MOCK_DOCUMENTS_START: Document[] = [
 ];
 
 export default function DocumentsPage() {
-    const [activeTab, setActiveTab] = useState<'documents' | 'info'>('documents');
+    const [activeTab, setActiveTab] = useState<'documents' | 'info'>('info');
     const [documents, setDocuments] = useState<Document[]>(MOCK_DOCUMENTS_START);
     const [selectedDoc, setSelectedDoc] = useState<Document | null>(null);
     const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
@@ -71,16 +71,16 @@ export default function DocumentsPage() {
 
             <div className={styles.tabs}>
                 <button
-                    className={`${styles.tab} ${activeTab === 'documents' ? styles.activeTab : ''}`}
-                    onClick={() => setActiveTab('documents')}
-                >
-                    Documents & Forms
-                </button>
-                <button
                     className={`${styles.tab} ${activeTab === 'info' ? styles.activeTab : ''}`}
                     onClick={() => setActiveTab('info')}
                 >
                     Community Information
+                </button>
+                <button
+                    className={`${styles.tab} ${activeTab === 'documents' ? styles.activeTab : ''}`}
+                    onClick={() => setActiveTab('documents')}
+                >
+                    Documents & Forms
                 </button>
             </div>
 
