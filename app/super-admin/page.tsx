@@ -159,10 +159,7 @@ export default function SuperAdminPage() {
             ) : communities.length === 0 ? (
                 <div className={styles.emptyState}>
                     <Database size={48} style={{ marginBottom: '1rem', opacity: 0.5 }} />
-                    <p>No tenants found in the database.</p>
-                    <button onClick={handleSeed} className={styles.seedButton}>
-                        Inventory Empty? Seed Default Data
-                    </button>
+                    <p>No tenants found. Add a tenant to get started.</p>
                 </div>
             ) : (
                 <div className={styles.grid}>

@@ -134,44 +134,4 @@ export async function updateCommunityBranding(id: string, branding: any) {
     }
 }
 
-// Seed function
-// Mock data structure inline for seeding
 
-
-export async function seedCommunitiesIfNeeded() {
-    const existing = await db.select().from(communities);
-    if (existing.length > 0) return { success: true, message: "Already seeded" };
-
-    const mocks = [
-        {
-            name: 'Oak Hills HOA',
-            slug: 'oak-hills',
-            planTuple: 'growth_250',
-            hasMarketplace: true, hasResources: true, hasEvents: true, hasDocuments: true,
-            hasForum: true, hasMessages: true, hasServicePros: true, hasLocalGuide: true,
-            isActive: true,
-            primaryColor: '#059669', secondaryColor: '#064e3b', accentColor: '#fbbf24',
-            logoUrl: 'https://cdn-icons-png.flaticon.com/512/3590/3590453.png'
-        },
-        {
-            name: 'Sunset Valley',
-            slug: 'sunset-valley',
-            planTuple: 'starter_100',
-            hasMarketplace: false, hasResources: false, hasEvents: true, hasDocuments: true,
-            hasForum: false, hasMessages: true, hasServicePros: false, hasLocalGuide: true,
-            isActive: true,
-            primaryColor: '#ea580c', secondaryColor: '#7c2d12', accentColor: '#38bdf8',
-            logoUrl: ''
-        }
-    ];
-
-    try {
-        for (const m of mocks) {
-            await db.insert(communities).values(m as any);
-        }
-        return { success: true, message: "Seeded mock data" };
-    } catch (e: any) {
-        console.error("Seed failed", e);
-        return { success: false, error: e.message || "Seed failed" };
-    }
-}
