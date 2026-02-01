@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { Shield, Plus, Check, PowerOff, Building, Download, Trash2, Database } from "lucide-react";
 import styles from "./admin.module.css";
-import { getCommunities, createCommunity, toggleCommunityStatus, deleteCommunity, toggleCommunityFeature, seedCommunitiesIfNeeded } from "@/app/actions/communities";
+import { getCommunities, createCommunity, toggleCommunityStatus, deleteCommunity, toggleCommunityFeature } from "@/app/actions/communities";
 import type { Community } from "@/types/community";
 
 export default function SuperAdminPage() {
@@ -116,16 +116,7 @@ export default function SuperAdminPage() {
         }
     };
 
-    const handleSeed = async () => {
-        setLoading(true);
-        const res = await seedCommunitiesIfNeeded();
-        if (res.success) {
-            loadCommunities();
-        } else {
-            alert(`Seed failed: ${res.error || 'Unknown error'}`);
-            setLoading(false);
-        }
-    };
+
 
     const updateBrandingPreview = (id: string, field: string, value: string) => {
         // Just local state update for preview, ideally implementation would save on blur or store separately
