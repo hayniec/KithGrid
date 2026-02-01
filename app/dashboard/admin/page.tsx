@@ -6,6 +6,7 @@ import styles from "./admin.module.css";
 import { Palette, Shield, Users, FileText, AlertTriangle, Key, Trash2, CheckCircle, UserPlus, Mail } from "lucide-react";
 import { MOCK_NEIGHBORS } from "@/lib/data";
 import { createInvitation, getInvitations, deleteInvitation } from "@/app/actions/invitations";
+import { getCommunities } from "@/app/actions/communities";
 
 type Tab = 'general' | 'users' | 'invites';
 
@@ -29,21 +30,36 @@ export default function AdminPage() {
     const [newInviteEmail, setNewInviteEmail] = useState("");
     const [isGenerating, setIsGenerating] = useState(false);
     const [isLoadingInvites, setIsLoadingInvites] = useState(false);
+    const [communityId, setCommunityId] = useState<string>("");
 
-    // TODO: Get actual community ID from context/session
-    const COMMUNITY_ID = "temp-community-id"; // This should come from user context
+    // Fetch real Community ID
+    useEffect(() => {
+        const fetchCommunityId = async () => {
+            try {
+                const res = await getCommunities();
+                if (res.success && res.data && res.data.length > 0) {
+                    // Use the first community found for now
+                    setCommunityId(res.data[0].id);
+                }
+            } catch (error) {
+                console.error("Failed to fetch community ID", error);
+            }
+        };
+        fetchCommunityId();
+    }, []);
 
     // Load invitations when switching to the invites tab
     useEffect(() => {
-        if (activeTab === 'invites') {
+        if (activeTab === 'invites' && communityId) {
             loadInvites();
         }
-    }, [activeTab]);
+    }, [activeTab, communityId]);
 
     const loadInvites = async () => {
         setIsLoadingInvites(true);
         try {
-            const result = await getInvitations(COMMUNITY_ID);
+            if (!communityId) return;
+            const result = await getInvitations(communityId);
             if (result.success && result.data) {
                 setInvites(result.data);
             } else {
@@ -62,10 +78,15 @@ export default function AdminPage() {
             return;
         }
 
+        if (!communityId) {
+            alert("No community found. Please refresh or create a community first.");
+            return;
+        }
+
         setIsGenerating(true);
         try {
             const result = await createInvitation({
-                communityId: COMMUNITY_ID,
+                communityId: communityId,
                 email: newInviteEmail,
             });
 
