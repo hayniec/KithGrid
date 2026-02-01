@@ -4,9 +4,10 @@ import { useState, useEffect } from "react";
 import { useTheme, THEMES } from "@/contexts/ThemeContext";
 import styles from "./admin.module.css";
 import { Palette, Shield, Users, FileText, AlertTriangle, Key, Trash2, CheckCircle, UserPlus, Mail, X } from "lucide-react";
-import { MOCK_NEIGHBORS } from "@/lib/data";
 import { createInvitation, getInvitations, deleteInvitation } from "@/app/actions/invitations";
 import { getCommunities } from "@/app/actions/communities";
+
+import { getNeighbors } from "@/app/actions/neighbors";
 
 type Tab = 'general' | 'users' | 'invites';
 
@@ -23,7 +24,8 @@ export default function AdminPage() {
     const [activeTab, setActiveTab] = useState<Tab>('general');
 
     // User Management State
-    const [mockUsers, setMockUsers] = useState(MOCK_NEIGHBORS);
+    const [users, setUsers] = useState<any[]>([]);
+    const [isLoadingUsers, setIsLoadingUsers] = useState(false);
 
     // Invite System State
     const [invites, setInvites] = useState<Invitation[]>([]);
@@ -54,6 +56,27 @@ export default function AdminPage() {
             loadInvites();
         }
     }, [activeTab, communityId]);
+
+    // Load users when switching to the users tab
+    useEffect(() => {
+        if (activeTab === 'users' && communityId) {
+            loadUsers();
+        }
+    }, [activeTab, communityId]);
+
+    const loadUsers = async () => {
+        setIsLoadingUsers(true);
+        try {
+            const result = await getNeighbors(communityId);
+            if (result.success && result.data) {
+                setUsers(result.data);
+            }
+        } catch (error) {
+            console.error("Failed to load users", error);
+        } finally {
+            setIsLoadingUsers(false);
+        }
+    };
 
     const loadInvites = async () => {
         setIsLoadingInvites(true);
@@ -192,7 +215,7 @@ export default function AdminPage() {
             {/* Quick Stats Row */}
             <div className={styles.grid} style={{ marginBottom: '2rem' }}>
                 <div className={styles.statCard}>
-                    <span className={styles.statValue}>{mockUsers.length}</span>
+                    <span className={styles.statValue}>{users.length}</span>
                     <span className={styles.statLabel}>Active Households</span>
                 </div>
                 <div className={styles.statCard}>
@@ -308,7 +331,7 @@ export default function AdminPage() {
                                 </tr>
                             </thead>
                             <tbody>
-                                {mockUsers.map(user => (
+                                {users.map((user: any) => (
                                     <tr key={user.id} style={{ borderBottom: '1px solid var(--border)' }}>
                                         <td style={{ padding: '0.75rem 0.5rem' }}>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -321,8 +344,8 @@ export default function AdminPage() {
                                                 padding: '0.25rem 0.5rem',
                                                 borderRadius: '1rem',
                                                 fontSize: '0.75rem',
-                                                background: user.role.includes('Board') ? 'var(--primary)' : 'var(--muted)',
-                                                color: user.role.includes('Board') ? 'white' : 'var(--foreground)'
+                                                background: user.role && user.role.includes('Board') ? 'var(--primary)' : 'var(--muted)',
+                                                color: user.role && user.role.includes('Board') ? 'white' : 'var(--foreground)'
                                             }}>
                                                 {user.role}
                                             </span>

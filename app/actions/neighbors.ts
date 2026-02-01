@@ -1,0 +1,102 @@
+'use server'
+
+import { db } from "@/db";
+import { neighbors } from "@/db/schema";
+import { eq, and } from "drizzle-orm";
+
+export type NeighborActionState = {
+    success: boolean;
+    message?: string;
+    data?: any;
+    error?: string;
+};
+
+/**
+ * Register a new neighbor
+ */
+export async function registerNeighbor(data: {
+    communityId: string;
+    email: string;
+    password?: string;
+    name: string;
+    address?: string;
+    role?: 'Admin' | 'Resident' | 'Board Member';
+}): Promise<NeighborActionState> {
+    try {
+        console.log("[registerNeighbor] Registering neighbor:", data.email);
+
+        // Check if user already exists in this community
+        const existing = await db
+            .select()
+            .from(neighbors)
+            .where(
+                and(
+                    eq(neighbors.communityId, data.communityId),
+                    eq(neighbors.email, data.email)
+                )
+            );
+
+        if (existing.length > 0) {
+            return {
+                success: false,
+                error: "A user with this email already exists in this community."
+            };
+        }
+
+        const [newNeighbor] = await db.insert(neighbors).values({
+            communityId: data.communityId,
+            email: data.email,
+            password: data.password || 'temp123', // Default for now if missing
+            name: data.name,
+            address: data.address,
+            role: data.role || 'Resident',
+            joinedDate: new Date(),
+            isOnline: true // Log them in effectively
+        }).returning();
+
+        console.log("[registerNeighbor] Successfully registered:", newNeighbor.id);
+
+        return {
+            success: true,
+            data: {
+                id: newNeighbor.id,
+                name: newNeighbor.name,
+                email: newNeighbor.email,
+                role: newNeighbor.role,
+                communityId: newNeighbor.communityId,
+            },
+            message: "Account created successfully"
+        };
+    } catch (error: any) {
+        console.error("Failed to register neighbor:", error);
+        return { success: false, error: error.message || "Failed to create account" };
+    }
+}
+
+/**
+ * Get all neighbors for a community (for Admin Panel)
+ */
+export async function getNeighbors(communityId: string): Promise<NeighborActionState> {
+    try {
+        const results = await db
+            .select()
+            .from(neighbors)
+            .where(eq(neighbors.communityId, communityId));
+
+        return {
+            success: true,
+            data: results.map(n => ({
+                id: n.id,
+                name: n.name,
+                email: n.email,
+                role: n.role,
+                address: n.address,
+                avatar: n.avatar || '👤',
+                joinedDate: n.joinedDate
+            }))
+        };
+    } catch (error: any) {
+        console.error("Failed to fetch neighbors:", error);
+        return { success: false, error: error.message || "Failed to fetch neighbors" };
+    }
+}

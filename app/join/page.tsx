@@ -5,6 +5,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import styles from "./join.module.css";
 import { validateInvitation, markInvitationUsed } from "@/app/actions/invitations";
+import { registerNeighbor } from "@/app/actions/neighbors";
 
 export default function JoinPage() {
     const router = useRouter();
@@ -19,7 +20,9 @@ export default function JoinPage() {
     });
     const [error, setError] = useState("");
     const [isVerifying, setIsVerifying] = useState(false);
+    const [isRegistering, setIsRegistering] = useState(false);
     const [invitationId, setInvitationId] = useState<string>("");
+    const [communityId, setCommunityId] = useState<string>("");
 
     const verifyCode = async () => {
         if (!formData.code) {
@@ -36,6 +39,7 @@ export default function JoinPage() {
             if (result.success && result.data) {
                 setFormData(prev => ({ ...prev, email: result.data.email }));
                 setInvitationId(result.data.id);
+                setCommunityId(result.data.communityId);
                 setStep(2);
             } else {
                 setError(result.error || "Invalid or expired invitation code.");
@@ -49,17 +53,48 @@ export default function JoinPage() {
     };
 
     const handleRegister = async () => {
-        // TODO: Actually create the user account here
-        // For now, just mark the invitation as used
+        if (!formData.firstName || !formData.lastName || !formData.password) {
+            alert("Please fill in all required fields.");
+            return;
+        }
+
+        setIsRegistering(true);
         try {
+            // 1. Create the user account
+            const registerResult = await registerNeighbor({
+                communityId: communityId,
+                email: formData.email,
+                password: formData.password,
+                name: `${formData.firstName} ${formData.lastName}`,
+                address: formData.address || "",
+                role: 'Resident'
+            });
+
+            if (!registerResult.success) {
+                alert(`Registration failed: ${registerResult.error}`);
+                setIsRegistering(false);
+                return;
+            }
+
+            // 2. Mark invitation used
             if (invitationId) {
                 await markInvitationUsed(formData.code);
             }
+
+            // 3. Simulate Login (Context/LocalStorage)
+            const newUserProfile = {
+                name: registerResult.data.name,
+                role: "resident",
+                avatar: registerResult.data.name.charAt(0).toUpperCase()
+            };
+            localStorage.setItem("neighborNet_user", JSON.stringify(newUserProfile));
+
             alert(`Welcome, ${formData.firstName}! Account created successfully.`);
             router.push("/dashboard");
         } catch (error) {
             console.error("Error during registration:", error);
             alert("Error completing registration");
+            setIsRegistering(false);
         }
     };
 
