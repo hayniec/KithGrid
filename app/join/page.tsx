@@ -4,6 +4,7 @@ import { useState } from "react";
 
 import { useRouter } from "next/navigation";
 import styles from "./join.module.css";
+import { validateInvitation, markInvitationUsed } from "@/app/actions/invitations";
 
 export default function JoinPage() {
     const router = useRouter();
@@ -17,36 +18,49 @@ export default function JoinPage() {
         password: ""
     });
     const [error, setError] = useState("");
+    const [isVerifying, setIsVerifying] = useState(false);
+    const [invitationId, setInvitationId] = useState<string>("");
 
-    const verifyCode = () => {
-        // Retrieve valid invites from simulated backend
-        let validInvites = [];
+    const verifyCode = async () => {
+        if (!formData.code) {
+            setError("Please enter an invitation code");
+            return;
+        }
+
+        setIsVerifying(true);
+        setError("");
+
         try {
-            const stored = localStorage.getItem('neighborNet_invites');
-            if (stored) validInvites = JSON.parse(stored);
-        } catch (e) { }
+            const result = await validateInvitation(formData.code);
 
-        const match = validInvites.find((invite: any) =>
-            invite.code === formData.code.toUpperCase() &&
-            invite.status === 'pending'
-        );
-
-        if (match) {
-            setFormData(prev => ({ ...prev, email: match.email }));
-            setError("");
-            setStep(2);
-        } else {
-            setError("Invalid or expired invitation code.");
+            if (result.success && result.data) {
+                setFormData(prev => ({ ...prev, email: result.data.email }));
+                setInvitationId(result.data.id);
+                setStep(2);
+            } else {
+                setError(result.error || "Invalid or expired invitation code.");
+            }
+        } catch (error) {
+            console.error("Error validating invitation:", error);
+            setError("Unexpected error validating invitation code");
+        } finally {
+            setIsVerifying(false);
         }
     };
 
-    const handleRegister = () => {
-        // Simulate registration
-        alert(`Welcome, ${formData.firstName}! Account created successfully.`);
-        // In a real app, we'd invalidate the code now
-
-        // Redirect
-        router.push("/dashboard");
+    const handleRegister = async () => {
+        // TODO: Actually create the user account here
+        // For now, just mark the invitation as used
+        try {
+            if (invitationId) {
+                await markInvitationUsed(formData.code);
+            }
+            alert(`Welcome, ${formData.firstName}! Account created successfully.`);
+            router.push("/dashboard");
+        } catch (error) {
+            console.error("Error during registration:", error);
+            alert("Error completing registration");
+        }
     };
 
     return (
@@ -76,14 +90,16 @@ export default function JoinPage() {
                                 value={formData.code}
                                 onChange={e => setFormData({ ...formData, code: e.target.value.toUpperCase() })}
                                 className={styles.codeInput}
+                                disabled={isVerifying}
                             />
                         </div>
                         {error && <p className={styles.error}>{error}</p>}
                         <button
                             onClick={verifyCode}
                             className={styles.button}
+                            disabled={isVerifying}
                         >
-                            Verify Code
+                            {isVerifying ? 'Verifying...' : 'Verify Code'}
                         </button>
                         <p className={styles.footerText}>
                             Already have an account? <a href="/login" className={styles.link}>Sign in</a>

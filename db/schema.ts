@@ -33,6 +33,18 @@ export const communities = pgTable('communities', {
     createdAt: timestamp('created_at').defaultNow(),
 });
 
+// Invitations table (for new resident sign-ups)
+export const invitations = pgTable('invitations', {
+    id: uuid('id').primaryKey().defaultRandom(),
+    communityId: uuid('community_id').references(() => communities.id).notNull(),
+    code: text('code').notNull().unique(), // e.g., "A1B2C3"
+    email: text('email').notNull(),
+    status: text('status', { enum: ['pending', 'used', 'expired'] }).default('pending'),
+    createdBy: uuid('created_by'), // References neighbors.id (admin who created it)
+    createdAt: timestamp('created_at').defaultNow(),
+    expiresAt: timestamp('expires_at'), // Optional expiration
+});
+
 // 1. Neighbors (Users)
 export const neighbors = pgTable('neighbors', {
     id: uuid('id').primaryKey().defaultRandom(),

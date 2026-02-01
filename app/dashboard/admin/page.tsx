@@ -5,8 +5,17 @@ import { useTheme, THEMES } from "@/contexts/ThemeContext";
 import styles from "./admin.module.css";
 import { Palette, Shield, Users, FileText, AlertTriangle, Key, Trash2, CheckCircle, UserPlus, Mail } from "lucide-react";
 import { MOCK_NEIGHBORS } from "@/lib/data";
+import { createInvitation, getInvitations, deleteInvitation } from "@/app/actions/invitations";
 
 type Tab = 'general' | 'users' | 'invites';
+
+type Invitation = {
+    id: string;
+    code: string;
+    email: string;
+    status: 'pending' | 'used' | 'expired';
+    createdAt?: Date;
+};
 
 export default function AdminPage() {
     const { theme, setTheme, communityName, setCommunityName, communityLogo, setCommunityLogo } = useTheme();
@@ -16,34 +25,81 @@ export default function AdminPage() {
     const [mockUsers, setMockUsers] = useState(MOCK_NEIGHBORS);
 
     // Invite System State
-    const [invites, setInvites] = useState<{ code: string, email: string, status: 'pending' | 'used' }[]>([]);
+    const [invites, setInvites] = useState<Invitation[]>([]);
     const [newInviteEmail, setNewInviteEmail] = useState("");
+    const [isGenerating, setIsGenerating] = useState(false);
+    const [isLoadingInvites, setIsLoadingInvites] = useState(false);
 
-    // Load invites from local storage on mount
+    // TODO: Get actual community ID from context/session
+    const COMMUNITY_ID = "temp-community-id"; // This should come from user context
+
+    // Load invitations when switching to the invites tab
     useEffect(() => {
-        const storedInvites = localStorage.getItem('neighborNet_invites');
-        if (storedInvites) {
-            setInvites(JSON.parse(storedInvites));
+        if (activeTab === 'invites') {
+            loadInvites();
         }
-    }, []);
+    }, [activeTab]);
 
-    const generateInvite = () => {
-        if (!newInviteEmail) return;
-
-        const code = Math.random().toString(36).substring(2, 8).toUpperCase();
-        const newInvite = { code, email: newInviteEmail, status: 'pending' as const };
-        const updatedInvites = [...invites, newInvite];
-
-        setInvites(updatedInvites);
-        localStorage.setItem('neighborNet_invites', JSON.stringify(updatedInvites));
-        setNewInviteEmail("");
-        alert(`Invite generated! Code: ${code}`);
+    const loadInvites = async () => {
+        setIsLoadingInvites(true);
+        try {
+            const result = await getInvitations(COMMUNITY_ID);
+            if (result.success && result.data) {
+                setInvites(result.data);
+            } else {
+                console.error("Failed to load invitations:", result.error);
+            }
+        } catch (error) {
+            console.error("Error loading invitations:", error);
+        } finally {
+            setIsLoadingInvites(false);
+        }
     };
 
-    const deleteInvite = (code: string) => {
-        const updated = invites.filter(i => i.code !== code);
-        setInvites(updated);
-        localStorage.setItem('neighborNet_invites', JSON.stringify(updated));
+    const generateInvite = async () => {
+        if (!newInviteEmail) {
+            alert("Please enter an email address");
+            return;
+        }
+
+        setIsGenerating(true);
+        try {
+            const result = await createInvitation({
+                communityId: COMMUNITY_ID,
+                email: newInviteEmail,
+            });
+
+            if (result.success && result.data) {
+                alert(`Invitation generated!\n\nCode: ${result.data.code}\n\nSend this code to ${newInviteEmail}`);
+                setNewInviteEmail("");
+                await loadInvites(); // Reload the list
+            } else {
+                alert(`Failed to generate invitation: ${result.error}`);
+            }
+        } catch (error) {
+            console.error("Error generating invitation:", error);
+            alert("Unexpected error generating invitation");
+        } finally {
+            setIsGenerating(false);
+        }
+    };
+
+    const handleDeleteInvite = async (id: string) => {
+        if (!confirm("Are you sure you want to delete this invitation?")) {
+            return;
+        }
+
+        try {
+            const result = await deleteInvitation(id);
+            if (result.success) {
+                await loadInvites(); // Reload the list
+            } else {
+                alert(`Failed to delete invitation: ${result.error}`);
+            }
+        } catch (error) {
+            console.error("Error deleting invitation:", error);
+            alert("Unexpected error deleting invitation");
+        }
     };
 
     // Tabs Navigation
@@ -262,18 +318,19 @@ export default function AdminPage() {
                             </div>
                             <button
                                 onClick={generateInvite}
+                                disabled={isGenerating}
                                 style={{
                                     width: '100%',
                                     padding: '0.75rem',
                                     borderRadius: 'var(--radius)',
-                                    background: 'var(--primary)',
+                                    background: isGenerating ? 'var(--muted)' : 'var(--primary)',
                                     color: 'white',
                                     border: 'none',
                                     fontWeight: 600,
-                                    cursor: 'pointer'
+                                    cursor: isGenerating ? 'not-allowed' : 'pointer'
                                 }}
                             >
-                                Generate Code
+                                {isGenerating ? 'Generating...' : 'Generate Code'}
                             </button>
                         </div>
                     </div>
@@ -313,7 +370,7 @@ export default function AdminPage() {
                                                     {invite.status}
                                                 </span>
                                                 <button
-                                                    onClick={() => deleteInvite(invite.code)}
+                                                    onClick={() => handleDeleteInvite(invite.id)}
                                                     style={{ color: 'var(--muted-foreground)', cursor: 'pointer' }}
                                                 >
                                                     <Trash2 size={16} />
