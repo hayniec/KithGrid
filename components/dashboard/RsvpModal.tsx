@@ -46,6 +46,11 @@ export function RsvpModal({ isOpen, onClose, onConfirm, eventTitle, currentRsvp 
                 </div>
 
                 <div className={styles.actions}>
+                    {currentRsvp > 0 && (
+                        <button className={`${styles.button} ${styles.secondaryButton}`} onClick={() => onConfirm(0)} style={{ color: '#dc2626', borderColor: '#fee2e2' }}>
+                            Not Going
+                        </button>
+                    )}
                     <button className={`${styles.button} ${styles.secondaryButton}`} onClick={onClose}>
                         Cancel
                     </button>
@@ -53,7 +58,7 @@ export function RsvpModal({ isOpen, onClose, onConfirm, eventTitle, currentRsvp 
                         className={`${styles.button} ${styles.primaryButton}`}
                         onClick={() => onConfirm(count)}
                     >
-                        Confirm RSVP
+                        {currentRsvp > 0 ? 'Update' : 'Confirm'}
                     </button>
                 </div>
             </div>

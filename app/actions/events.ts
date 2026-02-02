@@ -1,8 +1,8 @@
 'use server'
 
 import { db } from "@/db";
-import { events } from "@/db/schema";
-import { eq, desc } from "drizzle-orm";
+import { events, eventRsvps, neighbors } from "@/db/schema";
+import { eq, desc, inArray, and } from "drizzle-orm";
 
 export type EventActionState = {
     success: boolean;
@@ -10,29 +10,52 @@ export type EventActionState = {
     error?: string;
 };
 
-export async function getCommunityEvents(communityId: string): Promise<EventActionState> {
+export async function getCommunityEvents(communityId: string, userId?: string): Promise<EventActionState> {
     try {
-        const results = await db
+        const communityEvents = await db
             .select()
             .from(events)
             .where(eq(events.communityId, communityId))
             .orderBy(desc(events.date));
 
-        return {
-            success: true,
-            data: results.map(e => ({
-                id: e.id,
-                title: e.title,
-                date: e.date, // string YYYY-MM-DD
-                time: e.time,
-                location: e.location,
-                description: e.description,
-                organizer: "Neighbor", // TODO: join with neighbors table to get name
-                attendees: e.attendeesCount,
-                category: e.category,
-                userRsvp: 0
-            }))
-        };
+        if (communityEvents.length === 0) {
+            return { success: true, data: [] };
+        }
+
+        const eventIds = communityEvents.map(e => e.id);
+
+        // Fetch RSVPs
+        const rsvps = await db
+            .select()
+            .from(eventRsvps)
+            .where(inArray(eventRsvps.eventId, eventIds));
+
+        // Map data
+        const data = communityEvents.map(event => {
+            const eventRsvpsList = rsvps.filter(r => r.eventId === event.id && r.status === 'Going');
+            const attendees = eventRsvpsList.reduce((sum, r) => sum + (r.guestCount || 0), 0);
+
+            let userRsvp = 0;
+            if (userId) {
+                const myRsvp = eventRsvpsList.find(r => r.neighborId === userId);
+                if (myRsvp) userRsvp = myRsvp.guestCount || 0;
+            }
+
+            return {
+                id: event.id,
+                title: event.title,
+                date: event.date,
+                time: event.time,
+                location: event.location,
+                description: event.description,
+                organizer: "Neighbor", // TODO: join
+                attendees: attendees,
+                category: event.category,
+                userRsvp: userRsvp
+            };
+        });
+
+        return { success: true, data };
     } catch (error: any) {
         console.error("Failed to fetch events:", error);
         return { success: false, error: error.message };
@@ -50,6 +73,14 @@ export async function createEvent(data: {
     organizerId: string;
 }): Promise<EventActionState> {
     try {
+        // Permission check
+        const [user] = await db.select().from(neighbors).where(eq(neighbors.id, data.organizerId));
+        const role = user?.role?.toLowerCase();
+
+        if (role !== 'admin' && role !== 'event manager') {
+            return { success: false, error: 'Unauthorized: Only Admins or Event Managers can create events.' };
+        }
+
         const [newEvent] = await db.insert(events).values({
             communityId: data.communityId,
             title: data.title,
@@ -59,19 +90,68 @@ export async function createEvent(data: {
             location: data.location,
             category: data.category as "Social" | "HOA" | "Maintenance" | "Security",
             organizerId: data.organizerId,
-            attendeesCount: 1
+            attendeesCount: 0
         }).returning();
+
+        // Auto-RSVP organizer?
+        await db.insert(eventRsvps).values({
+            eventId: newEvent.id,
+            neighborId: data.organizerId,
+            guestCount: 1,
+            status: 'Going'
+        });
 
         return {
             success: true,
             data: {
                 ...newEvent,
-                attendees: newEvent.attendeesCount,
-                userRsvp: 1 // Creator is attending
+                attendees: 1,
+                userRsvp: 1
             }
         };
     } catch (error: any) {
         console.error("Failed to create event:", error);
+        return { success: false, error: error.message };
+    }
+}
+
+export async function deleteEvent(eventId: string, userId: string): Promise<EventActionState> {
+    try {
+        const [user] = await db.select().from(neighbors).where(eq(neighbors.id, userId));
+        const role = user?.role?.toLowerCase();
+
+        if (role !== 'admin' && role !== 'event manager') {
+            return { success: false, error: 'Unauthorized: Only Admins or Event Managers can delete events.' };
+        }
+
+        await db.delete(events).where(eq(events.id, eventId));
+        return { success: true };
+    } catch (error: any) {
+        console.error("Failed to delete event:", error);
+        return { success: false, error: error.message };
+    }
+}
+
+export async function updateRsvp(eventId: string, userId: string, guestCount: number): Promise<EventActionState> {
+    try {
+        if (guestCount <= 0) {
+            await db.delete(eventRsvps).where(and(eq(eventRsvps.eventId, eventId), eq(eventRsvps.neighborId, userId)));
+        } else {
+            const [existing] = await db.select().from(eventRsvps).where(and(eq(eventRsvps.eventId, eventId), eq(eventRsvps.neighborId, userId)));
+            if (existing) {
+                await db.update(eventRsvps).set({ guestCount: guestCount, status: 'Going' }).where(eq(eventRsvps.id, existing.id));
+            } else {
+                await db.insert(eventRsvps).values({
+                    eventId,
+                    neighborId: userId,
+                    guestCount,
+                    status: 'Going'
+                });
+            }
+        }
+        return { success: true };
+    } catch (error: any) {
+        console.error("Failed to update RSVP:", error);
         return { success: false, error: error.message };
     }
 }

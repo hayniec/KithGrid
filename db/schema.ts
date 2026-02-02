@@ -52,7 +52,7 @@ export const neighbors = pgTable('neighbors', {
     email: text('email').notNull(), // Add email for auth
     password: text('password'), // Add simple password for MVP
     name: text('name').notNull(),
-    role: text('role', { enum: ['Admin', 'Resident', 'Board Member'] }).default('Resident'),
+    role: text('role', { enum: ['Admin', 'Resident', 'Board Member', 'Event Manager'] }).default('Resident'),
     address: text('address'),
     avatar: text('avatar'),
     // Note: Array support in Drizzle requires specific setup or json handling if strict arrays aren't needed. 
@@ -117,4 +117,14 @@ export const documents = pgTable('documents', {
     size: text('size'),
     url: text('url'),
     uploaderId: uuid('uploader_id').references(() => neighbors.id),
+});
+
+// 6. Event RSVPs
+export const eventRsvps = pgTable('event_rsvps', {
+    id: uuid('id').primaryKey().defaultRandom(),
+    eventId: uuid('event_id').references(() => events.id, { onDelete: 'cascade' }).notNull(),
+    neighborId: uuid('neighbor_id').references(() => neighbors.id).notNull(),
+    guestCount: integer('guest_count').default(1),
+    status: text('status', { enum: ['Going', 'Maybe', 'Not Going'] }).default('Going'),
+    rsvpDate: timestamp('rsvp_date', { withTimezone: true }).defaultNow(),
 });

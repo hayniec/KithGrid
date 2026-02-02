@@ -7,9 +7,10 @@ import { Clock, MapPin, Users } from "lucide-react";
 interface EventCardProps {
     event: Event;
     onRsvp: (event: Event) => void;
+    onDelete?: (eventId: string) => void;
 }
 
-export function EventCard({ event, onRsvp }: EventCardProps) {
+export function EventCard({ event, onRsvp, onDelete }: EventCardProps) {
     const dateObj = new Date(event.date);
     const month = dateObj.toLocaleString('default', { month: 'short' });
     const day = dateObj.getDate();
@@ -31,12 +32,36 @@ export function EventCard({ event, onRsvp }: EventCardProps) {
         <div className={styles.card}>
             <div className={styles.cardHeader} style={{
                 background: `linear-gradient(to bottom, ${catStyle.bg}, var(--card))`,
-                height: '6rem'
+                height: '6rem',
+                position: 'relative'
             }}>
                 <div className={styles.dateBadge}>
                     <span className={styles.month}>{month}</span>
                     <span className={styles.day}>{day}</span>
                 </div>
+                {onDelete && (
+                    <button
+                        onClick={(e) => { e.stopPropagation(); onDelete(event.id); }}
+                        style={{
+                            position: 'absolute',
+                            top: '0.5rem',
+                            right: '0.5rem',
+                            background: 'rgba(255,255,255,0.8)',
+                            border: 'none',
+                            borderRadius: '50%',
+                            width: '24px',
+                            height: '24px',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            color: '#dc2626'
+                        }}
+                        title="Delete Event"
+                    >
+                        &times;
+                    </button>
+                )}
             </div>
 
             <div className={styles.cardContent}>

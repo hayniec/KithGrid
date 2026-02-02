@@ -8,7 +8,7 @@ import styles from "./events.module.css";
 import { Plus } from "lucide-react";
 import { Event } from "@/types/event";
 import { useUser } from "@/contexts/UserContext";
-import { getCommunityEvents, createEvent } from "@/app/actions/events";
+import { getCommunityEvents, createEvent, deleteEvent, updateRsvp } from "@/app/actions/events";
 
 export default function EventsPage() {
     const { user } = useUser();
@@ -27,7 +27,7 @@ export default function EventsPage() {
                 return;
             }
             try {
-                const result = await getCommunityEvents(user.communityId);
+                const result = await getCommunityEvents(user.communityId, user.id);
                 if (result.success && result.data) {
                     setEvents(result.data);
                 }
@@ -38,7 +38,7 @@ export default function EventsPage() {
             }
         };
         fetchEvents();
-    }, [user.communityId]);
+    }, [user.communityId, user.id]);
 
     // Sorting
     const sortedEvents = [...events].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
@@ -73,16 +73,36 @@ export default function EventsPage() {
         }
     };
 
+    const handleDeleteEvent = async (eventId: string) => {
+        if (!confirm("Are you sure you want to delete this event?")) return;
+
+        try {
+            const result = await deleteEvent(eventId, user.id || "");
+            if (result.success) {
+                setEvents(prev => prev.filter(e => e.id !== eventId));
+            } else {
+                alert("Failed to delete event: " + result.error);
+            }
+        } catch (error) {
+            console.error("Error deleting event:", error);
+            alert("An error occurred while deleting.");
+        }
+    };
+
     const handleRsvpClick = (event: Event) => {
         setSelectedEventId(event.id);
         setIsRsvpModalOpen(true);
     };
 
-    const handleRsvpConfirm = (count: number) => {
+    const handleRsvpConfirm = async (count: number) => {
         if (!selectedEventId) return;
+        const eventId = selectedEventId;
 
         setEvents(events.map(ev => {
             if (ev.id === selectedEventId) {
+                // Determine logic: 
+                // If previous userRsvp was > 0, we subtract it and add new count.
+                // If count is 0, we subtract previous.
                 const previousUserRsvp = ev.userRsvp || 0;
                 const newTotal = ev.attendees - previousUserRsvp + count;
                 return {
@@ -96,7 +116,16 @@ export default function EventsPage() {
 
         setIsRsvpModalOpen(false);
         setSelectedEventId(null);
+
+        try {
+            await updateRsvp(eventId, user.id || "", count);
+        } catch (error) {
+            console.error("RSVP update failed:", error);
+            alert("Failed to update RSVP");
+        }
     };
+
+    const canManageEvents = ['admin', 'event manager'].includes(user.role?.toLowerCase());
 
     return (
         <div className={styles.container}>
@@ -107,24 +136,26 @@ export default function EventsPage() {
                         Stay up to date with HOA meetings, social gatherings, and maintenance schedules.
                     </p>
                 </div>
-                <button
-                    style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '0.5rem',
-                        backgroundColor: 'var(--primary)',
-                        color: 'var(--primary-foreground)',
-                        border: 'none',
-                        padding: '0.75rem 1.25rem',
-                        borderRadius: 'var(--radius)',
-                        fontWeight: 600,
-                        cursor: 'pointer'
-                    }}
-                    onClick={() => setIsCreateModalOpen(true)}
-                >
-                    <Plus size={20} />
-                    Create Event
-                </button>
+                {canManageEvents && (
+                    <button
+                        style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.5rem',
+                            backgroundColor: 'var(--primary)',
+                            color: 'var(--primary-foreground)',
+                            border: 'none',
+                            padding: '0.75rem 1.25rem',
+                            borderRadius: 'var(--radius)',
+                            fontWeight: 600,
+                            cursor: 'pointer'
+                        }}
+                        onClick={() => setIsCreateModalOpen(true)}
+                    >
+                        <Plus size={20} />
+                        Create Event
+                    </button>
+                )}
             </div>
 
             {isLoading ? (
@@ -136,6 +167,7 @@ export default function EventsPage() {
                             key={event.id}
                             event={event}
                             onRsvp={handleRsvpClick}
+                            onDelete={canManageEvents ? handleDeleteEvent : undefined}
                         />
                     ))}
                     {sortedEvents.length === 0 && (
