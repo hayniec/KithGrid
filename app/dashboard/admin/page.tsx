@@ -90,6 +90,7 @@ export default function AdminPage() {
 
     const handleCsvUpload = async () => {
         if (!csvFile || !communityId || !user.id) return;
+        const currentUserId = user.id;
         setIsImporting(true);
         const reader = new FileReader();
         reader.onload = async (e) => {
@@ -104,7 +105,7 @@ export default function AdminPage() {
             const res = await bulkCreateInvitations({
                 communityId,
                 emails,
-                createdBy: user.id
+                createdBy: currentUserId
             });
             if (res.success && res.data) {
                 setBulkImportResults(res.data as any);
