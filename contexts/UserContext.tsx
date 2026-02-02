@@ -11,6 +11,7 @@ interface UserProfile {
     name: string;
     role: UserRole;
     avatar: string;
+    address?: string;
 }
 
 interface UserContextType {
@@ -25,7 +26,8 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     const [user, setUserState] = useState<UserProfile>({
         name: "Eric H.",
         role: "admin", // Default to admin for first-time ease of use
-        avatar: "EH"
+        avatar: "EH",
+        address: "123 Oak St, Unit 4"
     });
 
     useEffect(() => {
