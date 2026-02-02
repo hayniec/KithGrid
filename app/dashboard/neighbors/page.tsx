@@ -119,25 +119,27 @@ export default function NeighborsPage() {
                             Connect with neighbors, find help with skills you need, or borrow equipment for your next project.
                         </p>
                     </div>
-                    <button
-                        onClick={() => setIsInviteModalOpen(true)}
-                        style={{
-                            padding: '0.6rem 1rem',
-                            borderRadius: '999px',
-                            backgroundColor: 'var(--primary)',
-                            color: 'var(--primary-foreground)',
-                            border: 'none',
-                            fontWeight: 600,
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '0.5rem',
-                            fontSize: '0.9rem'
-                        }}
-                    >
-                        <Mail size={16} />
-                        Invite Neighbor
-                    </button>
+                    {(user.role as string) === 'Admin' && (
+                        <button
+                            onClick={() => setIsInviteModalOpen(true)}
+                            style={{
+                                padding: '0.6rem 1rem',
+                                borderRadius: '999px',
+                                backgroundColor: 'var(--primary)',
+                                color: 'var(--primary-foreground)',
+                                border: 'none',
+                                fontWeight: 600,
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.5rem',
+                                fontSize: '0.9rem'
+                            }}
+                        >
+                            <Mail size={16} />
+                            Invite Neighbor
+                        </button>
+                    )}
                 </div>
 
                 {/* Search Bar */}

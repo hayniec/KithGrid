@@ -1,176 +1,93 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
+import { useTheme } from "@/contexts/ThemeContext";
+import { useUser } from "@/contexts/UserContext";
+import { getCommunities } from "@/app/actions/communities";
+import { Siren, Phone, ShieldAlert, Key } from "lucide-react";
 import styles from "./emergency.module.css";
-import { Phone, Heart, Zap, ShieldAlert, Siren, Flame, Info, AlertOctagon, Settings } from "lucide-react";
-import { MOCK_NEIGHBORS } from "@/lib/data";
 import Link from "next/link";
 
-interface ExternalContact {
-    id: string;
-    name: string;
-    relationship: string;
-    phone: string;
-}
-
 export default function EmergencyPage() {
-    const [externalContacts, setExternalContacts] = useState<ExternalContact[]>([]);
-    const [medicalNeighbors, setMedicalNeighbors] = useState<typeof MOCK_NEIGHBORS>([]);
-    const [hasLoaded, setHasLoaded] = useState(false);
+    const { communityName } = useTheme();
+    const { user } = useUser();
+    const [emergencyInfo, setEmergencyInfo] = useState<{ accessCode: string; instructions: string } | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        const savedProfile = localStorage.getItem('neighborNet_profile');
-        if (savedProfile) {
-            try {
-                const profile = JSON.parse(savedProfile);
-
-                // Load External Contacts
-                if (profile.externalContacts && Array.isArray(profile.externalContacts)) {
-                    setExternalContacts(profile.externalContacts);
+        const fetchInfo = async () => {
+            if (user.communityId) {
+                // Ideally we have a better way to fetch single community, but reusing getCommunities for MVP speed
+                const result = await getCommunities();
+                if (result.success && result.data) {
+                    const current = result.data.find((c: any) => c.id === user.communityId);
+                    if (current && current.emergency) {
+                        setEmergencyInfo(current.emergency);
+                    }
                 }
-
-                // Load Selected Medical Neighbors
-                // If the user has explicitly selected neighbors (array exists and has length > 0), filter by that.
-                // Otherwise, fallback to showing ALL medically trained (default safety behavior).
-                // Actually, if the array exists but is empty, it might mean they deselected everyone. 
-                // Let's assume if the key 'selectedMedicalNeighbors' exists, we respect it.
-                if (profile.selectedMedicalNeighbors) {
-                    const selectedIds = profile.selectedMedicalNeighbors as string[];
-                    const selected = MOCK_NEIGHBORS.filter(n => selectedIds.includes(n.id));
-                    setMedicalNeighbors(selected);
-                } else {
-                    // Fallback to all trained if no preference saved
-                    setMedicalNeighbors(MOCK_NEIGHBORS.filter(n =>
-                        n.skills.some(s => ["Nurse", "Doctor", "First Aid", "CPR", "EMT", "First Aid/CPR"].some(term => s.includes(term)))
-                    ));
-                }
-            } catch (e) {
-                console.error("Failed to parse profile", e);
             }
-        } else {
-            // Default behavior if no profile saved yet: Show all trained neighbors, and maybe mock contacts? 
-            // Better to show empty contacts to encourage setup.
-            setExternalContacts([]);
-            setMedicalNeighbors(MOCK_NEIGHBORS.filter(n =>
-                n.skills.some(s => ["Nurse", "Doctor", "First Aid", "CPR", "EMT", "First Aid/CPR"].some(term => s.includes(term)))
-            ));
-        }
-        setHasLoaded(true);
-    }, []);
-
-    const emergencyServices = [
-        { name: "Emergency", number: "911", icon: Siren, color: "#ef4444", bg: "#fee2e2" },
-        { name: "Poison Control", number: "1-800-222-1222", icon: ShieldAlert, color: "#d97706", bg: "#fef3c7" },
-        { name: "Non-Emergency", number: "311", icon: Info, color: "#3b82f6", bg: "#dbeafe" },
-    ];
-
-    if (!hasLoaded) return null; // Prevent hydration mismatch or flash
+            setIsLoading(false);
+        };
+        fetchInfo();
+    }, [user.communityId]);
 
     return (
         <div className={styles.container}>
-            {/* SOS Hero */}
-            <div className={styles.sosCard}>
-                <div className={styles.sosHeader}>
-                    <AlertOctagon size={48} />
-                    <div className={styles.sosTitle}>Emergency SOS</div>
-                </div>
-                <div className={styles.sosButtonContainer}>
-                    <button className={styles.sosButton} onClick={() => alert("Simulating SOS: Alert sent to neighbors and emergency contacts!")}>
-                        SOS
-                    </button>
-                    <span className={styles.sosHint}>Tap to Alert Network</span>
-                </div>
-                <div className={styles.sosDescription}>
-                    Pressing this button will instantly notify your designated emergency contacts and nearby neighbors listed as first responders.
-                </div>
+            <div className={styles.header}>
+                <Siren size={48} className={styles.icon} />
+                <h1 className={styles.title}>Emergency Access Information</h1>
+                <p className={styles.subtitle}>
+                    For use during 911 calls or emergency situations only.
+                </p>
             </div>
 
-            {/* Your Emergency Contacts */}
-            <div className={styles.section}>
-                <div className={styles.sectionTitle} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                        <Phone size={18} />
-                        Your Emergency Contacts
+            {isLoading ? (
+                <div style={{ textAlign: 'center', padding: '2rem' }}>Loading emergency data...</div>
+            ) : (
+                <div className={styles.content}>
+                    <div className={styles.card}>
+                        <div className={styles.cardHeader}>
+                            <Key size={24} className={styles.cardIcon} />
+                            <h2>Gate / Door Code</h2>
+                        </div>
+                        <div className={styles.codeDisplay}>
+                            {emergencyInfo?.accessCode || "No code configured"}
+                        </div>
+                        <p className={styles.cardNote}>
+                            Provide this code to emergency responders (Police, Fire, EMS) for building/gate access.
+                        </p>
                     </div>
-                    <Link href="/dashboard/settings" className={styles.settingsLink} style={{ fontSize: '0.8rem', color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: '4px', textDecoration: 'none' }}>
-                        <Settings size={14} /> Manage
-                    </Link>
-                </div>
 
-                {externalContacts.length > 0 ? (
-                    <div className={styles.grid}>
-                        {externalContacts.map(contact => (
-                            <div key={contact.id} className={styles.card}>
-                                <div className={styles.contactInfo}>
-                                    <span className={styles.contactName}>{contact.name}</span>
-                                    <span className={styles.contactRole}>{contact.relationship}</span>
-                                </div>
-                                <a href={`tel:${contact.phone}`} className={styles.callButton}>
-                                    <Phone size={14} />
-                                    Call
-                                </a>
-                            </div>
-                        ))}
+                    <div className={styles.card}>
+                        <div className={styles.cardHeader}>
+                            <ShieldAlert size={24} className={styles.cardIcon} />
+                            <h2>Instructions</h2>
+                        </div>
+                        <div className={styles.instructions}>
+                            {emergencyInfo?.instructions ? (
+                                <p>{emergencyInfo.instructions}</p>
+                            ) : (
+                                <p style={{ color: 'var(--muted-foreground)', fontStyle: 'italic' }}>
+                                    No specific instructions provided by administration.
+                                </p>
+                            )}
+                        </div>
                     </div>
-                ) : (
-                    <div style={{ padding: '2rem', textAlign: 'center', background: 'var(--muted)', borderRadius: '1rem', color: 'var(--muted-foreground)' }}>
-                        <p>No external contacts set.</p>
-                        <Link href="/dashboard/settings" style={{ color: 'var(--primary)', fontWeight: 500 }}>Add contacts in Settings</Link>
-                    </div>
-                )}
-            </div>
 
-            {/* Neighbors with Medical Training */}
-            <div className={styles.section}>
-                <div className={styles.sectionTitle}>
-                    <Heart size={18} color="#ef4444" />
-                    <span style={{ color: '#ef4444' }}>Neighbors with Medical Training</span>
-                </div>
-                {medicalNeighbors.length > 0 ? (
-                    <div className={styles.grid}>
-                        {medicalNeighbors.map(neighbor => (
-                            <div key={neighbor.id} className={styles.card} style={{ borderColor: 'rgba(239, 68, 68, 0.2)', backgroundColor: '#fff5f5' }}>
-                                <div className={styles.contactInfo}>
-                                    <span className={styles.contactName}>{neighbor.name}</span>
-                                    <span className={styles.contactRole}>
-                                        {neighbor.skills.find(s => ["Nurse", "Doctor", "First Aid", "CPR", "EMT", "First Aid/CPR"].some(term => s.includes(term)))}
-                                    </span>
-                                    {neighbor.phone && (
-                                        <span style={{ fontSize: '0.85rem', color: 'var(--foreground)', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                            <Phone size={12} /> {neighbor.phone}
-                                        </span>
-                                    )}
-                                </div>
-                                <a href={`tel:${neighbor.phone || neighbor.id}`} className={styles.callButton} style={{ backgroundColor: '#fee2e2', color: '#dc2626' }}>
-                                    <Phone size={14} />
-                                    Alert
-                                </a>
-                            </div>
-                        ))}
+                    <div className={styles.warningBox}>
+                        <h3>⚠️ Important</h3>
+                        <p>
+                            Misuse of this information allows for immediate community access revocation.
+                            This page access is logged.
+                        </p>
                     </div>
-                ) : (
-                    <p style={{ color: 'var(--muted-foreground)', fontStyle: 'italic' }}>No medical neighbors found or selected.</p>
-                )}
-            </div>
+                </div>
+            )}
 
-            {/* Local Services */}
-            <div className={styles.section}>
-                <div className={styles.sectionTitle}>
-                    Local Emergency Services
-                </div>
-                <div className={styles.grid} style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))' }}>
-                    {emergencyServices.map(service => (
-                        <a key={service.name} href={`tel:${service.number}`} className={styles.serviceButton}>
-                            <div className={styles.serviceIcon} style={{ backgroundColor: service.bg, color: service.color }}>
-                                <service.icon size={24} />
-                            </div>
-                            <div style={{ textAlign: 'center' }}>
-                                <div className={styles.serviceName}>{service.name}</div>
-                                <div className={styles.serviceNumber}>{service.number}</div>
-                            </div>
-                        </a>
-                    ))}
-                </div>
+            <div style={{ marginTop: '2rem', textAlign: 'center' }}>
+                <Link href="/dashboard" style={{ color: 'var(--primary)', textDecoration: 'underline' }}>
+                    Return to Dashboard
+                </Link>
             </div>
         </div>
     );

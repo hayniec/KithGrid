@@ -8,6 +8,8 @@ type ThemeColor = {
     ring: string;
 };
 
+export type ColorMode = 'light' | 'dark' | 'system';
+
 export const THEMES: ThemeColor[] = [
     { name: "Indigo (Default)", primary: "#4f46e5", ring: "#6366f1" },
     { name: "Forest", primary: "#059669", ring: "#10b981" },
@@ -20,6 +22,10 @@ export const THEMES: ThemeColor[] = [
 interface ThemeContextType {
     theme: ThemeColor;
     setTheme: (theme: ThemeColor) => void;
+
+    colorMode: ColorMode;
+    setColorMode: (mode: ColorMode) => void;
+
     communityName: string;
     setCommunityName: (name: string) => void;
     communityLogo: string;
@@ -41,6 +47,7 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
     const [theme, setThemeState] = useState<ThemeColor>(THEMES[0]);
+    const [colorMode, setColorModeState] = useState<ColorMode>('system');
     const [communityName, setCommunityNameState] = useState("HOA NeighborNet");
     const [communityLogo, setCommunityLogoState] = useState("");
 
@@ -54,8 +61,10 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         return (yiq >= 128) ? '#000000' : '#ffffff';
     }
 
+    // Load initial state
     useEffect(() => {
         const savedThemeName = localStorage.getItem("neighborNet_themeName");
+        const savedColorMode = localStorage.getItem("neighborNet_colorMode") as ColorMode;
         const savedCommunityName = localStorage.getItem("neighborNet_communityName");
         const savedCommunityLogo = localStorage.getItem("neighborNet_communityLogo");
 
@@ -69,6 +78,10 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         } else if (envTheme) {
             const foundTheme = THEMES.find(t => t.name === envTheme);
             if (foundTheme) setThemeState(foundTheme);
+        }
+
+        if (savedColorMode) {
+            setColorModeState(savedColorMode);
         }
 
         if (savedCommunityName) {
@@ -107,6 +120,28 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         }
     }, []);
 
+    // Handle Color Mode changes
+    useEffect(() => {
+        const root = window.document.documentElement;
+        root.classList.remove("light", "dark");
+
+        if (colorMode === "system") {
+            const systemTheme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+            root.classList.add(systemTheme);
+
+            // Listen for system changes
+            const listener = (e: MediaQueryListEvent) => {
+                root.classList.remove("light", "dark");
+                root.classList.add(e.matches ? "dark" : "light");
+            };
+            const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+            mediaQuery.addEventListener("change", listener);
+            return () => mediaQuery.removeEventListener("change", listener);
+        } else {
+            root.classList.add(colorMode);
+        }
+    }, [colorMode]);
+
     const [enabledModules, setEnabledModules] = useState({
         marketplace: true,
         resources: true,
@@ -130,6 +165,11 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         // Apply CSS variables
         document.documentElement.style.setProperty("--primary", newTheme.primary);
         document.documentElement.style.setProperty("--ring", newTheme.ring);
+    };
+
+    const setColorMode = (mode: ColorMode) => {
+        setColorModeState(mode);
+        localStorage.setItem("neighborNet_colorMode", mode);
     };
 
     const setCommunityName = (name: string) => {
@@ -157,6 +197,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     return (
         <ThemeContext.Provider value={{
             theme, setTheme,
+            colorMode, setColorMode,
             communityName, setCommunityName,
             communityLogo, setCommunityLogo,
             enabledModules, toggleModule

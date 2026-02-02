@@ -34,6 +34,10 @@ const mapToUI = (row: any) => ({
         primaryColor: row.primaryColor || '#4f46e5',
         secondaryColor: row.secondaryColor || '#1e1b4b',
         accentColor: row.accentColor || '#f59e0b',
+    },
+    emergency: {
+        accessCode: row.emergencyAccessCode || '',
+        instructions: row.emergencyInstructions || ''
     }
 });
 
@@ -144,6 +148,19 @@ export async function updateCommunityBranding(id: string, branding: any) {
         return { success: true };
     } catch (e) {
         return { success: false, error: "Failed update branding" };
+    }
+}
+
+export async function updateEmergencySettings(id: string, data: { accessCode: string; instructions: string }) {
+    try {
+        await db.update(communities).set({
+            emergencyAccessCode: data.accessCode,
+            emergencyInstructions: data.instructions
+        }).where(eq(communities.id, id));
+        return { success: true };
+    } catch (e) {
+        console.error("Failed to update emergency settings", e);
+        return { success: false, error: "Failed to update emergency settings" };
     }
 }
 

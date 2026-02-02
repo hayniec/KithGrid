@@ -1,225 +1,128 @@
 .container {
-    display: flex;
-    flex-direction: column;
-    gap: 2rem;
+    padding: 2rem;
     max-width: 800px;
     margin: 0 auto;
-    width: 100%;
-}
-
-.sosCard {
-    background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%);
-    color: white;
-    border-radius: var(--radius);
-    padding: 3rem 2rem;
+    min-height: 80vh;
     display: flex;
     flex-direction: column;
-    align-items: center;
-    text-align: center;
-    gap: 2rem;
-    box-shadow: 0 10px 15px -3px rgba(220, 38, 38, 0.3), 0 4px 6px -4px rgba(220, 38, 38, 0.3);
-    position: relative;
-    overflow: hidden;
-}
-
-.sosHeader {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.5rem;
-    z-index: 10;
-}
-
-.sosCard::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: radial-gradient(circle at center, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
-    pointer-events: none;
-}
-
-.sosTitle {
-    font-size: 2rem;
-    font-weight: 800;
-    letter-spacing: -0.025em;
-    text-transform: uppercase;
-}
-
-.sosButtonContainer {
-    position: relative;
-    z-index: 10;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 1rem;
-}
-
-.sosButton {
-    width: 140px;
-    height: 140px;
-    border-radius: 50%;
-    background-color: rgba(255, 255, 255, 0.15);
-    border: 4px solid white;
-    display: flex;
-    align-items: center;
     justify-content: center;
-    color: white;
-    font-size: 1.75rem;
-    font-weight: 900;
-    cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.header {
+    text-align: center;
+    margin-bottom: 3rem;
+    animation: fadeIn 0.5s ease-out;
+}
+
+.icon {
+    color: var(--destructive);
+    margin-bottom: 1rem;
     animation: pulse 2s infinite;
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
 }
 
-.sosButton:hover {
-    transform: scale(1.05);
-    background-color: rgba(255, 255, 255, 0.25);
+.title {
+    font-size: 2.5rem;
+    font-weight: 800;
+    color: var(--destructive);
+    margin-bottom: 0.5rem;
 }
 
-.sosButton:active {
-    transform: scale(0.95);
+.subtitle {
+    color: var(--muted-foreground);
+    font-size: 1.1rem;
 }
 
-.sosHint {
-    font-size: 0.85rem;
-    opacity: 0.8;
-    font-weight: 500;
-    letter-spacing: 0.05em;
-    color: rgba(255, 255, 255, 0.9);
-}
-
-.sosDescription {
-    font-size: 1rem;
-    opacity: 0.9;
-    max-width: 480px;
-    z-index: 10;
-    line-height: 1.6;
-}
-
-.section {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-}
-
-.sectionTitle {
-    font-size: 1.125rem;
-    font-weight: 600;
-    color: var(--foreground);
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.grid {
+.content {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 1rem;
+    gap: 1.5rem;
 }
 
 .card {
-    background-color: var(--card);
+    background: var(--card);
     border: 1px solid var(--border);
     border-radius: var(--radius);
-    padding: 1.25rem;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-}
-
-.contactInfo {
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-}
-
-.contactName {
-    font-weight: 600;
-    color: var(--foreground);
-}
-
-.contactRole {
-    font-size: 0.85rem;
-    color: var(--muted-foreground);
-}
-
-.callButton {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.6rem 1rem;
-    background-color: rgba(16, 185, 129, 0.1);
-    color: #059669;
-    border-radius: 9999px;
-    font-weight: 600;
-    font-size: 0.875rem;
-    transition: all 0.2s;
-    text-decoration: none;
-}
-
-.callButton:hover {
-    background-color: rgba(16, 185, 129, 0.2);
-}
-
-.serviceButton {
-    background-color: var(--card);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 1.5rem;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.75rem;
-    cursor: pointer;
-    transition: all 0.2s;
-    text-decoration: none;
-}
-
-.serviceButton:hover {
-    border-color: var(--primary);
-    transform: translateY(-2px);
+    padding: 2rem;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
 }
 
-.serviceIcon {
-    width: 3.5rem;
-    height: 3.5rem;
-    border-radius: 50%;
+.cardHeader {
     display: flex;
     align-items: center;
-    justify-content: center;
-    font-size: 1.25rem;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+    color: var(--card-foreground);
 }
 
-.serviceName {
-    font-weight: 600;
+.cardIcon {
+    color: var(--primary);
+}
+
+.codeDisplay {
+    background: var(--muted);
+    padding: 1.5rem;
+    border-radius: var(--radius);
+    font-size: 3rem;
+    font-family: monospace;
+    font-weight: 900;
+    text-align: center;
+    letter-spacing: 0.2em;
     color: var(--foreground);
-    font-size: 0.95rem;
+    border: 2px dashed var(--border);
 }
 
-.serviceNumber {
+.cardNote {
+    margin-top: 1rem;
     font-size: 0.9rem;
-    color: #ef4444;
-    /* Make emergency numbers stand out */
-    font-weight: 700;
-    margin-top: 0.25rem;
+    color: var(--muted-foreground);
+    text-align: center;
+}
+
+.instructions {
+    line-height: 1.6;
+    color: var(--foreground);
+}
+
+.warningBox {
+    background: #fff1f2;
+    /* Light red background */
+    border: 1px solid #fecdd3;
+    color: #881337;
+    padding: 1rem;
+    border-radius: var(--radius);
+    font-size: 0.9rem;
+}
+
+.dark .warningBox {
+    background: #450a0a;
+    border-color: #7f1d1d;
+    color: #fecdd3;
 }
 
 @keyframes pulse {
     0% {
-        box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.4);
+        opacity: 1;
+        transform: scale(1);
     }
 
-    70% {
-        box-shadow: 0 0 0 20px rgba(255, 255, 255, 0);
+    50% {
+        opacity: 0.8;
+        transform: scale(1.05);
     }
 
     100% {
-        box-shadow: 0 0 0 0 rgba(255, 255, 255, 0);
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
     }
 }

@@ -4,9 +4,11 @@ import { useState, useEffect, useCallback } from "react";
 import { useTheme, THEMES } from "@/contexts/ThemeContext";
 import styles from "./admin.module.css";
 import { Palette, Shield, Users, FileText, Trash2, CheckCircle, UserPlus, Mail, X, Edit2 } from "lucide-react";
-import { createInvitation, getInvitations, deleteInvitation } from "@/app/actions/invitations";
-import { getCommunities } from "@/app/actions/communities";
+import { createInvitation, getInvitations, deleteInvitation, bulkCreateInvitations, InvitationActionState } from "@/app/actions/invitations";
+import { getCommunities, updateEmergencySettings } from "@/app/actions/communities";
 import { getNeighbors, deleteNeighbor, updateNeighbor } from "@/app/actions/neighbors";
+import { useUser } from "@/contexts/UserContext";
+import { Key, Upload } from "lucide-react";
 
 type Tab = 'general' | 'users' | 'invites';
 
@@ -29,8 +31,93 @@ interface NeighborUser {
 }
 
 export default function AdminPage() {
-    const { theme, setTheme, communityName, setCommunityName, communityLogo, setCommunityLogo } = useTheme();
+    const { theme, setTheme, communityName, setCommunityName, communityLogo, setCommunityLogo, colorMode, setColorMode } = useTheme();
+    const { user } = useUser();
     const [activeTab, setActiveTab] = useState<Tab>('general');
+    const [communityId, setCommunityId] = useState<string>("");
+
+    // Fetch real Community ID
+    useEffect(() => {
+        const fetchCommunityId = async () => {
+            try {
+                const res = await getCommunities();
+                if (res.success && res.data && res.data.length > 0) {
+                    setCommunityId(res.data[0].id);
+                }
+            } catch (error) {
+                console.error("Failed to fetch community ID", error);
+            }
+        };
+        fetchCommunityId();
+    }, []);
+
+    // Emergency Settings
+    const [emergencyCode, setEmergencyCode] = useState("");
+    const [emergencyInstructions, setEmergencyInstructions] = useState("");
+    const [isSavingEmergency, setIsSavingEmergency] = useState(false);
+
+    // CSV Import
+    const [csvFile, setCsvFile] = useState<File | null>(null);
+    const [isImporting, setIsImporting] = useState(false);
+    const [bulkImportResults, setBulkImportResults] = useState<{ email: string; code: string }[]>([]);
+
+    useEffect(() => {
+        if (communityId) {
+            // Fetch emergency settings (mocking retrieving it from getCommunities again or a dedicated call)
+            getCommunities().then(res => {
+                if (res.success && res.data) {
+                    const c = res.data.find((x: any) => x.id === communityId);
+                    if (c && c.emergency) {
+                        setEmergencyCode(c.emergency.accessCode);
+                        setEmergencyInstructions(c.emergency.instructions);
+                    }
+                }
+            });
+        }
+    }, [communityId]);
+
+    const handleSaveEmergency = async () => {
+        if (!communityId) return;
+        setIsSavingEmergency(true);
+        const res = await updateEmergencySettings(communityId, {
+            accessCode: emergencyCode,
+            instructions: emergencyInstructions
+        });
+        if (res.success) alert("Emergency settings updated.");
+        else alert("Failed to update.");
+        setIsSavingEmergency(false);
+    };
+
+    const handleCsvUpload = async () => {
+        if (!csvFile || !communityId || !user.id) return;
+        setIsImporting(true);
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+            const text = e.target?.result as string;
+            const emails = text.split(/\r?\n/).map(line => line.split(',')[0].trim()).filter(x => x && x.includes('@'));
+
+            if (emails.length === 0) {
+                alert("No valid emails found.");
+                setIsImporting(false);
+                return;
+            }
+            const res = await bulkCreateInvitations({
+                communityId,
+                emails,
+                createdBy: user.id
+            });
+            if (res.success && res.data) {
+                setBulkImportResults(res.data as any);
+                alert(`Imported ${res.data.length} invitations.`);
+                loadInvites();
+                setCsvFile(null);
+            } else {
+                alert("Import failed: " + res.error);
+            }
+            setIsImporting(false);
+        };
+        reader.readAsText(csvFile);
+    };
 
     // User Management State
     const [users, setUsers] = useState<NeighborUser[]>([]);
@@ -60,22 +147,7 @@ export default function AdminPage() {
         i.email.toLowerCase().includes(inviteSearchTerm.toLowerCase())
     );
 
-    const [communityId, setCommunityId] = useState<string>("");
 
-    // Fetch real Community ID
-    useEffect(() => {
-        const fetchCommunityId = async () => {
-            try {
-                const res = await getCommunities();
-                if (res.success && res.data && res.data.length > 0) {
-                    setCommunityId(res.data[0].id);
-                }
-            } catch (error) {
-                console.error("Failed to fetch community ID", error);
-            }
-        };
-        fetchCommunityId();
-    }, []);
 
     const loadUsers = useCallback(async () => {
         if (!communityId) return;
@@ -187,6 +259,7 @@ export default function AdminPage() {
             const result = await createInvitation({
                 communityId: communityId,
                 email: newInviteEmail,
+                createdBy: user.id
             });
 
             if (result.success && result.data) {
@@ -356,6 +429,35 @@ export default function AdminPage() {
                                     ))}
                                 </div>
                             </div>
+
+                            <div className={styles.formGroup}>
+                                <label className={styles.label}>Interface Mode</label>
+                                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                    {[
+                                        { id: 'light', label: 'Light' },
+                                        { id: 'dark', label: 'Dark' },
+                                        { id: 'system', label: 'System' }
+                                    ].map((mode) => (
+                                        <button
+                                            key={mode.id}
+                                            onClick={() => setColorMode(mode.id as any)}
+                                            style={{
+                                                flex: 1,
+                                                padding: '0.6rem',
+                                                borderRadius: 'var(--radius)',
+                                                border: '1px solid var(--border)',
+                                                backgroundColor: colorMode === mode.id ? 'var(--primary)' : 'var(--card)',
+                                                color: colorMode === mode.id ? 'var(--primary-foreground)' : 'var(--foreground)',
+                                                fontWeight: 500,
+                                                cursor: 'pointer',
+                                                fontSize: '0.9rem'
+                                            }}
+                                        >
+                                            {mode.label}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -383,445 +485,568 @@ export default function AdminPage() {
                         </div>
                     </div>
                 </div>
-            )}
-
-            {activeTab === 'users' && (
-                <div className={styles.card}>
-                    <div className={styles.cardHeader}>
-                        <Users size={20} />
-                        <span className={styles.cardTitle}>Manage Residents</span>
-                    </div>
-                    <div className={styles.cardContent}>
-                        {/* Search Input */}
-                        <div style={{ marginBottom: '1rem' }}>
-                            <input
-                                className={styles.input}
-                                placeholder="Search by name, email, or address..."
-                                value={userSearchTerm}
-                                onChange={(e) => setUserSearchTerm(e.target.value)}
-                                aria-label="Search residents"
-                            />
+                    <div className={styles.card}>
+                        <div className={styles.cardHeader}>
+                            <Key size={20} className="text-destructive" />
+                            <span className={styles.cardTitle}>Emergency Access Settings</span>
                         </div>
+                        <div className={styles.cardContent}>
+                           <div className={styles.formGroup}>
+                                <label className={styles.label}>Gate / Door Code</label>
+                                <input 
+                                    className={styles.input} 
+                                    value={emergencyCode}
+                                    onChange={(e) => setEmergencyCode(e.target.value)}
+                                    placeholder="#1234"
+                                />
+                           </div>
+                           <div className={styles.formGroup}>
+                                <label className={styles.label}>Emergency Instructions</label>
+                                <textarea 
+                                    className={styles.input} 
+                                    value={emergencyInstructions}
+                                    onChange={(e) => setEmergencyInstructions(e.target.value)}
+                                    placeholder="Instructions for first responders..."
+                                    rows={3}
+                                />
+                           </div>
+                           <button onClick={handleSaveEmergency} disabled={isSavingEmergency} style={{ padding: '0.5rem 1rem', borderRadius: 'var(--radius)', background: 'var(--destructive)', color: 'white', border: 'none', cursor: 'pointer' }}>
+                               {isSavingEmergency ? "Saving..." : "Save Emergency Settings"}
+                           </button>
+                        </div>
+                    </div>
+                </div>
+    )
+}
 
-                        {isLoadingUsers ? (
-                            <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--muted-foreground)' }}>Loading residents...</div>
-                        ) : (
-                            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+{
+    activeTab === 'users' && (
+        <div className={styles.card}>
+            <div className={styles.cardHeader}>
+                <Users size={20} />
+                <span className={styles.cardTitle}>Manage Residents</span>
+            </div>
+            <div className={styles.cardContent}>
+                {/* Search Input */}
+                <div style={{ marginBottom: '1rem' }}>
+                    <input
+                        className={styles.input}
+                        placeholder="Search by name, email, or address..."
+                        value={userSearchTerm}
+                        onChange={(e) => setUserSearchTerm(e.target.value)}
+                        aria-label="Search residents"
+                    />
+                </div>
+
+                {isLoadingUsers ? (
+                    <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--muted-foreground)' }}>Loading residents...</div>
+                ) : (
+                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                        <thead>
+                            <tr style={{ borderBottom: '1px solid var(--border)', textAlign: 'left' }}>
+                                <th style={{ padding: '0.5rem' }}>Name</th>
+                                <th style={{ padding: '0.5rem' }}>Role</th>
+                                <th style={{ padding: '0.5rem' }}>Address</th>
+                                <th style={{ padding: '0.5rem' }}>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {filteredUsers.map((user) => (
+                                <tr key={user.id} style={{ borderBottom: '1px solid var(--border)' }}>
+                                    <td style={{ padding: '0.75rem 0.5rem' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                            <div style={{ width: 24, height: 24, borderRadius: '50%', background: 'var(--muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem' }}>{user.avatar}</div>
+                                            {user.name}
+                                        </div>
+                                    </td>
+                                    <td style={{ padding: '0.5rem' }}>
+                                        <span style={{
+                                            padding: '0.25rem 0.5rem',
+                                            borderRadius: '1rem',
+                                            fontSize: '0.75rem',
+                                            background: user.role && user.role.includes('Board') ? 'var(--primary)' : 'var(--muted)',
+                                            color: user.role && user.role.includes('Board') ? 'white' : 'var(--foreground)'
+                                        }}>
+                                            {user.role}
+                                        </span>
+                                    </td>
+                                    <td style={{ padding: '0.5rem' }}>{user.address}</td>
+                                    <td style={{ padding: '0.5rem' }}>
+                                        <button
+                                            onClick={() => setEditingUser(user)}
+                                            style={{ fontSize: '0.8rem', color: 'var(--primary)', marginRight: '1rem', background: 'none', border: 'none', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                                        >
+                                            <Edit2 size={12} /> Edit
+                                        </button>
+                                        <button
+                                            onClick={() => handleDeleteUser(user.id, user.name)}
+                                            style={{ fontSize: '0.8rem', color: 'red', background: 'none', border: 'none', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                                        >
+                                            <Trash2 size={12} /> Remove
+                                        </button>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                )}
+            </div>
+        </div>
+    )
+}
+
+{
+    activeTab === 'invites' && (
+        <div className={styles.grid}>
+            <div className={styles.card}>
+                <div className={styles.cardHeader}>
+                    <UserPlus size={20} />
+                    <span className={styles.cardTitle}>Generate New Invite</span>
+                </div>
+                <div className={styles.cardContent}>
+                    <div className={styles.formGroup}>
+                        <label className={styles.label}>Recipient Email</label>
+                        <input
+                            className={styles.input}
+                            placeholder="neighbor@example.com"
+                            value={newInviteEmail}
+                            onChange={(e) => setNewInviteEmail(e.target.value)}
+                            aria-label="Recipient Email"
+                        />
+                    </div>
+                    <button
+                        onClick={generateInvite}
+                        disabled={isGenerating}
+                        style={{
+                            width: '100%',
+                            padding: '0.75rem',
+                            borderRadius: 'var(--radius)',
+                            background: isGenerating ? 'var(--muted)' : 'var(--primary)',
+                            color: 'white',
+                            border: 'none',
+                            fontWeight: 600,
+                            cursor: isGenerating ? 'not-allowed' : 'pointer'
+                        }}
+                    >
+                        {isGenerating ? 'Generating...' : 'Generate Code'}
+                    </button>
+                </div>
+            </div>
+
+            <div className={styles.card}>
+                <div className={styles.cardHeader}>
+                    <Upload size={20} />
+                    <span className={styles.cardTitle}>Batch Import Residents</span>
+                </div>
+                <div className={styles.cardContent}>
+                    <div className={styles.formGroup}>
+                        <label className={styles.label}>Upload CSV (Email in first column)</label>
+                        <input type="file" accept=".csv" onChange={(e) => setCsvFile(e.target.files?.[0] || null)} style={{ marginTop: '0.5rem' }} />
+                    </div>
+                    <button
+                        onClick={handleCsvUpload}
+                        disabled={!csvFile || isImporting}
+                        style={{ width: '100%', padding: '0.75rem', borderRadius: 'var(--radius)', background: 'var(--secondary)', color: 'white', border: 'none', cursor: 'pointer' }}
+                    >
+                        {isImporting ? "Importing..." : "Process CSV & Generate Codes"}
+                    </button>
+                    {bulkImportResults.length > 0 && (
+                        <div style={{ marginTop: '1rem', maxHeight: '150px', overflowY: 'auto', background: 'var(--muted)', padding: '0.5rem' }}>
+                            <table style={{ width: '100%', fontSize: '0.8rem' }}>
+                                <thead><tr><th style={{ textAlign: 'left' }}>Email</th><th style={{ textAlign: 'left' }}>Code</th></tr></thead>
+                                <tbody>
+                                    {bulkImportResults.map((r, i) => (
+                                        <tr key={i}><td>{r.email}</td><td style={{ fontWeight: 'bold' }}>{r.code}</td></tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            <div className={styles.card}>
+                <div className={styles.cardHeader}>
+                    <Upload size={20} />
+                    <span className={styles.cardTitle}>Bulk Import Residents</span>
+                </div>
+                <div className={styles.cardContent}>
+                    <div className={styles.formGroup}>
+                        <label className={styles.label}>Upload CSV</label>
+                        <input
+                            type="file"
+                            accept=".csv"
+                            onChange={(e) => setCsvFile(e.target.files ? e.target.files[0] : null)}
+                            style={{ display: 'block', marginTop: '0.5rem' }}
+                        />
+                        <div style={{ fontSize: '0.8rem', color: 'var(--muted-foreground)', marginTop: '0.5rem' }}>
+                            CSV Format: First column should be email address. One per line.
+                        </div>
+                    </div>
+                    <button
+                        onClick={handleCsvUpload}
+                        disabled={!csvFile || isImporting}
+                        style={{
+                            width: '100%',
+                            padding: '0.75rem',
+                            borderRadius: 'var(--radius)',
+                            background: isImporting ? 'var(--muted)' : 'var(--secondary)',
+                            color: 'white',
+                            border: 'none',
+                            fontWeight: 600,
+                            cursor: isImporting ? 'not-allowed' : 'pointer'
+                        }}
+                    >
+                        {isImporting ? 'Importing...' : 'Import & Generate Codes'}
+                    </button>
+
+                    {bulkImportResults.length > 0 && (
+                        <div style={{ marginTop: '1.5rem', background: 'var(--muted)', padding: '1rem', borderRadius: 'var(--radius)', maxHeight: '200px', overflowY: 'auto' }}>
+                            <h4 style={{ marginBottom: '0.5rem', fontSize: '0.9rem' }}>Generated Codes ({bulkImportResults.length})</h4>
+                            <table style={{ width: '100%', fontSize: '0.85rem' }}>
                                 <thead>
-                                    <tr style={{ borderBottom: '1px solid var(--border)', textAlign: 'left' }}>
-                                        <th style={{ padding: '0.5rem' }}>Name</th>
-                                        <th style={{ padding: '0.5rem' }}>Role</th>
-                                        <th style={{ padding: '0.5rem' }}>Address</th>
-                                        <th style={{ padding: '0.5rem' }}>Actions</th>
-                                    </tr>
+                                    <tr style={{ textAlign: 'left' }}><th>Email</th><th>Code</th></tr>
                                 </thead>
                                 <tbody>
-                                    {filteredUsers.map((user) => (
-                                        <tr key={user.id} style={{ borderBottom: '1px solid var(--border)' }}>
-                                            <td style={{ padding: '0.75rem 0.5rem' }}>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                                    <div style={{ width: 24, height: 24, borderRadius: '50%', background: 'var(--muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem' }}>{user.avatar}</div>
-                                                    {user.name}
-                                                </div>
-                                            </td>
-                                            <td style={{ padding: '0.5rem' }}>
-                                                <span style={{
-                                                    padding: '0.25rem 0.5rem',
-                                                    borderRadius: '1rem',
-                                                    fontSize: '0.75rem',
-                                                    background: user.role && user.role.includes('Board') ? 'var(--primary)' : 'var(--muted)',
-                                                    color: user.role && user.role.includes('Board') ? 'white' : 'var(--foreground)'
-                                                }}>
-                                                    {user.role}
-                                                </span>
-                                            </td>
-                                            <td style={{ padding: '0.5rem' }}>{user.address}</td>
-                                            <td style={{ padding: '0.5rem' }}>
-                                                <button
-                                                    onClick={() => setEditingUser(user)}
-                                                    style={{ fontSize: '0.8rem', color: 'var(--primary)', marginRight: '1rem', background: 'none', border: 'none', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
-                                                >
-                                                    <Edit2 size={12} /> Edit
-                                                </button>
-                                                <button
-                                                    onClick={() => handleDeleteUser(user.id, user.name)}
-                                                    style={{ fontSize: '0.8rem', color: 'red', background: 'none', border: 'none', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
-                                                >
-                                                    <Trash2 size={12} /> Remove
-                                                </button>
-                                            </td>
+                                    {bulkImportResults.map((r, i) => (
+                                        <tr key={i}>
+                                            <td>{r.email}</td>
+                                            <td style={{ fontFamily: 'monospace', fontWeight: 'bold' }}>{r.code}</td>
                                         </tr>
                                     ))}
                                 </tbody>
                             </table>
-                        )}
-                    </div>
+                        </div>
+                    )}
                 </div>
-            )}
-
-            {activeTab === 'invites' && (
-                <div className={styles.grid}>
-                    <div className={styles.card}>
-                        <div className={styles.cardHeader}>
-                            <UserPlus size={20} />
-                            <span className={styles.cardTitle}>Generate New Invite</span>
-                        </div>
-                        <div className={styles.cardContent}>
-                            <div className={styles.formGroup}>
-                                <label className={styles.label}>Recipient Email</label>
-                                <input
-                                    className={styles.input}
-                                    placeholder="neighbor@example.com"
-                                    value={newInviteEmail}
-                                    onChange={(e) => setNewInviteEmail(e.target.value)}
-                                    aria-label="Recipient Email"
-                                />
-                            </div>
-                            <button
-                                onClick={generateInvite}
-                                disabled={isGenerating}
-                                style={{
-                                    width: '100%',
-                                    padding: '0.75rem',
-                                    borderRadius: 'var(--radius)',
-                                    background: isGenerating ? 'var(--muted)' : 'var(--primary)',
-                                    color: 'white',
-                                    border: 'none',
-                                    fontWeight: 600,
-                                    cursor: isGenerating ? 'not-allowed' : 'pointer'
-                                }}
-                            >
-                                {isGenerating ? 'Generating...' : 'Generate Code'}
-                            </button>
-                        </div>
-                    </div>
+            </div>
 
 
 
-                    <div className={styles.card}>
-                        <div className={styles.cardHeader}>
-                            <Mail size={20} />
-                            <span className={styles.cardTitle}>Invitations</span>
-                        </div>
-                        <div className={styles.cardContent}>
-                            <div className={styles.filterContainer}>
-                                <button
-                                    onClick={() => setInviteFilter('pending')}
-                                    className={`${styles.filterButton} ${inviteFilter === 'pending' ? styles.filterButtonActive : ''}`}
-                                >
-                                    Pending
-                                </button>
-                                <button
-                                    onClick={() => setInviteFilter('used')}
-                                    className={`${styles.filterButton} ${inviteFilter === 'used' ? styles.filterButtonActive : ''}`}
-                                >
-                                    Accepted
-                                </button>
-                                <button
-                                    onClick={() => setInviteFilter('expired')}
-                                    className={`${styles.filterButton} ${inviteFilter === 'expired' ? styles.filterButtonActive : ''}`}
-                                >
-                                    Expired
-                                </button>
-                            </div>
-
-                            {/* Search Input */}
-                            <div style={{ marginBottom: '1rem' }}>
-                                <input
-                                    className={styles.input}
-                                    placeholder="Search by email..."
-                                    value={inviteSearchTerm}
-                                    onChange={(e) => setInviteSearchTerm(e.target.value)}
-                                    aria-label="Search invitations"
-                                />
-                            </div>
-
-                            {isLoadingInvites ? (
-                                <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--muted-foreground)' }}>Loading invitations...</div>
-                            ) : filteredInvites.length === 0 ? (
-                                <p style={{ color: 'var(--muted-foreground)', textAlign: 'center', padding: '1rem' }}>No {inviteFilter} invitations.</p>
-                            ) : (
-                                <ul style={{ listStyle: 'none', padding: 0 }}>
-                                    {filteredInvites.map((invite, idx) => (
-                                        <li key={idx} style={{
-                                            display: 'flex',
-                                            justifyContent: 'space-between',
-                                            alignItems: 'center',
-                                            padding: '0.75rem',
-                                            borderBottom: '1px solid var(--border)'
-                                        }}>
-                                            <div>
-                                                <div style={{ fontWeight: 500 }}>{invite.email}</div>
-                                                <div style={{ fontSize: '0.8rem', fontFamily: 'monospace', background: 'var(--muted)', padding: '0.1rem 0.3rem', borderRadius: 4, display: 'inline-block', marginTop: 4 }}>
-                                                    {invite.code}
-                                                </div>
-                                            </div>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                                <span style={{
-                                                    fontSize: '0.75rem',
-                                                    padding: '0.25rem 0.5rem',
-                                                    borderRadius: '1rem',
-                                                    background: invite.status === 'pending' ? 'var(--accent)' : 'var(--muted)',
-                                                    color: invite.status === 'pending' ? 'var(--primary)' : 'var(--muted-foreground)'
-                                                }}>
-                                                    {invite.status}
-                                                </span>
-                                                <button
-                                                    onClick={() => handleDeleteInvite(invite.id)}
-                                                    aria-label="Delete invitation"
-                                                    style={{ color: 'var(--muted-foreground)', cursor: 'pointer', background: 'none', border: 'none' }}
-                                                >
-                                                    <Trash2 size={16} />
-                                                </button>
-                                            </div>
-                                        </li>
-                                    ))}
-                                </ul>
-                            )}
-                        </div>
-                    </div>
+            <div className={styles.card}>
+                <div className={styles.cardHeader}>
+                    <Mail size={20} />
+                    <span className={styles.cardTitle}>Invitations</span>
                 </div>
-            )
-            }
+                <div className={styles.cardContent}>
+                    <div className={styles.filterContainer}>
+                        <button
+                            onClick={() => setInviteFilter('pending')}
+                            className={`${styles.filterButton} ${inviteFilter === 'pending' ? styles.filterButtonActive : ''}`}
+                        >
+                            Pending
+                        </button>
+                        <button
+                            onClick={() => setInviteFilter('used')}
+                            className={`${styles.filterButton} ${inviteFilter === 'used' ? styles.filterButtonActive : ''}`}
+                        >
+                            Accepted
+                        </button>
+                        <button
+                            onClick={() => setInviteFilter('expired')}
+                            className={`${styles.filterButton} ${inviteFilter === 'expired' ? styles.filterButtonActive : ''}`}
+                        >
+                            Expired
+                        </button>
+                    </div>
 
-            {/* Success Invitation Modal */}
-            {
-                showModal && (
-                    <div style={{
-                        position: 'fixed',
-                        top: 0,
-                        left: 0,
-                        width: '100%',
-                        height: '100%',
-                        backgroundColor: 'rgba(0, 0, 0, 0.5)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        zIndex: 1000,
-                        backdropFilter: 'blur(4px)'
-                    }}>
-                        <div style={{
-                            backgroundColor: 'var(--card)',
-                            borderRadius: '1rem',
-                            padding: '2rem',
-                            width: '90%',
-                            maxWidth: '500px',
-                            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)',
-                            border: '1px solid var(--border)',
-                            position: 'relative'
-                        }}>
-                            <button
-                                onClick={() => setShowModal(false)}
-                                aria-label="Close modal"
-                                style={{
-                                    position: 'absolute',
-                                    top: '1rem',
-                                    right: '1rem',
-                                    background: 'transparent',
-                                    border: 'none',
-                                    color: 'var(--muted-foreground)',
-                                    cursor: 'pointer'
-                                }}
-                            >
-                                <X size={20} />
-                            </button>
+                    {/* Search Input */}
+                    <div style={{ marginBottom: '1rem' }}>
+                        <input
+                            className={styles.input}
+                            placeholder="Search by email..."
+                            value={inviteSearchTerm}
+                            onChange={(e) => setInviteSearchTerm(e.target.value)}
+                            aria-label="Search invitations"
+                        />
+                    </div>
 
-                            <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
-                                <div style={{
-                                    width: '3rem',
-                                    height: '3rem',
-                                    backgroundColor: 'var(--accent)',
-                                    borderRadius: '50%',
+                    {isLoadingInvites ? (
+                        <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--muted-foreground)' }}>Loading invitations...</div>
+                    ) : filteredInvites.length === 0 ? (
+                        <p style={{ color: 'var(--muted-foreground)', textAlign: 'center', padding: '1rem' }}>No {inviteFilter} invitations.</p>
+                    ) : (
+                        <ul style={{ listStyle: 'none', padding: 0 }}>
+                            {filteredInvites.map((invite, idx) => (
+                                <li key={idx} style={{
                                     display: 'flex',
+                                    justifyContent: 'space-between',
                                     alignItems: 'center',
-                                    justifyContent: 'center',
-                                    margin: '0 auto 1rem auto',
-                                    color: 'var(--primary)'
+                                    padding: '0.75rem',
+                                    borderBottom: '1px solid var(--border)'
                                 }}>
-                                    <CheckCircle size={24} />
-                                </div>
-                                <h2 style={{ fontSize: '1.5rem', fontWeight: 600, marginBottom: '0.5rem' }}>Invitation Created!</h2>
-                                <p style={{ color: 'var(--muted-foreground)' }}>Share this with your neighbor.</p>
-                            </div>
+                                    <div>
+                                        <div style={{ fontWeight: 500 }}>{invite.email}</div>
+                                        <div style={{ fontSize: '0.8rem', fontFamily: 'monospace', background: 'var(--muted)', padding: '0.1rem 0.3rem', borderRadius: 4, display: 'inline-block', marginTop: 4 }}>
+                                            {invite.code}
+                                        </div>
+                                    </div>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                        <span style={{
+                                            fontSize: '0.75rem',
+                                            padding: '0.25rem 0.5rem',
+                                            borderRadius: '1rem',
+                                            background: invite.status === 'pending' ? 'var(--accent)' : 'var(--muted)',
+                                            color: invite.status === 'pending' ? 'var(--primary)' : 'var(--muted-foreground)'
+                                        }}>
+                                            {invite.status}
+                                        </span>
+                                        <button
+                                            onClick={() => handleDeleteInvite(invite.id)}
+                                            aria-label="Delete invitation"
+                                            style={{ color: 'var(--muted-foreground)', cursor: 'pointer', background: 'none', border: 'none' }}
+                                        >
+                                            <Trash2 size={16} />
+                                        </button>
+                                    </div>
+                                </li>
+                            ))}
+                        </ul>
+                    )}
+                </div>
+            </div>
+        </div>
+    )
+}
 
-                            <div style={{
-                                backgroundColor: 'var(--muted)',
-                                padding: '1rem',
-                                borderRadius: '0.5rem',
-                                fontFamily: 'monospace',
-                                fontSize: '0.9rem',
-                                whiteSpace: 'pre-wrap',
-                                marginBottom: '1.5rem',
-                                border: '1px solid var(--border)',
-                                color: 'var(--foreground)'
-                            }}>
-                                {modalData.message}
-                            </div>
+{/* Success Invitation Modal */ }
+{
+    showModal && (
+        <div style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+            backdropFilter: 'blur(4px)'
+        }}>
+            <div style={{
+                backgroundColor: 'var(--card)',
+                borderRadius: '1rem',
+                padding: '2rem',
+                width: '90%',
+                maxWidth: '500px',
+                boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)',
+                border: '1px solid var(--border)',
+                position: 'relative'
+            }}>
+                <button
+                    onClick={() => setShowModal(false)}
+                    aria-label="Close modal"
+                    style={{
+                        position: 'absolute',
+                        top: '1rem',
+                        right: '1rem',
+                        background: 'transparent',
+                        border: 'none',
+                        color: 'var(--muted-foreground)',
+                        cursor: 'pointer'
+                    }}
+                >
+                    <X size={20} />
+                </button>
 
-                            <div style={{ display: 'flex', gap: '1rem' }}>
-                                <button
-                                    onClick={() => setShowModal(false)}
-                                    style={{
-                                        flex: 1,
-                                        padding: '0.75rem',
-                                        borderRadius: 'var(--radius)',
-                                        background: 'transparent',
-                                        border: '1px solid var(--border)',
-                                        color: 'var(--foreground)',
-                                        fontWeight: 600,
-                                        cursor: 'pointer'
-                                    }}
-                                >
-                                    Close
-                                </button>
-                                <button
-                                    onClick={copyToClipboard}
-                                    style={{
-                                        flex: 1,
-                                        padding: '0.75rem',
-                                        borderRadius: 'var(--radius)',
-                                        background: 'var(--primary)',
-                                        border: 'none',
-                                        color: 'white',
-                                        fontWeight: 600,
-                                        cursor: 'pointer',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        gap: '0.5rem'
-                                    }}
-                                >
-                                    <FileText size={18} />
-                                    Copy Message
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                )
-            }
-
-            {/* Edit User Modal */}
-            {
-                editingUser && (
+                <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
                     <div style={{
-                        position: 'fixed',
-                        top: 0,
-                        left: 0,
-                        width: '100%',
-                        height: '100%',
-                        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                        width: '3rem',
+                        height: '3rem',
+                        backgroundColor: 'var(--accent)',
+                        borderRadius: '50%',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        zIndex: 1000,
-                        backdropFilter: 'blur(4px)'
+                        margin: '0 auto 1rem auto',
+                        color: 'var(--primary)'
                     }}>
-                        <div style={{
-                            backgroundColor: 'var(--card)',
-                            borderRadius: '1rem',
-                            padding: '2rem',
-                            width: '90%',
-                            maxWidth: '500px',
-                            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)',
-                            border: '1px solid var(--border)',
-                            position: 'relative'
-                        }}>
-                            <button
-                                onClick={() => setEditingUser(null)}
-                                aria-label="Close modal"
-                                style={{
-                                    position: 'absolute',
-                                    top: '1rem',
-                                    right: '1rem',
-                                    background: 'transparent',
-                                    border: 'none',
-                                    color: 'var(--muted-foreground)',
-                                    cursor: 'pointer'
-                                }}
-                            >
-                                <X size={20} />
-                            </button>
-
-                            <div style={{ marginBottom: '1.5rem' }}>
-                                <h2 style={{ fontSize: '1.5rem', fontWeight: 600, marginBottom: '0.5rem' }}>Edit Resident</h2>
-                                <p style={{ color: 'var(--muted-foreground)' }}>Update details for {editingUser.name}</p>
-                            </div>
-
-                            <div className={styles.formGroup} style={{ marginBottom: '1rem' }}>
-                                <label className={styles.label}>Name</label>
-                                <input
-                                    className={styles.input}
-                                    value={editingUser.name}
-                                    onChange={(e) => setEditingUser({ ...editingUser, name: e.target.value })}
-                                    aria-label="Resident Name"
-                                />
-                            </div>
-
-                            <div className={styles.formGroup} style={{ marginBottom: '1rem' }}>
-                                <label className={styles.label}>Address</label>
-                                <input
-                                    className={styles.input}
-                                    value={editingUser.address || ''}
-                                    onChange={(e) => setEditingUser({ ...editingUser, address: e.target.value })}
-                                    aria-label="Resident Address"
-                                />
-                            </div>
-
-                            <div className={styles.formGroup} style={{ marginBottom: '1.5rem' }}>
-                                <label className={styles.label}>Role</label>
-                                <select
-                                    className={styles.input}
-                                    value={editingUser.role}
-                                    onChange={(e) => setEditingUser({ ...editingUser, role: e.target.value })}
-                                    aria-label="Resident Role"
-                                >
-                                    <option value="Resident">Resident</option>
-                                    <option value="Board Member">Board Member</option>
-                                    <option value="Admin">Admin</option>
-                                </select>
-                            </div>
-
-                            <div style={{ display: 'flex', gap: '1rem' }}>
-                                <button
-                                    onClick={() => setEditingUser(null)}
-                                    style={{
-                                        flex: 1,
-                                        padding: '0.75rem',
-                                        borderRadius: 'var(--radius)',
-                                        background: 'transparent',
-                                        border: '1px solid var(--border)',
-                                        color: 'var(--foreground)',
-                                        fontWeight: 600,
-                                        cursor: 'pointer'
-                                    }}
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    onClick={handleUpdateUser}
-                                    disabled={isUpdatingUser}
-                                    style={{
-                                        flex: 1,
-                                        padding: '0.75rem',
-                                        borderRadius: 'var(--radius)',
-                                        background: 'var(--primary)',
-                                        border: 'none',
-                                        color: 'white',
-                                        fontWeight: 600,
-                                        cursor: isUpdatingUser ? 'not-allowed' : 'pointer',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        gap: '0.5rem'
-                                    }}
-                                >
-                                    {isUpdatingUser ? 'Saving...' : 'Save Changes'}
-                                </button>
-                            </div>
-                        </div>
+                        <CheckCircle size={24} />
                     </div>
-                )
-            }
+                    <h2 style={{ fontSize: '1.5rem', fontWeight: 600, marginBottom: '0.5rem' }}>Invitation Created!</h2>
+                    <p style={{ color: 'var(--muted-foreground)' }}>Share this with your neighbor.</p>
+                </div>
+
+                <div style={{
+                    backgroundColor: 'var(--muted)',
+                    padding: '1rem',
+                    borderRadius: '0.5rem',
+                    fontFamily: 'monospace',
+                    fontSize: '0.9rem',
+                    whiteSpace: 'pre-wrap',
+                    marginBottom: '1.5rem',
+                    border: '1px solid var(--border)',
+                    color: 'var(--foreground)'
+                }}>
+                    {modalData.message}
+                </div>
+
+                <div style={{ display: 'flex', gap: '1rem' }}>
+                    <button
+                        onClick={() => setShowModal(false)}
+                        style={{
+                            flex: 1,
+                            padding: '0.75rem',
+                            borderRadius: 'var(--radius)',
+                            background: 'transparent',
+                            border: '1px solid var(--border)',
+                            color: 'var(--foreground)',
+                            fontWeight: 600,
+                            cursor: 'pointer'
+                        }}
+                    >
+                        Close
+                    </button>
+                    <button
+                        onClick={copyToClipboard}
+                        style={{
+                            flex: 1,
+                            padding: '0.75rem',
+                            borderRadius: 'var(--radius)',
+                            background: 'var(--primary)',
+                            border: 'none',
+                            color: 'white',
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '0.5rem'
+                        }}
+                    >
+                        <FileText size={18} />
+                        Copy Message
+                    </button>
+                </div>
+            </div>
+        </div>
+    )
+}
+
+{/* Edit User Modal */ }
+{
+    editingUser && (
+        <div style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+            backdropFilter: 'blur(4px)'
+        }}>
+            <div style={{
+                backgroundColor: 'var(--card)',
+                borderRadius: '1rem',
+                padding: '2rem',
+                width: '90%',
+                maxWidth: '500px',
+                boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)',
+                border: '1px solid var(--border)',
+                position: 'relative'
+            }}>
+                <button
+                    onClick={() => setEditingUser(null)}
+                    aria-label="Close modal"
+                    style={{
+                        position: 'absolute',
+                        top: '1rem',
+                        right: '1rem',
+                        background: 'transparent',
+                        border: 'none',
+                        color: 'var(--muted-foreground)',
+                        cursor: 'pointer'
+                    }}
+                >
+                    <X size={20} />
+                </button>
+
+                <div style={{ marginBottom: '1.5rem' }}>
+                    <h2 style={{ fontSize: '1.5rem', fontWeight: 600, marginBottom: '0.5rem' }}>Edit Resident</h2>
+                    <p style={{ color: 'var(--muted-foreground)' }}>Update details for {editingUser.name}</p>
+                </div>
+
+                <div className={styles.formGroup} style={{ marginBottom: '1rem' }}>
+                    <label className={styles.label}>Name</label>
+                    <input
+                        className={styles.input}
+                        value={editingUser.name}
+                        onChange={(e) => setEditingUser({ ...editingUser, name: e.target.value })}
+                        aria-label="Resident Name"
+                    />
+                </div>
+
+                <div className={styles.formGroup} style={{ marginBottom: '1rem' }}>
+                    <label className={styles.label}>Address</label>
+                    <input
+                        className={styles.input}
+                        value={editingUser.address || ''}
+                        onChange={(e) => setEditingUser({ ...editingUser, address: e.target.value })}
+                        aria-label="Resident Address"
+                    />
+                </div>
+
+                <div className={styles.formGroup} style={{ marginBottom: '1.5rem' }}>
+                    <label className={styles.label}>Role</label>
+                    <select
+                        className={styles.input}
+                        value={editingUser.role}
+                        onChange={(e) => setEditingUser({ ...editingUser, role: e.target.value })}
+                        aria-label="Resident Role"
+                    >
+                        <option value="Resident">Resident</option>
+                        <option value="Board Member">Board Member</option>
+                        <option value="Admin">Admin</option>
+                    </select>
+                </div>
+
+                <div style={{ display: 'flex', gap: '1rem' }}>
+                    <button
+                        onClick={() => setEditingUser(null)}
+                        style={{
+                            flex: 1,
+                            padding: '0.75rem',
+                            borderRadius: 'var(--radius)',
+                            background: 'transparent',
+                            border: '1px solid var(--border)',
+                            color: 'var(--foreground)',
+                            fontWeight: 600,
+                            cursor: 'pointer'
+                        }}
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        onClick={handleUpdateUser}
+                        disabled={isUpdatingUser}
+                        style={{
+                            flex: 1,
+                            padding: '0.75rem',
+                            borderRadius: 'var(--radius)',
+                            background: 'var(--primary)',
+                            border: 'none',
+                            color: 'white',
+                            fontWeight: 600,
+                            cursor: isUpdatingUser ? 'not-allowed' : 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '0.5rem'
+                        }}
+                    >
+                        {isUpdatingUser ? 'Saving...' : 'Save Changes'}
+                    </button>
+                </div>
+            </div>
+        </div>
+    )
+}
         </div >
     );
 }

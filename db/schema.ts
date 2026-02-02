@@ -30,6 +30,10 @@ export const communities = pgTable('communities', {
     stripeCustomerId: text('stripe_customer_id'),
     stripeSubscriptionId: text('stripe_subscription_id'),
 
+    // Emergency Access
+    emergencyAccessCode: text('emergency_access_code'),
+    emergencyInstructions: text('emergency_instructions'),
+
     createdAt: timestamp('created_at').defaultNow(),
 });
 
