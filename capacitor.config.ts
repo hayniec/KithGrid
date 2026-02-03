@@ -10,7 +10,7 @@ const config: CapacitorConfig = {
     // cleartext: true,
 
     // 2. For Production/Phone, uncomment and set your Netlify URL:
-    // url: "https://your-site.netlify.app", 
+    url: "https://neighborhoodnet.netlify.app/dashboard, 
 
     androidScheme: 'https'
   }
