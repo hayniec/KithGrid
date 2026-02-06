@@ -1,7 +1,7 @@
 'use server'
 
 import { db } from "@/db";
-import { marketplaceItems } from "@/db/schema";
+import { marketplaceItems, neighbors } from "@/db/schema";
 import { eq, desc } from "drizzle-orm";
 
 export type MarketplaceActionState = {
@@ -13,27 +13,31 @@ export type MarketplaceActionState = {
 export async function getCommunityMarketplaceItems(communityId: string): Promise<MarketplaceActionState> {
     try {
         const results = await db
-            .select()
+            .select({
+                item: marketplaceItems,
+                seller: neighbors
+            })
             .from(marketplaceItems)
+            .leftJoin(neighbors, eq(marketplaceItems.sellerId, neighbors.id))
             .where(eq(marketplaceItems.communityId, communityId))
             .orderBy(desc(marketplaceItems.postedDate));
 
         return {
             success: true,
-            data: results.map(item => ({
+            data: results.map(({ item, seller }) => ({
                 id: item.id,
                 title: item.title,
                 description: item.description,
                 price: item.price,
-                // TODO: Add isFree, isNegotiable to schema or infer
-                isFree: Number(item.price) === 0,
-                isNegotiable: false,
-                images: [],
-                status: 'Active',
+                isFree: item.isFree,
+                isNegotiable: item.isNegotiable,
+                images: item.images || [],
+                status: item.status,
                 postedDate: item.postedDate?.toISOString(),
                 expiresAt: item.expiresAt?.toISOString(),
                 sellerId: item.sellerId,
-                sellerName: "Neighbor" // TODO: Join
+                sellerName: seller?.name || "Unknown Neighbor",
+                sellerEmail: seller?.email // Optional: Exposed for contact link if straightforward
             }))
         };
     } catch (error: any) {
@@ -47,6 +51,9 @@ export async function createMarketplaceItem(data: {
     title: string;
     description: string;
     price: string;
+    isFree: boolean;
+    isNegotiable: boolean;
+    images: string[];
     sellerId: string;
 }): Promise<MarketplaceActionState> {
     try {
@@ -55,6 +62,9 @@ export async function createMarketplaceItem(data: {
             title: data.title,
             description: data.description,
             price: data.price,
+            isFree: data.isFree,
+            isNegotiable: data.isNegotiable,
+            images: data.images,
             sellerId: data.sellerId,
         }).returning();
 

@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import styles from "./marketplace.module.css";
-import { ShoppingBag, Plus, Tag, Clock, User, Check, X, Image as ImageIcon } from "lucide-react";
+import { ShoppingBag, Plus, Tag, Clock, User, Check, X, Image as ImageIcon, UploadCloud, Trash2 } from "lucide-react";
 import { MarketplaceItem } from "@/types/marketplace";
 import { useUser } from "@/contexts/UserContext";
 import { getCommunityMarketplaceItems, createMarketplaceItem } from "@/app/actions/marketplace";
@@ -19,7 +20,35 @@ export default function MarketplacePage() {
         price: "",
         isFree: false,
         isNegotiable: false,
+        images: [] as string[]
     });
+
+    const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const files = e.target.files;
+        if (!files) return;
+
+        Array.from(files).forEach(file => {
+            if (file.size > 1024 * 1024) { // 1MB limit for now
+                alert(`File ${file.name} is too large. Max 1MB.`);
+                return;
+            }
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setNewItem(prev => ({
+                    ...prev,
+                    images: [...prev.images, reader.result as string].slice(0, 5) // Max 5 images
+                }));
+            };
+            reader.readAsDataURL(file);
+        });
+    };
+
+    const removeImage = (index: number) => {
+        setNewItem(prev => ({
+            ...prev,
+            images: prev.images.filter((_, i) => i !== index)
+        }));
+    };
 
     useEffect(() => {
         const fetchItems = async () => {
@@ -57,30 +86,31 @@ export default function MarketplacePage() {
                 title: newItem.title,
                 description: newItem.description,
                 price: priceVal,
+                isFree: newItem.isFree,
+                isNegotiable: newItem.isNegotiable,
+                images: newItem.images,
                 sellerId: user.id || ""
             });
 
             if (res.success && res.data) {
-                // Optimistic add or refetch. 
-                // The returned item matches DB schema. 
-                // We map it to UI type if needed.
                 const createdItem: MarketplaceItem = {
                     id: res.data.id,
                     title: res.data.title,
                     description: res.data.description,
                     price: Number(res.data.price),
-                    isFree: Number(res.data.price) === 0,
-                    isNegotiable: false,
-                    images: [],
+                    isFree: res.data.isFree,
+                    isNegotiable: res.data.isNegotiable,
+                    images: res.data.images || newItem.images,
                     status: 'Active',
                     postedDate: new Date().toISOString(),
                     expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
                     sellerId: user.id || "currentUser",
-                    sellerName: user.name
+                    sellerName: user.name || "Me",
+                    sellerEmail: user.email || ""
                 };
                 setItems([createdItem, ...items]);
                 setIsModalOpen(false);
-                setNewItem({ title: "", description: "", price: "", isFree: false, isNegotiable: false });
+                setNewItem({ title: "", description: "", price: "", isFree: false, isNegotiable: false, images: [] });
             } else {
                 alert("Failed to create item.");
             }
@@ -89,6 +119,7 @@ export default function MarketplacePage() {
             alert("Error creating item.");
         }
     };
+
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
@@ -119,7 +150,14 @@ export default function MarketplacePage() {
                         return (
                             <div key={item.id} className={styles.card} style={{ opacity: isExpired ? 0.6 : 1 }}>
                                 <div className={styles.imagePlaceholder}>
-                                    <ImageIcon size={40} />
+                                    {item.images && item.images.length > 0 ? (
+                                        <img src={item.images[0]} alt={item.title} className={styles.cardImage} />
+                                    ) : (
+                                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--muted-foreground)' }}>
+                                            <ImageIcon size={40} />
+                                            <span style={{ fontSize: '0.8rem', marginTop: '0.5rem' }}>No Photo</span>
+                                        </div>
+                                    )}
                                     {item.status === 'Sold' && <div className={styles.soldOverlay}>SOLD</div>}
                                 </div>
                                 <div className={styles.content}>
@@ -128,7 +166,7 @@ export default function MarketplacePage() {
                                         {item.isFree ? (
                                             <span className={styles.freeTag}>FREE</span>
                                         ) : (
-                                            <span className={styles.priceTag}>${item.price}</span>
+                                            <span className={styles.priceTag}>${item.price.toFixed(2)}</span>
                                         )}
                                     </div>
                                     <p className={styles.description}>{item.description}</p>
@@ -136,7 +174,13 @@ export default function MarketplacePage() {
                                     <div className={styles.meta}>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
                                             <User size={14} />
-                                            <span>{item.sellerName || 'Neighbor'}</span>
+                                            {item.sellerName === "Unknown Neighbor" ? (
+                                                <span>{item.sellerName}</span>
+                                            ) : (
+                                                <Link href={`/dashboard/neighbors/${item.sellerId}`} className="hover:underline hover:text-primary">
+                                                    {item.sellerName}
+                                                </Link>
+                                            )}
                                         </div>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
                                             <Clock size={14} />
@@ -144,7 +188,13 @@ export default function MarketplacePage() {
                                         </div>
                                     </div>
 
-                                    <button className={styles.contactButton}>Contact Seller</button>
+                                    <a
+                                        href={`mailto:${item.sellerEmail || ''}?subject=Question about ${item.title}`}
+                                        className={styles.contactButton}
+                                        style={{ textDecoration: 'none', textAlign: 'center', display: 'block', marginTop: 'auto' }}
+                                    >
+                                        Contact Seller
+                                    </a>
                                 </div>
                             </div>
                         );
@@ -178,6 +228,37 @@ export default function MarketplacePage() {
                                     onChange={e => setNewItem({ ...newItem, description: e.target.value })}
                                     placeholder="Condition, details, etc."
                                 />
+                            </div>
+                            <div className={styles.formGroup}>
+                                <label>Photos (Max 5)</label>
+                                <label className={styles.imageUploadArea}>
+                                    <input
+                                        type="file"
+                                        accept="image/*"
+                                        multiple
+                                        onChange={handleImageUpload}
+                                        style={{ display: 'none' }}
+                                    />
+                                    <UploadCloud size={24} />
+                                    <span>Click to upload photos</span>
+                                </label>
+                                {newItem.images.length > 0 && (
+                                    <div className={styles.imagePreviewGrid}>
+                                        {newItem.images.map((img, idx) => (
+                                            <div key={idx} className={styles.imagePreview}>
+                                                <img src={img} alt="Preview" />
+                                                <button
+                                                    className={styles.removeImage}
+                                                    onClick={() => removeImage(idx)}
+                                                    type="button"
+                                                    aria-label="Remove image"
+                                                >
+                                                    <X size={12} />
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
                             <div className={styles.flexibleRow}>
                                 <div className={`${styles.formGroup} ${styles.flex1}`}>

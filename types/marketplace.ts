@@ -11,4 +11,5 @@ export interface MarketplaceItem {
     expiresAt: string; // ISO Date
     sellerId: string;
     sellerName: string;
+    sellerEmail?: string;
 }
