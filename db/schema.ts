@@ -53,7 +53,7 @@ export const invitations = pgTable('invitations', {
 export const neighbors = pgTable('neighbors', {
     id: uuid('id').primaryKey().defaultRandom(),
     communityId: uuid('community_id').references(() => communities.id), // Link to the tenant
-    email: text('email').notNull(), // Add email for auth
+    email: text('email').notNull().unique(), // Add email for auth, unique to ensure 1 community per user
     password: text('password'), // Add simple password for MVP
     name: text('name').notNull(),
     role: text('role', { enum: ['Admin', 'Resident', 'Board Member', 'Event Manager'] }).default('Resident'),

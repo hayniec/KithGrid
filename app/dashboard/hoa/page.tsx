@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useUser } from "@/contexts/UserContext";
 import { MOCK_DOCUMENTS, MOCK_NEIGHBORS } from "@/lib/data";
 import { HoaDocument } from "@/types/hoa";
 import styles from "./hoa.module.css";
@@ -10,7 +11,9 @@ import { UploadDocumentModal } from "@/components/dashboard/UploadDocumentModal"
 export default function HoaPage() {
     const [documents, setDocuments] = useState<HoaDocument[]>(MOCK_DOCUMENTS);
     const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
-    const [isAdminMode, setIsAdminMode] = useState(false); // Simulated logic for "Officer"
+    const { user } = useUser();
+    const role = user?.role?.toLowerCase();
+    const canUpload = role === 'admin' || role === 'board member';
 
     // Filter board members from neighbors
     const boardMembers = MOCK_NEIGHBORS.filter(n => n.role === "Board Member" || n.role === "Admin");
@@ -22,9 +25,9 @@ export default function HoaPage() {
             name: docData.name,
             category: docData.category,
             uploadDate: new Date().toISOString().split('T')[0],
-            size: "1.2 MB", // Mocked size
-            url: "#",
-            uploaderName: "You"
+            size: docData.file ? "1.5 MB" : "Link",
+            url: docData.source === 'external' ? docData.url : "#",
+            uploaderName: user?.name || "Neighbor"
         };
         setDocuments([newDoc, ...documents]);
         setIsUploadModalOpen(false);
@@ -33,25 +36,7 @@ export default function HoaPage() {
     return (
         <div className={styles.container}>
 
-            {/* Dev toggle to simulate permissions */}
-            <div style={{ position: 'fixed', bottom: 20, right: 20, zIndex: 100 }}>
-                <button
-                    onClick={() => setIsAdminMode(!isAdminMode)}
-                    style={{
-                        padding: '0.5rem 1rem',
-                        background: isAdminMode ? 'var(--primary)' : 'var(--muted)',
-                        color: isAdminMode ? 'white' : 'var(--foreground)',
-                        borderRadius: '999px',
-                        border: 'none',
-                        boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
-                        cursor: 'pointer',
-                        fontSize: '0.75rem',
-                        fontWeight: 600
-                    }}
-                >
-                    {isAdminMode ? 'View as: Officer' : 'View as: Resident'}
-                </button>
-            </div>
+
 
             <div className={styles.intro}>
                 <h1>Maple Grove HOA</h1>
@@ -112,7 +97,7 @@ export default function HoaPage() {
             <div className={styles.section}>
                 <div className={styles.sectionHeader}>
                     <h2 className={styles.title}>Documents & Resources</h2>
-                    {isAdminMode && (
+                    {canUpload && (
                         <button
                             onClick={() => setIsUploadModalOpen(true)}
                             style={{

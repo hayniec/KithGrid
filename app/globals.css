@@ -1,8 +1,8 @@
 :root {
   /* Premium Light Mode Palette (Default Fallback) */
-  --background: #ffffff;
+  --background: #f1f5f9;
   --foreground: #0f172a;
-  --card: #f8fafc;
+  --card: #ffffff;
   --card-foreground: #0f172a;
   --popover: #ffffff;
   --popover-foreground: #0f172a;
@@ -24,9 +24,9 @@
 
 .light {
   /* Premium Light Mode Palette (Explicit) */
-  --background: #ffffff;
+  --background: #f1f5f9;
   --foreground: #0f172a;
-  --card: #f8fafc;
+  --card: #ffffff;
   --card-foreground: #0f172a;
   --popover: #ffffff;
   --popover-foreground: #0f172a;

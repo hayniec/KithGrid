@@ -5,10 +5,10 @@ import { useTheme, THEMES } from "@/contexts/ThemeContext";
 import styles from "./admin.module.css";
 import { Palette, Shield, Users, FileText, Trash2, CheckCircle, UserPlus, Mail, X, Edit2 } from "lucide-react";
 import { createInvitation, getInvitations, deleteInvitation, bulkCreateInvitations, InvitationActionState } from "@/app/actions/invitations";
-import { getCommunities, updateEmergencySettings } from "@/app/actions/communities";
+import { getCommunities } from "@/app/actions/communities";
 import { getNeighbors, deleteNeighbor, updateNeighbor } from "@/app/actions/neighbors";
 import { useUser } from "@/contexts/UserContext";
-import { Key, Upload } from "lucide-react";
+import { Upload } from "lucide-react";
 
 type Tab = 'general' | 'users' | 'invites';
 
@@ -51,42 +51,15 @@ export default function AdminPage() {
         fetchCommunityId();
     }, []);
 
-    // Emergency Settings
-    const [emergencyCode, setEmergencyCode] = useState("");
-    const [emergencyInstructions, setEmergencyInstructions] = useState("");
-    const [isSavingEmergency, setIsSavingEmergency] = useState(false);
 
     // CSV Import
     const [csvFile, setCsvFile] = useState<File | null>(null);
     const [isImporting, setIsImporting] = useState(false);
     const [bulkImportResults, setBulkImportResults] = useState<{ email: string; code: string }[]>([]);
 
-    useEffect(() => {
-        if (communityId) {
-            // Fetch emergency settings (mocking retrieving it from getCommunities again or a dedicated call)
-            getCommunities().then(res => {
-                if (res.success && res.data) {
-                    const c = res.data.find((x: any) => x.id === communityId);
-                    if (c && c.emergency) {
-                        setEmergencyCode(c.emergency.accessCode);
-                        setEmergencyInstructions(c.emergency.instructions);
-                    }
-                }
-            });
-        }
-    }, [communityId]);
 
-    const handleSaveEmergency = async () => {
-        if (!communityId) return;
-        setIsSavingEmergency(true);
-        const res = await updateEmergencySettings(communityId, {
-            accessCode: emergencyCode,
-            instructions: emergencyInstructions
-        });
-        if (res.success) alert("Emergency settings updated.");
-        else alert("Failed to update.");
-        setIsSavingEmergency(false);
-    };
+
+
 
     const handleCsvUpload = async () => {
         if (!csvFile || !communityId || !user.id) return;
@@ -485,36 +458,7 @@ export default function AdminPage() {
                             </div>
                         </div>
                     </div>
-                    <div className={styles.card}>
-                        <div className={styles.cardHeader}>
-                            <Key size={20} className="text-destructive" />
-                            <span className={styles.cardTitle}>Emergency Access Settings</span>
-                        </div>
-                        <div className={styles.cardContent}>
-                            <div className={styles.formGroup}>
-                                <label className={styles.label}>Gate / Door Code</label>
-                                <input
-                                    className={styles.input}
-                                    value={emergencyCode}
-                                    onChange={(e) => setEmergencyCode(e.target.value)}
-                                    placeholder="#1234"
-                                />
-                            </div>
-                            <div className={styles.formGroup}>
-                                <label className={styles.label}>Emergency Instructions</label>
-                                <textarea
-                                    className={styles.input}
-                                    value={emergencyInstructions}
-                                    onChange={(e) => setEmergencyInstructions(e.target.value)}
-                                    placeholder="Instructions for first responders..."
-                                    rows={3}
-                                />
-                            </div>
-                            <button onClick={handleSaveEmergency} disabled={isSavingEmergency} style={{ padding: '0.5rem 1rem', borderRadius: 'var(--radius)', background: 'var(--destructive)', color: 'white', border: 'none', cursor: 'pointer' }}>
-                                {isSavingEmergency ? "Saving..." : "Save Emergency Settings"}
-                            </button>
-                        </div>
-                    </div>
+
                 </div>
             )
             }

@@ -11,11 +11,18 @@ interface UploadModalProps {
 }
 
 export function UploadDocumentModal({ isOpen, onClose, onUpload }: UploadModalProps) {
-    const [formData, setFormData] = useState({
+    const [formData, setFormData] = useState<{
+        name: string;
+        category: string;
+        source: 'internal' | 'external';
+        url: string;
+        file?: File | null;
+    }>({
         name: "",
         category: "Rules",
-        source: "internal", // 'internal' | 'external'
-        url: ""
+        source: "internal",
+        url: "",
+        file: null
     });
 
     if (!isOpen) return null;
@@ -23,9 +30,10 @@ export function UploadDocumentModal({ isOpen, onClose, onUpload }: UploadModalPr
     const handleSubmit = () => {
         if (!formData.name) return;
         if (formData.source === 'external' && !formData.url) return;
+        if (formData.source === 'internal' && !formData.file) return;
 
         onUpload(formData);
-        setFormData({ name: "", category: "Rules", source: "internal", url: "" });
+        setFormData({ name: "", category: "Rules", source: "internal", url: "", file: null });
     };
 
     return (
@@ -92,7 +100,7 @@ export function UploadDocumentModal({ isOpen, onClose, onUpload }: UploadModalPr
                 {formData.source === 'internal' ? (
                     <div className={styles.field}>
                         <label className={styles.label}>File</label>
-                        <div style={{
+                        <label style={{
                             border: '2px dashed var(--border)',
                             borderRadius: 'var(--radius)',
                             padding: '2rem',
@@ -105,8 +113,16 @@ export function UploadDocumentModal({ isOpen, onClose, onUpload }: UploadModalPr
                             fontSize: '0.85rem'
                         }}>
                             <Upload size={24} />
-                            <span>Click to browse or drag file here</span>
-                        </div>
+                            <span>{formData.file ? formData.file.name : "Click to browse or drag file here"}</span>
+                            <input
+                                type="file"
+                                style={{ display: 'none' }}
+                                onChange={(e) => {
+                                    const file = e.target.files?.[0];
+                                    if (file) setFormData({ ...formData, file, name: formData.name || file.name });
+                                }}
+                            />
+                        </label>
                     </div>
                 ) : (
                     <div className={styles.field}>
@@ -127,7 +143,7 @@ export function UploadDocumentModal({ isOpen, onClose, onUpload }: UploadModalPr
                     <button
                         className={`${styles.button} ${styles.primaryButton}`}
                         onClick={handleSubmit}
-                        disabled={!formData.name || (formData.source === 'external' && !formData.url)}
+                        disabled={!formData.name || (formData.source === 'external' && !formData.url) || (formData.source === 'internal' && !formData.file)}
                     >
                         {formData.source === 'internal' ? 'Upload' : 'Add Link'}
                     </button>
