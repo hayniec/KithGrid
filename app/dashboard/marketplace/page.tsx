@@ -28,8 +28,8 @@ export default function MarketplacePage() {
         if (!files) return;
 
         Array.from(files).forEach(file => {
-            if (file.size > 1024 * 1024) { // 1MB limit for now
-                alert(`File ${file.name} is too large. Max 1MB.`);
+            if (file.size > 800 * 1024) { // 800KB limit for safety
+                alert(`File ${file.name} is too large. Max 800KB.`);
                 return;
             }
             const reader = new FileReader();
@@ -116,7 +116,7 @@ export default function MarketplacePage() {
             }
         } catch (e) {
             console.error(e);
-            alert("Error creating item.");
+            alert(`Error creating item: ${e instanceof Error ? e.message : String(e)}`);
         }
     };
 

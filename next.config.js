@@ -11,6 +11,11 @@ const nextConfig = {
     output: "standalone",
     // Explicitly disable Turbopack config to valid build errors on Vercel with Next.js 16
     turbopack: {},
+    experimental: {
+        serverActions: {
+            bodySizeLimit: '5mb',
+        },
+    },
 };
 
 if (process.env.NODE_ENV === "development") {
