@@ -46,6 +46,16 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
                 avatar: session.user.image || "",
                 communityId: session.user.communityId || undefined,
             });
+        } else if (status === "unauthenticated" || status === "loading") {
+            // MOCK USER FOR DEVELOPMENT/BYPASS
+            setUserState({
+                id: "mock-super-admin-id",
+                name: "Super Admin (Bypass)",
+                email: "admin@neighbornet.com",
+                role: "admin", // 'admin' role grants access to Super Admin features
+                avatar: "SA",
+                communityId: "mock-community-id",
+            });
         }
     }, [session, status]);
 

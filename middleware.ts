@@ -20,28 +20,28 @@ export async function middleware(req: NextRequest) {
     }
 
     // Auth pages (login, join) - redirect to dashboard if logged in
-    if (pathname.startsWith("/login") || pathname.startsWith("/join")) {
-        if (isAuthenticated) {
-            return NextResponse.redirect(new URL("/dashboard", req.url));
-        }
-        return NextResponse.next();
-    }
+    // if (pathname.startsWith("/login") || pathname.startsWith("/join")) {
+    //     if (isAuthenticated) {
+    //         return NextResponse.redirect(new URL("/dashboard", req.url));
+    //     }
+    //     return NextResponse.next();
+    // }
 
-    // Root path - redirect based on auth status
-    if (pathname === "/") {
-        if (isAuthenticated) {
-            return NextResponse.redirect(new URL("/dashboard", req.url));
-        } else {
-            return NextResponse.redirect(new URL("/login", req.url));
-        }
-    }
+    // // Root path - redirect based on auth status
+    // if (pathname === "/") {
+    //     if (isAuthenticated) {
+    //         return NextResponse.redirect(new URL("/dashboard", req.url));
+    //     } else {
+    //         return NextResponse.redirect(new URL("/login", req.url));
+    //     }
+    // }
 
-    // Protected routes (everything else, effectively, especially /dashboard)
-    // If not authenticated, redirect to login
-    if (!isAuthenticated) {
-        const from = pathname;
-        return NextResponse.redirect(new URL(`/login?callbackUrl=${encodeURIComponent(from)}`, req.url));
-    }
+    // // Protected routes (everything else, effectively, especially /dashboard)
+    // // If not authenticated, redirect to login
+    // if (!isAuthenticated) {
+    //     const from = pathname;
+    //     return NextResponse.redirect(new URL(`/login?callbackUrl=${encodeURIComponent(from)}`, req.url));
+    // }
 
     return NextResponse.next();
 }

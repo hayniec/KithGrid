@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useUser } from "@/contexts/UserContext";
 import styles from "../join/join.module.css";
@@ -11,6 +11,12 @@ import { signIn } from "next-auth/react";
 export default function LoginPage() {
     const router = useRouter();
     const { setUser } = useUser();
+
+    // Auto-redirect to dashboard since we are bypassing login
+    useEffect(() => {
+        router.push("/dashboard");
+    }, [router]);
+
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
