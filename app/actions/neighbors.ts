@@ -164,7 +164,7 @@ export async function updateNeighbor(memberId: string, data: {
 
         if (data.name) {
             const [member] = await db.select().from(members).where(eq(members.id, memberId));
-            if (member) {
+            if (member && member.userId) {
                 await db.update(users).set({ name: data.name }).where(eq(users.id, member.userId));
             }
         }

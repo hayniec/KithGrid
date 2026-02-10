@@ -1,7 +1,7 @@
 
 import { NextResponse } from "next/server";
 import { db } from "@/db";
-import { neighbors, communities } from "@/db/schema";
+import { members as neighbors, communities, users } from "@/db/schema";
 import { eq } from "drizzle-orm";
 
 export async function GET() {
@@ -24,22 +24,46 @@ export async function GET() {
         const email = "admin@example.com";
         const password = "password123";
 
-        const existingUser = await db.select().from(neighbors).where(eq(neighbors.email, email));
+        // 1. Check/Create Global User
+        let [user] = await db.select().from(users).where(eq(users.email, email));
 
-        if (existingUser.length > 0) {
-            await db.update(neighbors).set({
-                password: password,
-                role: "Admin",
-                communityId: communityId
-            }).where(eq(neighbors.email, email));
-        } else {
-            await db.insert(neighbors).values({
+        if (!user) {
+            console.log("Creating new global user...");
+            [user] = await db.insert(users).values({
                 name: "Test Admin",
                 email: email,
                 password: password,
-                role: "Admin",
-                communityId: communityId,
                 avatar: "TA"
+            }).returning();
+        } else {
+            console.log("Updating existing global user...");
+            await db.update(users).set({
+                password: password,
+                // name: "Test Admin" // Optional: Update name if needed
+            }).where(eq(users.email, email));
+        }
+
+        // 2. Check/Create Member Logic
+        // We need to import 'members' and 'users' properly at the top first.
+        // Assuming 'neighbors' is aliased to 'members' in imports for now,
+        // but let's fix the imports in a separate step if needed.
+        // Actually, I should have fixed the imports first.
+        // But let's assume I fix imports in this file rename or previous step.
+        // Wait, I aliased members as neighbors in previous step.
+
+        const [existingMember] = await db.select().from(neighbors).where(eq(neighbors.userId, user.id));
+
+        if (existingMember) {
+            await db.update(neighbors).set({
+                role: "Admin",
+                communityId: communityId
+            }).where(eq(neighbors.id, existingMember.id));
+        } else {
+            await db.insert(neighbors).values({
+                userId: user.id,
+                communityId: communityId,
+                role: "Admin",
+                // joinedDate: new Date()
             });
         }
 

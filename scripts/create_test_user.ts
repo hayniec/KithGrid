@@ -1,6 +1,6 @@
 
 import { db } from "@/db";
-import { neighbors, communities } from "@/db/schema";
+import { members as neighbors, communities, users } from "@/db/schema";
 import { eq } from "drizzle-orm";
 
 async function createTestUser() {
@@ -25,24 +25,39 @@ async function createTestUser() {
     const password = "password123";
 
     console.log(`Checking for user: ${email}...`);
-    const existingUser = await db.select().from(neighbors).where(eq(neighbors.email, email));
+    // 1. Check/Create Global User
+    let [user] = await db.select().from(users).where(eq(users.email, email));
 
-    if (existingUser.length > 0) {
-        console.log("User already exists. Updating password and role...");
-        await db.update(neighbors).set({
-            password: password,
-            role: "Admin",
-            communityId: communityId
-        }).where(eq(neighbors.email, email));
-    } else {
-        console.log("Creating new test user...");
-        await db.insert(neighbors).values({
+    if (!user) {
+        console.log("Creating new global user...");
+        [user] = await db.insert(users).values({
             name: "Test Admin",
             email: email,
             password: password,
-            role: "Admin",
-            communityId: communityId,
             avatar: "TA"
+        }).returning();
+    } else {
+        console.log("Global user exists. Updating password...");
+        await db.update(users).set({
+            password: password
+        }).where(eq(users.id, user.id));
+    }
+
+    // 2. Check/Upsert Membership
+    const [existingMember] = await db.select().from(neighbors).where(eq(neighbors.userId, user.id));
+
+    if (existingMember) {
+        console.log("Updating existing membership...");
+        await db.update(neighbors).set({
+            role: "Admin",
+            communityId: communityId
+        }).where(eq(neighbors.id, existingMember.id));
+    } else {
+        console.log("Creating new membership...");
+        await db.insert(neighbors).values({
+            userId: user.id,
+            communityId: communityId,
+            role: "Admin"
         });
     }
 
