@@ -49,9 +49,9 @@ export const users = pgTable('users', {
 
 // 2. Members (Community Specific Profile)
 // Formerly 'neighbors'
-export const members = pgTable('members', {
+export const members = pgTable('neighbors', {
     id: uuid('id').primaryKey().defaultRandom(),
-    userId: uuid('user_id').references(() => users.id).notNull(),
+    userId: uuid('user_id').references(() => users.id),
     communityId: uuid('community_id').references(() => communities.id).notNull(),
 
     role: text('role', { enum: ['Admin', 'Resident', 'Board Member', 'Event Manager'] }).default('Resident'),
