@@ -1,8 +1,9 @@
 'use server'
 
 import { db } from "@/db";
-import { invitations, members } from "@/db/schema";
+import { invitations, members, communities } from "@/db/schema";
 import { eq, and, inArray } from "drizzle-orm";
+import { sendInvitationEmail } from "@/app/lib/email";
 
 export type InvitationActionState = {
     success: boolean;
@@ -62,6 +63,14 @@ export async function createInvitation(data: {
             status: 'pending',
         }).returning();
 
+        // Fetch Community Name for the email
+        const [community] = await db.select({ name: communities.name }).from(communities).where(eq(communities.id, data.communityId));
+
+        // Attempt to send email (don't block return on failure, just log)
+        if (community) {
+            await sendInvitationEmail(data.email, code, community.name);
+        }
+
         return {
             success: true,
             data: {
@@ -70,7 +79,7 @@ export async function createInvitation(data: {
                 email: invitation.email,
                 status: invitation.status,
             },
-            message: `Invitation created with code: ${code}`
+            message: `Invitation created and email sent! Code: ${code}`
         };
     } catch (error: any) {
         console.error("Failed to create invitation:", error);

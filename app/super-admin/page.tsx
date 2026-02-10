@@ -3,7 +3,8 @@
 import { useState, useEffect } from "react";
 import { Shield, Plus, Check, PowerOff, Building, Download, Trash2, Database } from "lucide-react";
 import styles from "./admin.module.css";
-import { getCommunities, createCommunity, toggleCommunityStatus, deleteCommunity, toggleCommunityFeature } from "@/app/actions/communities";
+import { getTenants } from "@/app/actions/super-admin";
+import { createCommunity, toggleCommunityStatus, deleteCommunity, toggleCommunityFeature } from "@/app/actions/communities";
 import type { Community } from "@/types/community";
 
 export default function SuperAdminPage() {
@@ -28,7 +29,7 @@ export default function SuperAdminPage() {
     const loadCommunities = async () => {
         setLoading(true);
         try {
-            const res = await getCommunities();
+            const res = await getTenants();
             if (res.success && res.data) {
                 setCommunities(res.data);
             } else {
