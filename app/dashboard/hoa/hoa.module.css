@@ -100,13 +100,35 @@
 .officerItem {
     display: flex;
     align-items: center;
+    justify-content: space-between;
     gap: 0.75rem;
-    padding: 0.5rem 0;
+    padding: 0.75rem 0;
     border-bottom: 1px solid var(--border);
 }
 
 .officerItem:last-child {
     border-bottom: none;
+}
+
+.contactLink {
+    background: none;
+    border: 1px solid var(--border);
+    padding: 0.4rem 0.6rem;
+    border-radius: var(--radius);
+    font-size: 0.8rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    color: var(--muted-foreground);
+    transition: all 0.2s;
+    font-weight: 500;
+}
+
+.contactLink:hover {
+    background-color: var(--muted);
+    color: var(--foreground);
+    border-color: var(--foreground);
 }
 
 .docsList {

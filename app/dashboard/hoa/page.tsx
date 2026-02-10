@@ -1,22 +1,68 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useUser } from "@/contexts/UserContext";
-import { MOCK_DOCUMENTS, MOCK_NEIGHBORS } from "@/lib/data";
+import { MOCK_DOCUMENTS } from "@/lib/data";
 import { HoaDocument } from "@/types/hoa";
 import styles from "./hoa.module.css";
 import { FileText, Download, Mail, Phone, MapPin, Upload } from "lucide-react";
 import { UploadDocumentModal } from "@/components/dashboard/UploadDocumentModal";
+import { getNeighbors, NeighborActionState } from "@/app/actions/neighbors";
+import { ContactOfficerModal } from "@/components/dashboard/ContactOfficerModal";
+
+interface Officer {
+    id: string;
+    name: string;
+    role: string;
+    hoaPosition: string | null;
+    email: string;
+    avatar?: string;
+}
 
 export default function HoaPage() {
     const [documents, setDocuments] = useState<HoaDocument[]>(MOCK_DOCUMENTS);
     const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+
+    // Contact Modal State
+    const [isContactModalOpen, setIsContactModalOpen] = useState(false);
+    const [selectedOfficer, setSelectedOfficer] = useState<Officer | null>(null);
+
     const { user } = useUser();
     const role = user?.role?.toLowerCase();
     const canUpload = role === 'admin' || role === 'board member';
 
-    // Filter board members from neighbors
-    const boardMembers = MOCK_NEIGHBORS.filter(n => n.role === "Board Member" || n.role === "Admin");
+    const [officers, setOfficers] = useState<Officer[]>([]);
+    const [isLoadingOfficers, setIsLoadingOfficers] = useState(true);
+
+    useEffect(() => {
+        async function fetchOfficers() {
+            if (!user?.communityId) return;
+
+            try {
+                const result = await getNeighbors(user.communityId);
+                if (result.success && result.data) {
+                    const foundOfficers = result.data.filter((n: any) =>
+                        n.hoaPosition && n.hoaPosition.trim() !== ""
+                    ).map((n: any) => ({
+                        id: n.id,
+                        name: n.name,
+                        role: n.role,
+                        hoaPosition: n.hoaPosition,
+                        email: n.email,
+                        avatar: n.avatar
+                    }));
+                    setOfficers(foundOfficers);
+                }
+            } catch (err) {
+                console.error("Failed to load officers", err);
+            } finally {
+                setIsLoadingOfficers(false);
+            }
+        }
+
+        fetchOfficers();
+    }, [user?.communityId]);
+
 
     const handleUpload = (docData: any) => {
         // Mock upload
@@ -33,10 +79,13 @@ export default function HoaPage() {
         setIsUploadModalOpen(false);
     };
 
+    const handleEmailClick = (officer: Officer) => {
+        setSelectedOfficer(officer);
+        setIsContactModalOpen(true);
+    };
+
     return (
         <div className={styles.container}>
-
-
 
             <div className={styles.intro}>
                 <h1>Maple Grove HOA</h1>
@@ -68,19 +117,40 @@ export default function HoaPage() {
                     </div>
 
                     <div className={styles.infoCard}>
-                        <span className={styles.cardLabel}>Board Members</span>
+                        <span className={styles.cardLabel}>Board Members / Officers</span>
                         <div className={styles.officerList}>
-                            {boardMembers.map(member => (
-                                <div key={member.id} className={styles.officerItem}>
-                                    <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--primary)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem' }}>
-                                        {member.avatar}
-                                    </div>
-                                    <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                        <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>{member.name}</span>
-                                        <span style={{ fontSize: '0.75rem', color: 'var(--muted-foreground)' }}>{member.role === 'Board Member' ? 'Director' : 'President'}</span>
-                                    </div>
+                            {isLoadingOfficers ? (
+                                <div style={{ padding: '1rem', color: 'var(--muted-foreground)' }}>Loading officers...</div>
+                            ) : officers.length === 0 ? (
+                                <div style={{ padding: '1rem', color: 'var(--muted-foreground)', fontStyle: 'italic' }}>
+                                    No officers listed.
                                 </div>
-                            ))}
+                            ) : (
+                                officers.map(officer => (
+                                    <div key={officer.id} className={styles.officerItem}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                            <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'var(--primary)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.9rem' }}>
+                                                {officer.avatar || officer.name.charAt(0)}
+                                            </div>
+                                            <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                                <span style={{ fontWeight: 600, fontSize: '0.95rem' }}>{officer.name}</span>
+                                                <span style={{ fontSize: '0.75rem', color: 'var(--muted-foreground)', fontWeight: 500 }}>
+                                                    {officer.hoaPosition}
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        <button
+                                            className={styles.contactLink}
+                                            onClick={() => handleEmailClick(officer)}
+                                            title={`Email ${officer.name}`}
+                                        >
+                                            <Mail size={16} />
+                                            Email
+                                        </button>
+                                    </div>
+                                ))
+                            )}
                         </div>
                     </div>
 
@@ -146,6 +216,20 @@ export default function HoaPage() {
                 isOpen={isUploadModalOpen}
                 onClose={() => setIsUploadModalOpen(false)}
                 onUpload={handleUpload}
+            />
+
+            <ContactOfficerModal
+                isOpen={isContactModalOpen}
+                onClose={() => setIsContactModalOpen(false)}
+                officer={selectedOfficer ? {
+                    name: selectedOfficer.name,
+                    email: selectedOfficer.email,
+                    position: selectedOfficer.hoaPosition || "Officer"
+                } : null}
+                sender={{
+                    name: user?.name || "Resident",
+                    email: user?.email || ""
+                }}
             />
         </div>
     );
