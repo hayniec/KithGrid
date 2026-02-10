@@ -788,8 +788,6 @@ export default function AdminPage() {
 
             {/* Success Invitation Modal */}
             {
-                {/* Success Invitation Modal */ }
-            {
                 showModal && (
                     <div className={styles.modal}>
                         <div className={styles.modalContent}>
