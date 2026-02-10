@@ -49,17 +49,25 @@ const mapToUI = (row: any) => ({
 });
 
 export async function getTenants() {
-    if (!await isSuperAdmin()) {
-        return { success: false, error: "Unauthorized: Super Admin access required." };
-    }
-
     try {
+        console.log("[SuperAdmin] getTenants called");
+
+        const authorized = await isSuperAdmin();
+        if (!authorized) {
+            console.error("[SuperAdmin] Authorization failed for user");
+            return { success: false, error: "Unauthorized: Super Admin access required." };
+        }
+
         console.log("[SuperAdmin] Fetching all tenants...");
         const rows = await db.select().from(communities);
         console.log(`[SuperAdmin] Found ${rows.length} tenants.`);
         return { success: true, data: rows.map(mapToUI) };
     } catch (error: any) {
-        console.error("Failed to fetch tenants:", error);
-        return { success: false, error: "Failed to fetch tenants" };
+        console.error("Failed to fetch tenants (Critical Error):", error);
+        // Log specifics if available
+        if (error?.message) console.error("Error Message:", error.message);
+        if (error?.stack) console.error("Error Stack:", error.stack);
+
+        return { success: false, error: "Failed to fetch tenants: " + (error.message || "Unknown error") };
     }
 }
