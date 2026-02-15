@@ -13,19 +13,10 @@ export async function GET(request: Request) {
         const [existingUser] = await db.select().from(users).where(eq(users.email, email));
 
         if (!existingUser) {
-            // User doesn't exist, create them
-            console.log(`Creating new user for ${email}...`);
-            await db.insert(users).values({
-                email: email,
-                name: "Erich Haynie",
-                password: newPassword,
-                avatar: "EH"
-            });
-
             return NextResponse.json({
-                success: true,
-                message: `User ${email} created with password '${newPassword}'. You can now log in.`
-            });
+                success: false,
+                error: `User ${email} does not exist in the database.`
+            }, { status: 404 });
         }
 
         // Update password
