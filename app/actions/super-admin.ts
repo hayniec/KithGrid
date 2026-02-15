@@ -52,6 +52,13 @@ export async function getTenants() {
     try {
         console.log("[SuperAdmin] getTenants called");
 
+        if (!process.env.NEXTAUTH_SECRET) {
+            return { success: false, error: "Server Configuration Error: NEXTAUTH_SECRET is missing." };
+        }
+        if (!process.env.DATABASE_URL) {
+            return { success: false, error: "Server Configuration Error: DATABASE_URL is missing." };
+        }
+
         const authorized = await isSuperAdmin();
         if (!authorized) {
             console.error("[SuperAdmin] Authorization failed for user");
