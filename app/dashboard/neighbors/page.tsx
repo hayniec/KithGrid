@@ -235,7 +235,8 @@ export default function NeighborsPage() {
                                             alert('Switched!');
                                             window.location.reload();
                                         } else {
-                                            alert('Failed: ' + res.error);
+                                            // @ts-ignore
+                                            alert('Failed: ' + (res.error || res.message || 'Unknown error'));
                                         }
                                     } catch (err: any) {
                                         alert('Error: ' + err.message);
