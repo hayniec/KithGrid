@@ -157,11 +157,47 @@ export default function NeighborsPage() {
                     <a href="/login" onClick={(e) => {
                         e.preventDefault();
                         localStorage.removeItem('kithGrid_user');
-                        // Force logout
                         window.location.href = '/api/auth/signout';
                     }} style={{ padding: '0.5rem 1rem', border: '1px solid var(--border)', borderRadius: '4px', color: 'var(--foreground)', textDecoration: 'none', cursor: 'pointer', display: 'inline-block' }}>
                         Sign Out
                     </a>
+                </div>
+
+                {/* DEBUG: Force Switch Community (Rescue Mode) */}
+                <div style={{ marginTop: '2rem', padding: '1rem', background: '#333', border: '1px solid #555', borderRadius: '4px', maxWidth: '400px', margin: '2rem auto 0' }}>
+                    <p style={{ fontSize: '0.8rem', fontWeight: 'bold', marginBottom: '0.5rem', color: '#fff' }}>Debug: Rescue Account</p>
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                        <input
+                            type="text"
+                            placeholder="Paste ID..."
+                            value={switchId}
+                            onChange={(e) => setSwitchId(e.target.value)}
+                            style={{ padding: '0.5rem', background: '#222', border: '1px solid #555', borderRadius: '4px', flex: 1, color: '#fff' }}
+                        />
+                        <button
+                            onClick={async () => {
+                                if (!switchId || !user?.id) return;
+                                setIsSwitching(true);
+                                try {
+                                    const res = await switchCommunity(user.id, switchId);
+                                    if (res.success) {
+                                        alert('Switched! Reloading...');
+                                        window.location.reload();
+                                    } else {
+                                        alert('Failed: ' + res.error);
+                                    }
+                                } catch (err: any) {
+                                    alert('Error: ' + err.message);
+                                } finally {
+                                    setIsSwitching(false);
+                                }
+                            }}
+                            disabled={isSwitching}
+                            style={{ padding: '0.5rem 1rem', background: '#dc2626', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+                        >
+                            {isSwitching ? '...' : 'Force Switch'}
+                        </button>
+                    </div>
                 </div>
             </div>
         );
