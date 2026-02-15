@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { signOut } from "next-auth/react";
+import { signOut, useSession } from "next-auth/react";
 import { Shield, Plus, Check, PowerOff, Building, Download, Trash2, Database, LogOut } from "lucide-react";
 import styles from "./admin.module.css";
 import { getTenants } from "@/app/actions/super-admin";
@@ -9,6 +9,7 @@ import { createCommunity, toggleCommunityStatus, deleteCommunity, toggleCommunit
 import type { Community } from "@/types/community";
 
 export default function SuperAdminPage() {
+    const { data: session, status } = useSession();
     const [communities, setCommunities] = useState<Community[]>([]);
     const [loading, setLoading] = useState(true);
     const [isCreating, setIsCreating] = useState(false);
