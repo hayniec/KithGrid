@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Shield, Plus, Check, PowerOff, Building, Download, Trash2, Database } from "lucide-react";
+import { signOut } from "next-auth/react";
+import { Shield, Plus, Check, PowerOff, Building, Download, Trash2, Database, LogOut } from "lucide-react";
 import styles from "./admin.module.css";
 import { getTenants } from "@/app/actions/super-admin";
 import { createCommunity, toggleCommunityStatus, deleteCommunity, toggleCommunityFeature } from "@/app/actions/communities";
@@ -146,13 +147,22 @@ export default function SuperAdminPage() {
                     </h1>
                     <p className={styles.subtitle}>Master control for all KithGrid tenants.</p>
                 </div>
-                <button
-                    onClick={() => setShowAddModal(true)}
-                    className={styles.addButton}
-                >
-                    <Plus size={20} />
-                    Add Tenant
-                </button>
+                <div className={styles.actionsContainer}>
+                    <button
+                        onClick={() => signOut({ callbackUrl: '/login' })}
+                        className={styles.signOutButton}
+                    >
+                        <LogOut size={16} />
+                        Sign Out
+                    </button>
+                    <button
+                        onClick={() => setShowAddModal(true)}
+                        className={styles.addButton}
+                    >
+                        <Plus size={20} />
+                        Add Tenant
+                    </button>
+                </div>
             </div>
 
             {loading ? (
