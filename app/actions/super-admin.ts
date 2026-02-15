@@ -11,6 +11,7 @@ import { eq } from "drizzle-orm";
 const SUPER_ADMINS = [
     "sally.johnson@example.com",
     "erich.haynie@gmail.com",
+    "eric.haynie@gmail.com",
     process.env.SUPER_ADMIN_EMAIL
 ].filter((email): email is string => !!email).map(email => email.toLowerCase());
 
