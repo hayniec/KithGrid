@@ -60,7 +60,7 @@ export async function getUserProfile(userId: string) {
             data: {
                 ...dbUser,
                 communityId: membership.communityId,
-                role: membership.role
+                role: membership.role ? membership.role.toLowerCase() : 'resident'
             }
         };
 
