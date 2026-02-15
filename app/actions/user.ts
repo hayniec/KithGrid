@@ -67,11 +67,13 @@ export async function getUserProfile(userId: string) {
 
         console.log("[getUserProfile] Found membership:", membership);
 
+        // Return ONLY simple strings to guarantee no serialization errors
         return {
             success: true,
             data: {
-                ...dbUser,
-                createdAt: dbUser.createdAt?.toISOString(), // Serialize Date
+                id: dbUser.id,
+                email: dbUser.email,
+                name: dbUser.name,
                 communityId: membership.communityId,
                 role: membership.role ? membership.role.toLowerCase() : 'resident'
             }
