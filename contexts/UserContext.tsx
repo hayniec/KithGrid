@@ -49,12 +49,12 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         } else if (status === "unauthenticated" || status === "loading") {
             // MOCK USER FOR DEVELOPMENT/BYPASS
             setUserState({
-                id: "mock-super-admin-id",
+                id: "cd48f9df-4096-4f8d-b76c-9a6dca90ceab",
                 name: "Super Admin (Bypass)",
                 email: "admin@neighbornet.com",
                 role: "admin", // 'admin' role grants access to Super Admin features
                 avatar: "SA",
-                communityId: "mock-community-id",
+                communityId: "2bf6bc8a-899c-4e29-8ee7-f2038c804260",
             });
         }
     }, [session, status]);
