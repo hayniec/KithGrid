@@ -71,6 +71,7 @@ export async function getUserProfile(userId: string) {
             success: true,
             data: {
                 ...dbUser,
+                createdAt: dbUser.createdAt?.toISOString(), // Serialize Date
                 communityId: membership.communityId,
                 role: membership.role ? membership.role.toLowerCase() : 'resident'
             }
@@ -78,6 +79,6 @@ export async function getUserProfile(userId: string) {
 
     } catch (e: any) {
         console.error("Failed to get user profile", e);
-        return { success: false, error: e.message };
+        return { success: false, error: `Server Error: ${e.message || String(e)}` };
     }
 }
