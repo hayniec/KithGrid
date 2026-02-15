@@ -166,7 +166,7 @@ export default function MarketplacePage() {
                                         {item.isFree ? (
                                             <span className={styles.freeTag}>FREE</span>
                                         ) : (
-                                            <span className={styles.priceTag}>${item.price.toFixed(2)}</span>
+                                            <span className={styles.priceTag}>${Number(item.price).toFixed(2)}</span>
                                         )}
                                     </div>
                                     <p className={styles.description}>{item.description}</p>
