@@ -2,7 +2,7 @@
 
 import { db } from "@/db";
 import { announcements, members, users } from "@/db/schema";
-import { eq, desc, and } from "drizzle-orm";
+import { eq, desc, and, or, isNull, lte, gt } from "drizzle-orm";
 
 export type AnnouncementActionState = {
     success: boolean;
@@ -10,20 +10,43 @@ export type AnnouncementActionState = {
     error?: string;
 };
 
-export async function getCommunityAnnouncements(communityId: string): Promise<AnnouncementActionState> {
+export async function getCommunityAnnouncements(communityId: string, userId?: string): Promise<AnnouncementActionState> {
     try {
+        let isAdmin = false;
+
+        if (userId) {
+            const [member] = await db
+                .select()
+                .from(members)
+                .where(and(eq(members.userId, userId), eq(members.communityId, communityId)));
+
+            const role = member?.role?.toLowerCase();
+            isAdmin = role === 'admin' || role === 'board member';
+        }
+
+        const now = new Date();
+        const baseConditions = [eq(announcements.communityId, communityId)];
+
+        if (!isAdmin) {
+            // Residents only see active announcements
+            baseConditions.push(or(isNull(announcements.activateAt), lte(announcements.activateAt, now)));
+            baseConditions.push(or(isNull(announcements.expiresAt), gt(announcements.expiresAt, now)));
+        }
+
         const results = await db
             .select({
                 id: announcements.id,
                 title: announcements.title,
                 content: announcements.content,
                 createdAt: announcements.createdAt,
+                activateAt: announcements.activateAt,
+                expiresAt: announcements.expiresAt,
                 authorName: users.name
             })
             .from(announcements)
             .leftJoin(members, eq(announcements.authorId, members.id))
             .leftJoin(users, eq(members.userId, users.id))
-            .where(eq(announcements.communityId, communityId))
+            .where(and(...baseConditions))
             .orderBy(desc(announcements.createdAt));
 
         return { success: true, data: results };
@@ -37,6 +60,8 @@ export async function createAnnouncement(data: {
     title: string;
     content: string;
     userId: string;
+    activateAt?: string;
+    expiresAt?: string;
 }): Promise<AnnouncementActionState> {
     try {
         const [member] = await db
@@ -46,7 +71,6 @@ export async function createAnnouncement(data: {
                 eq(members.userId, data.userId),
                 eq(members.communityId, data.communityId)
             ));
-
         if (!member) {
             return { success: false, error: "Member not found" };
         }
@@ -61,6 +85,8 @@ export async function createAnnouncement(data: {
             title: data.title,
             content: data.content,
             authorId: member.id,
+            activateAt: data.activateAt ? new Date(data.activateAt) : new Date(),
+            expiresAt: data.expiresAt ? new Date(data.expiresAt) : null,
         }).returning();
 
         return { success: true, data: newAnnouncement };
@@ -71,7 +97,6 @@ export async function createAnnouncement(data: {
 
 export async function deleteAnnouncement(id: string, userId: string): Promise<AnnouncementActionState> {
     try {
-        // Fetc announcement to verify community
         const [announcement] = await db
             .select()
             .from(announcements)
@@ -79,7 +104,6 @@ export async function deleteAnnouncement(id: string, userId: string): Promise<An
 
         if (!announcement) return { success: false, error: "Not found" };
 
-        // Verify user role
         const [member] = await db
             .select()
             .from(members)

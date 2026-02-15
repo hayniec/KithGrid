@@ -15,6 +15,8 @@ interface Announcement {
     title: string;
     content: string;
     createdAt: string;
+    activateAt?: string;
+    expiresAt?: string;
     authorName?: string;
 }
 
@@ -48,7 +50,8 @@ export default function DashboardPage() {
         const fetchAnnouncements = async () => {
             if (user?.communityId) {
                 setIsLoadingAnnouncements(true);
-                const res = await getCommunityAnnouncements(user.communityId);
+                // Pass user.id so backend can return expired/future items for admins
+                const res = await getCommunityAnnouncements(user.communityId, user.id);
                 if (res.success && res.data) {
                     setAnnouncements(res.data);
                 }
@@ -56,16 +59,18 @@ export default function DashboardPage() {
             }
         };
         fetchAnnouncements();
-    }, [user?.communityId]);
+    }, [user?.communityId, user?.id]);
 
-    const handleCreateAnnouncement = async (data: { title: string; content: string }) => {
+    const handleCreateAnnouncement = async (data: { title: string; content: string; activateAt: string; expiresAt: string }) => {
         if (!user?.communityId || !user?.id) return;
 
         const res = await createAnnouncement({
             communityId: user.communityId,
             title: data.title,
             content: data.content,
-            userId: user.id
+            userId: user.id,
+            activateAt: data.activateAt || undefined,
+            expiresAt: data.expiresAt || undefined
         });
 
         if (res.success && res.data) {
@@ -184,35 +189,60 @@ export default function DashboardPage() {
                     </div>
 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', flex: 1 }}>
-                        {announcements.map(announcement => (
-                            <div key={announcement.id} style={{ paddingBottom: '1rem', borderBottom: '1px solid var(--border)', position: 'relative' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}>
-                                    <div style={{ fontWeight: 500, marginBottom: 4 }}>{announcement.title}</div>
-                                    {isAdmin && (
-                                        <button
-                                            onClick={() => handleDeleteAnnouncement(announcement.id)}
-                                            style={{
-                                                background: 'none',
-                                                border: 'none',
-                                                color: 'var(--muted-foreground)',
-                                                cursor: 'pointer',
-                                                padding: 0,
-                                                opacity: 0.6
-                                            }}
-                                            title="Delete Announcement"
-                                        >
-                                            <Trash2 size={14} />
-                                        </button>
+                        {announcements.map(announcement => {
+                            const now = new Date();
+                            const isFuture = announcement.activateAt && new Date(announcement.activateAt) > now;
+                            const isExpired = announcement.expiresAt && new Date(announcement.expiresAt) < now;
+
+                            return (
+                                <div key={announcement.id} style={{
+                                    paddingBottom: '1rem',
+                                    borderBottom: '1px solid var(--border)',
+                                    position: 'relative',
+                                    opacity: (isFuture || isExpired) ? 0.6 : 1
+                                }}>
+                                    {(isFuture || isExpired) && (
+                                        <div style={{
+                                            fontSize: '0.7rem',
+                                            fontWeight: 600,
+                                            marginBottom: '0.25rem',
+                                            color: isExpired ? 'var(--destructive)' : 'var(--warning)',
+                                            textTransform: 'uppercase'
+                                        }}>
+                                            {isExpired ? 'Expired' : `Scheduled: ${new Date(announcement.activateAt!).toLocaleDateString()}`}
+                                        </div>
                                     )}
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}>
+                                        <div style={{ fontWeight: 500, marginBottom: 4 }}>{announcement.title}</div>
+                                        {isAdmin && (
+                                            <button
+                                                onClick={() => handleDeleteAnnouncement(announcement.id)}
+                                                style={{
+                                                    background: 'none',
+                                                    border: 'none',
+                                                    color: 'var(--muted-foreground)',
+                                                    cursor: 'pointer',
+                                                    padding: 0,
+                                                    opacity: 0.6
+                                                }}
+                                                title="Delete Announcement"
+                                            >
+                                                <Trash2 size={14} />
+                                            </button>
+                                        )}
+                                    </div>
+                                    <p style={{ fontSize: '0.85rem', color: 'var(--muted-foreground)', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>
+                                        {announcement.content}
+                                    </p>
+                                    <div style={{ fontSize: '0.7rem', color: 'var(--muted-foreground)', marginTop: '0.5rem', opacity: 0.8 }}>
+                                        Posted {new Date(announcement.createdAt).toLocaleDateString()}
+                                        {announcement.expiresAt && !isExpired && (
+                                            <span style={{ marginLeft: '0.5rem' }}>• Expires {new Date(announcement.expiresAt).toLocaleDateString()}</span>
+                                        )}
+                                    </div>
                                 </div>
-                                <p style={{ fontSize: '0.85rem', color: 'var(--muted-foreground)', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>
-                                    {announcement.content}
-                                </p>
-                                <div style={{ fontSize: '0.7rem', color: 'var(--muted-foreground)', marginTop: '0.5rem', opacity: 0.8 }}>
-                                    Posted {new Date(announcement.createdAt).toLocaleDateString()}
-                                </div>
-                            </div>
-                        ))}
+                            );
+                        })}
 
                         {!isLoadingAnnouncements && announcements.length === 0 && (
                             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'var(--muted-foreground)', padding: '2rem 0' }}>

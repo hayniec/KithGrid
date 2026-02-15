@@ -2,31 +2,31 @@
 "use client";
 
 import { useState } from "react";
-// Using inline styles for simplicity as per user request to avoid lint errors from previous files being messy, 
-// but user also wants "Rich Aesthetics" so using CSS modules is better if available.
-// However, the previous modal used Modal.module.css. I'll use that.
-// I need check if Modal.module.css is available. Yes, likely at components/dashboard/Modal.module.css.
-import styles from "./Modal.module.css"; // Relative from components/dashboard/
+import styles from "./Modal.module.css";
 import { X } from "lucide-react";
 
 interface CreateAnnouncementModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onCreate: (data: { title: string; content: string }) => void;
+    onCreate: (data: { title: string; content: string; activateAt: string; expiresAt: string }) => void;
 }
 
 export function CreateAnnouncementModal({ isOpen, onClose, onCreate }: CreateAnnouncementModalProps) {
     const [title, setTitle] = useState("");
     const [content, setContent] = useState("");
+    const [activateAt, setActivateAt] = useState("");
+    const [expiresAt, setExpiresAt] = useState("");
 
     if (!isOpen) return null;
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (!title.trim() || !content.trim()) return;
-        onCreate({ title, content });
+        onCreate({ title, content, activateAt, expiresAt });
         setTitle("");
         setContent("");
+        setActivateAt("");
+        setExpiresAt("");
     };
 
     return (
@@ -50,7 +50,9 @@ export function CreateAnnouncementModal({ isOpen, onClose, onCreate }: CreateAnn
                 width: '100%',
                 maxWidth: '500px',
                 border: '1px solid var(--border)',
-                boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
+                boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+                maxHeight: '90vh',
+                overflowY: 'auto'
             }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
                     <h3 style={{ fontSize: '1.25rem', fontWeight: 600 }}>New Announcement</h3>
@@ -75,6 +77,41 @@ export function CreateAnnouncementModal({ isOpen, onClose, onCreate }: CreateAnn
                             onChange={(e) => setTitle(e.target.value)}
                             required
                         />
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                            <label style={{ fontSize: '0.875rem', fontWeight: 500 }}>Publish Date</label>
+                            <input
+                                type="date"
+                                style={{
+                                    padding: '0.5rem',
+                                    borderRadius: 'calc(var(--radius) - 2px)',
+                                    border: '1px solid var(--border)',
+                                    background: 'var(--background)',
+                                    color: 'var(--foreground)'
+                                }}
+                                value={activateAt}
+                                onChange={(e) => setActivateAt(e.target.value)}
+                            />
+                            <span style={{ fontSize: '0.7rem', color: 'var(--muted-foreground)' }}>Leave blank for immediate</span>
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                            <label style={{ fontSize: '0.875rem', fontWeight: 500 }}>Expiration Date</label>
+                            <input
+                                type="date"
+                                style={{
+                                    padding: '0.5rem',
+                                    borderRadius: 'calc(var(--radius) - 2px)',
+                                    border: '1px solid var(--border)',
+                                    background: 'var(--background)',
+                                    color: 'var(--foreground)'
+                                }}
+                                value={expiresAt}
+                                onChange={(e) => setExpiresAt(e.target.value)}
+                            />
+                            <span style={{ fontSize: '0.7rem', color: 'var(--muted-foreground)' }}>Leave blank for no expiration</span>
+                        </div>
                     </div>
 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>

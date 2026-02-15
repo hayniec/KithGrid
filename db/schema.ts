@@ -216,5 +216,6 @@ export const announcements = pgTable('announcements', {
     content: text('content').notNull(),
     authorId: uuid('author_id').references(() => members.id),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+    activateAt: timestamp('activate_at', { withTimezone: true }).defaultNow(),
     expiresAt: timestamp('expires_at', { withTimezone: true }),
 });
