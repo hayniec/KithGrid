@@ -422,7 +422,8 @@ export default function NeighborsPage() {
                                     alert('Switched! Reloading...');
                                     window.location.reload();
                                 } else {
-                                    alert('Switch failed: ' + res.error);
+                                    // @ts-ignore
+                                    alert('Switch failed: ' + (res.error || res.message || 'Unknown error'));
                                 }
                             } catch (err: any) {
                                 alert('Switch error: ' + err.message);
