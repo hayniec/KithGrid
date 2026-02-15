@@ -12,10 +12,9 @@ export default function LoginPage() {
     const router = useRouter();
     const { setUser } = useUser();
 
-    // Auto-redirect to dashboard since we are bypassing login
-    useEffect(() => {
-        router.push("/dashboard");
-    }, [router]);
+    // useEffect(() => {
+    //     router.push("/dashboard");
+    // }, [router]);
 
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
