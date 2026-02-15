@@ -24,11 +24,25 @@ export async function getUserProfile(userId: string) {
             // SPECIAL FIX: Auto-join 'Erich Haynie' to the first community if found
             // This handles the case where the user account exists but link is lost
             const email = dbUser.email.toLowerCase();
-            if (email.includes('erich.haynie') || email.includes('admin')) {
+            // Check for both spellings (Eric/Erich) and admin
+            if (email.includes('eric.haynie') || email.includes('erich.haynie') || email.includes('admin')) {
                 console.log(`[AutoFix] Creating admin membership for ${email}...`);
-                const [comm] = await db.select().from(communities).limit(1);
+
+                let [comm] = await db.select().from(communities).limit(1);
+
+                // Fallback: Create default community if DB is empty
+                if (!comm) {
+                    console.log("[AutoFix] No communities found! Creating 'Demo Community'...");
+                    const [newComm] = await db.insert(communities).values({
+                        name: "Demo Community",
+                        slug: `demo-${Date.now()}`,
+                        hasEmergency: true
+                    }).returning();
+                    comm = newComm;
+                }
 
                 if (comm) {
+                    console.log(`[AutoFix] Joining community: ${comm.name} (${comm.id})`);
                     const [newMember] = await db.insert(members).values({
                         userId: userId,
                         communityId: comm.id,
