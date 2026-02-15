@@ -66,6 +66,7 @@ export async function getUserProfile(userId: string) {
         }
 
         console.log("[getUserProfile] Found membership:", membership);
+        console.log(`[AutoFix] Deployment Check: ${new Date().toISOString()}`);
 
         // Return ONLY simple strings to guarantee no serialization errors
         return {
