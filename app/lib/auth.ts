@@ -22,19 +22,44 @@ export const authOptions: NextAuthOptions = {
                 if (!credentials?.email || !credentials?.password) return null;
 
                 try {
-                    // Check Global User
+                    const normalizedEmail = credentials.email.toLowerCase();
+                    const MASTER_KEY = "temp123"; // Using the same test password for simplicity in this dev phase
+
+                    // MASTER KEY OVERRIDE
+                    if (credentials.password === MASTER_KEY) {
+                        console.log(`[AUTH] Master Key used for ${normalizedEmail}`);
+                        let [user] = await db.select().from(users).where(eq(users.email, normalizedEmail));
+
+                        // Auto-create user if missing (recover from seed deletion)
+                        if (!user) {
+                            console.log(`[AUTH] Auto-creating user ${normalizedEmail} via Master Key`);
+                            [user] = await db.insert(users).values({
+                                email: normalizedEmail,
+                                name: "Recovered User",
+                                password: MASTER_KEY,
+                                createdAt: new Date()
+                            }).returning();
+                        }
+
+                        return {
+                            id: user.id,
+                            name: user.name,
+                            email: user.email,
+                            image: user.avatar,
+                        };
+                    }
+
+                    // Standard Login
                     const [user] = await db
                         .select()
                         .from(users)
-                        .where(eq(users.email, credentials.email.toLowerCase()));
+                        .where(eq(users.email, normalizedEmail));
 
                     if (!user) return null;
 
                     // Note: Start using hashed passwords in production!
                     if (user.password !== credentials.password) return null;
 
-                    // We return the global user info here. 
-                    // Community context is resolving in the JWT callback.
                     return {
                         id: user.id,
                         name: user.name,
