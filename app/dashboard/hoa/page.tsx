@@ -90,7 +90,7 @@ export default function HoaPage() {
     };
 
     const handleUpload = async (docData: any) => {
-        if (!user) return;
+        if (!user?.communityId || !user?.id) return;
 
         const path = docData.source === 'external' ? docData.url : "#";
 
