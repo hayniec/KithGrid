@@ -88,22 +88,35 @@ export async function getUserProfile(userId: string) {
 
 export async function switchCommunity(userId: string, newCommunityId: string) {
     try {
-        console.log(`[switchCommunity] Moving user ${userId} to ${newCommunityId}...`);
+        console.log(`[switchCommunity] Request: User ${userId} -> Comm ${newCommunityId}`);
 
-        // delete existing membership
+        // 1. Check if user exists
+        const [user] = await db.select().from(users).where(eq(users.id, userId));
+        if (!user) {
+            console.error("[switchCommunity] User not found");
+            return { success: false, error: "User ID invalid" };
+        }
+
+        // 2. Clear old membership
+        console.log("[switchCommunity] Deleting old membership...");
         await db.delete(members).where(eq(members.userId, userId));
 
-        // create new admin membership
-        const [newMember] = await db.insert(members).values({
+        // 3. Create new membership
+        console.log("[switchCommunity] Creating new membership...");
+        await db.insert(members).values({
             userId: userId,
             communityId: newCommunityId,
             role: 'Admin',
             joinedDate: new Date()
-        }).returning();
+        });
+        // Note: Not using .returning() to avoid any object return issues
 
-        return { success: true, message: "Switched successfully!", memberId: newMember.id };
+        console.log("[switchCommunity] Success!");
+        return { success: true, message: "Switched" };
+
     } catch (e: any) {
-        console.error("Failed to switch community", e);
-        return { success: false, error: e.message };
+        console.error("[switchCommunity] CRITICAL FAIL:", e);
+        // Ensure error is a simple string
+        return { success: false, error: String(e.message || e) };
     }
 }
