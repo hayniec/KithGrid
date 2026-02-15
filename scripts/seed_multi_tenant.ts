@@ -199,7 +199,7 @@ async function main() {
                     price: item.price.toString(),
                     sellerId: memberIds[1] || memberIds[0], // Bob sells stuff
                     status: "Active",
-                    createdAt: new Date()
+                    postedDate: new Date()
                 });
             }
         }
