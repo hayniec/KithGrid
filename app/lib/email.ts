@@ -31,7 +31,7 @@ export async function sendInvitationEmail(
 
                     <p>To accept this invitation:</p>
                     <ol>
-                        <li>Visit <a href="https://kithgrid.netlify.app/join">KithGrid</a></li>
+                        <li>Visit <a href="${process.env.NEXTAUTH_URL || 'https://kithgrid.netlify.app'}/join">KithGrid</a></li>
                         <li>Enter your email (${toEmail}) and the code above.</li>
                     </ol>
                     
