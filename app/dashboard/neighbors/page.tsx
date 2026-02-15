@@ -177,6 +177,41 @@ export default function NeighborsPage() {
                         <p style={{ color: 'var(--muted-foreground)', maxWidth: '600px' }}>
                             Connect with neighbors, find help with skills you need, or borrow equipment for your next project.
                         </p>
+
+                        {/* DEBUG: Force Switch Community (Top) */}
+                        <div style={{ marginTop: '1rem', padding: '0.5rem', background: '#f5f5f5', border: '1px solid #ddd', borderRadius: '4px', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                            <span style={{ fontSize: '0.8rem', fontWeight: 'bold' }}>Debug Switch:</span>
+                            <input
+                                type="text"
+                                placeholder="Paste ID..."
+                                value={switchId}
+                                onChange={(e) => setSwitchId(e.target.value)}
+                                style={{ padding: '0.25rem', fontSize: '0.8rem' }}
+                            />
+                            <button
+                                onClick={async () => {
+                                    if (!switchId || !user?.id) return;
+                                    setIsSwitching(true);
+                                    try {
+                                        const res = await switchCommunity(user.id, switchId);
+                                        if (res.success) {
+                                            alert('Switched!');
+                                            window.location.reload();
+                                        } else {
+                                            alert('Failed: ' + res.error);
+                                        }
+                                    } catch (err: any) {
+                                        alert('Error: ' + err.message);
+                                    } finally {
+                                        setIsSwitching(false);
+                                    }
+                                }}
+                                disabled={isSwitching}
+                                style={{ padding: '0.25rem 0.5rem', fontSize: '0.8rem', cursor: 'pointer' }}
+                            >
+                                Switch
+                            </button>
+                        </div>
                     </div>
                     {(user.role as string) === 'Admin' && (
                         <button
