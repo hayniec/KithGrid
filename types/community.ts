@@ -12,6 +12,7 @@ export type Community = {
         messages: boolean;
         services: boolean; // service pros
         local: boolean; // local guide
+        emergency: boolean; // emergency access
     };
     isActive: boolean;
     branding: {

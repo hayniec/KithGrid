@@ -26,7 +26,9 @@ const mapToUI = (row: any) => ({
         forum: row.hasForum,
         messages: row.hasMessages,
         services: row.hasServicePros,
+
         local: row.hasLocalGuide,
+        emergency: row.hasEmergency,
     },
     isActive: row.isActive,
     branding: {
@@ -68,7 +70,9 @@ export async function getCommunities() {
                 hasForum: communities.hasForum,
                 hasMessages: communities.hasMessages,
                 hasServicePros: communities.hasServicePros,
+
                 hasLocalGuide: communities.hasLocalGuide,
+                hasEmergency: communities.hasEmergency,
                 isActive: communities.isActive,
                 logoUrl: communities.logoUrl,
                 primaryColor: communities.primaryColor,
@@ -103,6 +107,7 @@ export async function createCommunity(data: any) {
             hasMessages: data.features.messages,
             hasServicePros: data.features.services,
             hasLocalGuide: data.features.local,
+            hasEmergency: data.features.emergency,
             isActive: true,
             // Branding defaults or provided
             primaryColor: data.branding?.primaryColor,
@@ -172,7 +177,9 @@ export async function toggleCommunityFeature(id: string, featureKey: string, new
         forum: { hasForum: newValue },
         messages: { hasMessages: newValue },
         services: { hasServicePros: newValue },
-        local: { hasLocalGuide: newValue }
+
+        local: { hasLocalGuide: newValue },
+        emergency: { hasEmergency: newValue }
     };
 
     if (!columnMap[featureKey]) return { success: false, error: "Invalid feature key" };

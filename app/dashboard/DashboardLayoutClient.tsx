@@ -17,6 +17,7 @@ export default function DashboardLayoutClient({
 }) {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [showSOSModal, setShowSOSModal] = useState(false);
+    const [showSOSButton, setShowSOSButton] = useState(true);
     const [sosMessage, setSosMessage] = useState("");
     const router = useRouter();
     const { user } = useUser();
@@ -60,6 +61,15 @@ export default function DashboardLayoutClient({
             }
 
             setSosMessage(message);
+            // Check if emergency feature is enabled
+            if (user.communityId) {
+                const res = await getCommunities();
+                if (res.success && res.data) {
+                    const com = res.data.find((c: any) => c.id === user.communityId);
+                    // Default to true if not set, or use the feature flag
+                    setShowSOSButton(com?.features?.emergency ?? true);
+                }
+            }
         };
         prepareSOS();
     }, [user, user?.communityId]);
@@ -81,13 +91,15 @@ export default function DashboardLayoutClient({
             </div>
 
             {/* SOS Floating Button */}
-            <button
-                className={styles.sosButton}
-                onClick={() => setShowSOSModal(true)}
-                title="Emergency Access"
-            >
-                <Siren size={32} />
-            </button>
+            {showSOSButton && (
+                <button
+                    className={styles.sosButton}
+                    onClick={() => setShowSOSModal(true)}
+                    title="Emergency Access"
+                >
+                    <Siren size={32} />
+                </button>
+            )}
 
             {/* SOS Confirmation Modal */}
             {showSOSModal && (

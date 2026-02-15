@@ -20,7 +20,7 @@ export default function SuperAdminPage() {
         plan: 'starter_100',
         features: {
             marketplace: true, resources: true, events: true, documents: true,
-            forum: true, messages: true, services: true, local: true
+            forum: true, messages: true, services: true, local: true, emergency: true
         }
     });
 
@@ -115,7 +115,7 @@ export default function SuperAdminPage() {
                     name: '', slug: '', plan: 'starter_100',
                     features: {
                         marketplace: true, resources: true, events: true, documents: true,
-                        forum: true, messages: true, services: true, local: true
+                        forum: true, messages: true, services: true, local: true, emergency: true
                     }
                 });
             } else {

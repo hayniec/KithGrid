@@ -36,6 +36,7 @@ const mapToUI = (row: any) => ({
         messages: row.hasMessages,
         services: row.hasServicePros,
         local: row.hasLocalGuide,
+        emergency: row.hasEmergency,
     },
     isActive: row.isActive,
     branding: {

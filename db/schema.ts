@@ -25,6 +25,7 @@ export const communities = pgTable('communities', {
     hasMessages: boolean('has_messages').default(true),
     hasServicePros: boolean('has_service_pros').default(true),
     hasLocalGuide: boolean('has_local_guide').default(true),
+    hasEmergency: boolean('has_emergency').default(true),
 
     // Billing Fields (Stripe placeholders)
     stripeCustomerId: text('stripe_customer_id'),
