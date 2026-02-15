@@ -6,11 +6,12 @@ import styles from "./neighbors.module.css";
 import { Search, Filter, Mail, X } from "lucide-react";
 import { useUser } from "@/contexts/UserContext";
 import { getNeighbors } from "@/app/actions/neighbors";
+import { getUserProfile } from "@/app/actions/user";
 import { createInvitation } from "@/app/actions/invitations";
 import { Neighbor } from "@/types/neighbor";
 
 export default function NeighborsPage() {
-    const { user } = useUser();
+    const { user, setUser } = useUser();
     const [neighbors, setNeighbors] = useState<Neighbor[]>([]);
     const [searchTerm, setSearchTerm] = useState("");
     const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
@@ -96,17 +97,48 @@ export default function NeighborsPage() {
             <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--muted-foreground)' }}>
                 <h2>Session Information Missing</h2>
                 <p>We couldn't detect your community information.</p>
-                <p style={{ marginTop: '1rem' }}>
-                    Please <a href="/login" onClick={(e) => {
+
+                <div style={{ marginTop: '1rem', padding: '1rem', background: '#333', color: '#fff', borderRadius: '4px', textAlign: 'left', fontSize: '0.8rem', fontFamily: 'monospace' }}>
+                    <strong>Debug Info:</strong><br />
+                    User ID: {user?.id || 'Missing'}<br />
+                    Email: {user?.email || 'Missing'}<br />
+                    Community ID: {user?.communityId || 'Missing'}<br />
+                    Role: {user?.role || 'Missing'}<br />
+                </div>
+
+                <div style={{ marginTop: '1.5rem', display: 'flex', gap: '1rem', justifyContent: 'center' }}>
+                    <button
+                        onClick={async () => {
+                            if (user?.id) {
+                                const res = await getUserProfile(user.id);
+                                if (res.success && res.data.communityId) {
+                                    alert(`Found Community: ${res.data.communityId}. Updating...`);
+                                    setUser({ ...user, communityId: res.data.communityId, role: res.data.role as any });
+                                    window.location.reload();
+                                } else {
+                                    alert("Server verify failed: No community found for this user.");
+                                }
+                            } else {
+                                alert("No User ID to verify with.");
+                            }
+                        }}
+                        style={{ padding: '0.5rem 1rem', background: 'var(--primary)', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+                    >
+                        Try Auto-Fix
+                    </button>
+
+                    <a href="/login" onClick={(e) => {
                         e.preventDefault();
                         localStorage.removeItem('kithGrid_user');
-                        window.location.href = '/login';
-                    }} style={{ color: 'var(--primary)', textDecoration: 'underline', cursor: 'pointer' }}>
+                        // Force logout
+                        window.location.href = '/api/auth/signout';
+                    }} style={{ padding: '0.5rem 1rem', border: '1px solid var(--border)', borderRadius: '4px', color: 'var(--foreground)', textDecoration: 'none', cursor: 'pointer', display: 'inline-block' }}>
                         Sign Out
-                    </a> and sign in again to refresh your session.
-                </p>
+                    </a>
+                </div>
             </div>
         );
+
     }
 
     return (
