@@ -56,15 +56,16 @@ export function CreateAnnouncementModal({ isOpen, onClose, onCreate }: CreateAnn
             }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
                     <h3 style={{ fontSize: '1.25rem', fontWeight: 600 }}>New Announcement</h3>
-                    <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted-foreground)' }}>
+                    <button onClick={onClose} aria-label="Close" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted-foreground)' }}>
                         <X size={20} />
                     </button>
                 </div>
 
                 <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                        <label style={{ fontSize: '0.875rem', fontWeight: 500 }}>Title</label>
+                        <label htmlFor="title" style={{ fontSize: '0.875rem', fontWeight: 500 }}>Title</label>
                         <input
+                            id="title"
                             style={{
                                 padding: '0.5rem',
                                 borderRadius: 'calc(var(--radius) - 2px)',
@@ -81,8 +82,9 @@ export function CreateAnnouncementModal({ isOpen, onClose, onCreate }: CreateAnn
 
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                            <label style={{ fontSize: '0.875rem', fontWeight: 500 }}>Publish Date</label>
+                            <label htmlFor="activateAt" style={{ fontSize: '0.875rem', fontWeight: 500 }}>Publish Date</label>
                             <input
+                                id="activateAt"
                                 type="date"
                                 style={{
                                     padding: '0.5rem',
@@ -97,8 +99,9 @@ export function CreateAnnouncementModal({ isOpen, onClose, onCreate }: CreateAnn
                             <span style={{ fontSize: '0.7rem', color: 'var(--muted-foreground)' }}>Leave blank for immediate</span>
                         </div>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                            <label style={{ fontSize: '0.875rem', fontWeight: 500 }}>Expiration Date</label>
+                            <label htmlFor="expiresAt" style={{ fontSize: '0.875rem', fontWeight: 500 }}>Expiration Date</label>
                             <input
+                                id="expiresAt"
                                 type="date"
                                 style={{
                                     padding: '0.5rem',
@@ -115,8 +118,9 @@ export function CreateAnnouncementModal({ isOpen, onClose, onCreate }: CreateAnn
                     </div>
 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                        <label style={{ fontSize: '0.875rem', fontWeight: 500 }}>Content</label>
+                        <label htmlFor="content" style={{ fontSize: '0.875rem', fontWeight: 500 }}>Content</label>
                         <textarea
+                            id="content"
                             style={{
                                 padding: '0.5rem',
                                 borderRadius: 'calc(var(--radius) - 2px)',

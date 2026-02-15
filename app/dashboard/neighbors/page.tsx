@@ -221,7 +221,7 @@ export default function NeighborsPage() {
                     }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
                             <h2 style={{ fontSize: '1.25rem', fontWeight: 600 }}>Invite Neighbor</h2>
-                            <button onClick={() => setIsInviteModalOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted-foreground)' }}>
+                            <button onClick={() => setIsInviteModalOpen(false)} aria-label="Close" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted-foreground)' }}>
                                 <X size={20} />
                             </button>
                         </div>
