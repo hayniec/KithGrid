@@ -590,29 +590,7 @@ export default function AdminPage() {
                         </div>
                     </div>
 
-                    <div className={styles.card}>
-                        <div className={styles.cardHeader}>
-                            <Shield size={20} />
-                            <span className={styles.cardTitle}>Access Control</span>
-                        </div>
-                        <div className={styles.cardContent}>
-                            <div className={styles.formGroup}>
-                                <label className={styles.label}>New Member Policy</label>
-                                <select className={styles.input} aria-label="New Member Policy">
-                                    <option>Approval Required (Recommended)</option>
-                                    <option>Open Registration</option>
-                                    <option>Invite Only</option>
-                                </select>
-                            </div>
-                            <div className={styles.formGroup}>
-                                <label className={styles.label}>Guest Access</label>
-                                <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem' }}>
-                                    <input type="checkbox" defaultChecked />
-                                    Allow residents to generate guest passes
-                                </label>
-                            </div>
-                        </div>
-                    </div>
+
 
                     <div className={styles.card}>
                         <div className={styles.cardHeader}>
