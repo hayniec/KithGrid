@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { signOut, useSession } from "next-auth/react";
-import { Shield, Plus, Check, PowerOff, Building, Download, Trash2, Database, LogOut, UserPlus, X } from "lucide-react";
+import { Shield, Plus, Check, PowerOff, Building, Download, Trash2, Database, LogOut, UserPlus, X, Copy } from "lucide-react";
 import styles from "./admin.module.css";
 import { getTenants } from "@/app/actions/super-admin";
 import { createCommunity, toggleCommunityStatus, deleteCommunity, toggleCommunityFeature } from "@/app/actions/communities";
@@ -388,6 +388,7 @@ export default function SuperAdminPage() {
                 </div>
             )}
             {/* Invite Admin Modal */}
+            {/* Invite Admin Modal */}
             {inviteModalOpen && (
                 <div className={styles.modalOverlay}>
                     <div className={styles.modalContent}>
@@ -400,27 +401,51 @@ export default function SuperAdminPage() {
                         <div className={styles.modalBody}>
                             {!generatedCode ? (
                                 <>
-                                    <p style={{ marginBottom: '1rem' }}>
+                                    <p style={{ marginBottom: '1.5rem', color: '#4b5563', lineHeight: '1.5' }}>
                                         Enter the email address of the primary administrator for this community.
-                                        They will receive an invite code with <strong>Admin</strong> privileges.
+                                        They will receive an invite code with <strong style={{ color: '#4f46e5' }}>Admin</strong> privileges.
                                     </p>
                                     <div className={styles.formGroup}>
-                                        <label className={styles.label}>Admin Email</label>
+                                        <label className={styles.label}>Administrator Email</label>
                                         <input
                                             className={styles.input}
                                             value={inviteEmail}
                                             onChange={(e) => setInviteEmail(e.target.value)}
-                                            placeholder="admin@example.com"
+                                            placeholder="e.g. admin@maplegrove.hoa"
+                                            autoFocus
                                         />
                                     </div>
                                 </>
                             ) : (
-                                <div style={{ textAlign: 'center', padding: '1rem', background: 'var(--muted)', borderRadius: 'var(--radius)' }}>
-                                    <h3>Invitation Generated!</h3>
-                                    <p style={{ fontSize: '1.5rem', fontWeight: 'bold', margin: '1rem 0', fontFamily: 'monospace' }}>
-                                        {generatedCode}
+                                <div className={styles.successCard}>
+                                    <h3 className={styles.successTitle}>
+                                        <Check size={20} />
+                                        Invitation Generated
+                                    </h3>
+                                    <p style={{ color: '#166534', fontSize: '0.9rem', marginBottom: '1rem' }}>
+                                        Share this code securely with the administrator.
                                     </p>
-                                    <p>Share this code with the administrator. They should use it at <strong>/join</strong>.</p>
+
+                                    <div
+                                        className={styles.codeBlock}
+                                        onClick={() => {
+                                            if (generatedCode) {
+                                                navigator.clipboard.writeText(generatedCode);
+                                                alert("Copied to clipboard!");
+                                            }
+                                        }}
+                                        title="Click to copy"
+                                    >
+                                        {generatedCode}
+                                        <span className={styles.copyHint}>
+                                            <Copy size={12} style={{ display: 'inline', marginRight: '4px' }} />
+                                            Click to Copy
+                                        </span>
+                                    </div>
+
+                                    <p style={{ fontSize: '0.875rem', color: '#4b5563', marginTop: '1.5rem' }}>
+                                        They should use this code at <strong>/join</strong>
+                                    </p>
                                 </div>
                             )}
                         </div>
@@ -428,10 +453,13 @@ export default function SuperAdminPage() {
                             {!generatedCode ? (
                                 <>
                                     <button onClick={closeInviteModal} className={styles.secondaryButton}>Cancel</button>
-                                    <button onClick={handleInviteAdmin} className={styles.primaryButton}>Generate Invitation</button>
+                                    <button onClick={handleInviteAdmin} className={styles.primaryButton}>
+                                        <UserPlus size={16} style={{ display: 'inline', marginRight: '0.5rem' }} />
+                                        Generate Invitation
+                                    </button>
                                 </>
                             ) : (
-                                <button onClick={closeInviteModal} className={styles.primaryButton}>Close</button>
+                                <button onClick={closeInviteModal} className={styles.primaryButton}>Done</button>
                             )}
                         </div>
                     </div>
