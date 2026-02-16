@@ -1,3 +1,5 @@
+"use client";
+
 import { useState, useEffect } from "react";
 import styles from "./services.module.css";
 import { Wrench, Phone, Star, User, Hammer, Trees, ShieldCheck, Plus } from "lucide-react";
