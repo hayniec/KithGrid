@@ -93,26 +93,7 @@ export default function ResourcesPage() {
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
 
-            {/* Admin Toggle */}
-            <div style={{ position: 'fixed', bottom: 20, right: 20, zIndex: 100 }}>
-                <button
-                    onClick={() => setIsAdminMode(!isAdminMode)}
-                    style={{
-                        padding: '0.5rem 1rem',
-                        background: isAdminMode ? 'var(--primary)' : 'var(--muted)',
-                        color: isAdminMode ? 'white' : 'var(--foreground)',
-                        borderRadius: '999px',
-                        border: 'none',
-                        boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
-                        cursor: 'pointer',
-                        fontSize: '0.75rem',
-                        fontWeight: 600
-                    }}
-                >
-                    {isAdminMode ? 'System Admin: ON' : 'System Admin: OFF'}
-                </button>
-            </div>
-
+// Removed Admin Toggle and Buttons
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'end' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                     <h1 style={{ fontSize: '2rem', fontWeight: 700 }}>Community Resources</h1>
@@ -120,16 +101,6 @@ export default function ResourcesPage() {
                         Shared assets available for all residents to reserve and enjoy.
                     </p>
                 </div>
-                {isAdminMode && (
-                    <button
-                        className={styles.button}
-                        onClick={() => setIsCreateModalOpen(true)}
-                        style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
-                    >
-                        <Plus size={16} />
-                        Add Resource
-                    </button>
-                )}
             </div>
 
             {isLoading ? (
@@ -160,19 +131,9 @@ export default function ResourcesPage() {
                                     <CheckCircle size={14} />
                                     Available {resource.nextAvailable || "Now"}
                                 </div>
-                                {isAdminMode ? (
-                                    <button
-                                        className={styles.button}
-                                        style={{ backgroundColor: '#ef4444', color: 'white' }}
-                                        onClick={() => handleDelete(resource.id)}
-                                    >
-                                        <Trash2 size={16} />
-                                    </button>
-                                ) : (
-                                    <button className={styles.button} onClick={() => handleReserve(resource)}>
-                                        Reserve
-                                    </button>
-                                )}
+                                <button className={styles.button} onClick={() => handleReserve(resource)}>
+                                    Reserve
+                                </button>
                             </div>
                         </div>
                     ))}

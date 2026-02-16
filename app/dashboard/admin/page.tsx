@@ -3,14 +3,16 @@
 import { useState, useEffect, useCallback } from "react";
 import { useTheme, THEMES } from "@/contexts/ThemeContext";
 import styles from "./admin.module.css";
-import { Palette, Shield, Users, FileText, Trash2, CheckCircle, UserPlus, Mail, X, Edit2 } from "lucide-react";
+import { Palette, Shield, Users, FileText, Trash2, CheckCircle, UserPlus, Mail, X, Edit2, Wrench } from "lucide-react";
 import { createInvitation, getInvitations, deleteInvitation, bulkCreateInvitations, InvitationActionState } from "@/app/actions/invitations";
 import { getCommunities } from "@/app/actions/communities";
 import { getNeighbors, deleteNeighbor, updateNeighbor } from "@/app/actions/neighbors";
+import { getCommunityResources, createResource, deleteResource } from "@/app/actions/resources";
+import { CreateResourceModal } from "@/components/dashboard/CreateResourceModal";
 import { useUser } from "@/contexts/UserContext";
 import { Upload } from "lucide-react";
 
-type Tab = 'general' | 'users' | 'invites';
+type Tab = 'general' | 'users' | 'invites' | 'resources';
 
 type Invitation = {
     id: string;
@@ -333,6 +335,66 @@ export default function AdminPage() {
         }
     };
 
+
+    // Resources State
+    const [resources, setResources] = useState<any[]>([]);
+    const [isLoadingResources, setIsLoadingResources] = useState(false);
+    const [isCreateResourceModalOpen, setIsCreateResourceModalOpen] = useState(false);
+
+    const loadResources = useCallback(async () => {
+        if (!communityId) return;
+        setIsLoadingResources(true);
+        try {
+            const res = await getCommunityResources(communityId);
+            if (res.success && res.data) {
+                setResources(res.data);
+            }
+        } catch (error) {
+            console.error("Failed to load resources", error);
+        } finally {
+            setIsLoadingResources(false);
+        }
+    }, [communityId]);
+
+    // Load resources when switching to the resources tab
+    useEffect(() => {
+        if (activeTab === 'resources' && communityId) {
+            loadResources();
+        }
+    }, [activeTab, communityId, loadResources]);
+
+    const handleCreateResource = async (data: any) => {
+        if (!communityId) return;
+
+        const res = await createResource({
+            communityId: communityId,
+            name: data.name,
+            type: data.type,
+            capacity: parseInt(data.capacity) || 0,
+            description: data.description,
+            isReservable: true
+        });
+
+        if (res.success) {
+            loadResources();
+            setIsCreateResourceModalOpen(false);
+        } else {
+            alert("Failed to create resource: " + res.error);
+        }
+    };
+
+    const handleDeleteResource = async (id: string, name: string) => {
+        if (!confirm(`Are you sure you want to delete ${name}?`)) {
+            return;
+        }
+        const res = await deleteResource(id);
+        if (res.success) {
+            loadResources();
+        } else {
+            alert("Failed to delete resource: " + res.error);
+        }
+    };
+
     // Tabs Navigation
     const renderTabs = () => (
         <div style={{ display: 'flex', gap: '1rem', marginBottom: '2rem', borderBottom: '1px solid var(--border)' }}>
@@ -368,6 +430,17 @@ export default function AdminPage() {
                 }}
             >
                 Invitations
+            </button>
+            <button
+                onClick={() => setActiveTab('resources')}
+                style={{
+                    padding: '0.75rem 1rem',
+                    borderBottom: activeTab === 'resources' ? '2px solid var(--primary)' : 'none',
+                    fontWeight: activeTab === 'resources' ? 600 : 400,
+                    color: activeTab === 'resources' ? 'var(--foreground)' : 'var(--muted-foreground)'
+                }}
+            >
+                Resources
             </button>
         </div>
     );
@@ -782,6 +855,84 @@ export default function AdminPage() {
                                 )}
                             </div>
                         </div>
+                    </div>
+                )
+            }
+
+
+            {
+                activeTab === 'resources' && (
+                    <div className={styles.grid}>
+                        <div className={styles.card}>
+                            <div className={styles.cardHeader}>
+                                <Wrench size={20} />
+                                <span className={styles.cardTitle}>Manage Community Resources</span>
+                            </div>
+                            <div className={styles.cardContent}>
+                                <button
+                                    onClick={() => setIsCreateResourceModalOpen(true)}
+                                    style={{
+                                        marginBottom: '1.5rem',
+                                        padding: '0.75rem 1rem',
+                                        background: 'var(--primary)',
+                                        color: 'white',
+                                        border: 'none',
+                                        borderRadius: 'var(--radius)',
+                                        cursor: 'pointer',
+                                        fontWeight: 600,
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '0.5rem'
+                                    }}
+                                >
+                                    <UserPlus size={16} /> {/* Reuse UserPlus or similar icon */}
+                                    Add New Resource
+                                </button>
+
+                                {isLoadingResources ? (
+                                    <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--muted-foreground)' }}>Loading resources...</div>
+                                ) : resources.length === 0 ? (
+                                    <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--muted-foreground)' }}>No resources found.</div>
+                                ) : (
+                                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                                        <thead>
+                                            <tr style={{ borderBottom: '1px solid var(--border)', textAlign: 'left' }}>
+                                                <th style={{ padding: '0.5rem' }}>Name</th>
+                                                <th style={{ padding: '0.5rem' }}>Type</th>
+                                                <th style={{ padding: '0.5rem' }}>Capacity</th>
+                                                <th style={{ padding: '0.5rem' }}>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {resources.map((resource) => (
+                                                <tr key={resource.id} style={{ borderBottom: '1px solid var(--border)' }}>
+                                                    <td style={{ padding: '0.75rem 0.5rem', fontWeight: 500 }}>{resource.name}</td>
+                                                    <td style={{ padding: '0.5rem' }}>
+                                                        <span style={{ fontSize: '0.8rem', padding: '0.2rem 0.5rem', borderRadius: '4px', background: 'var(--muted)' }}>
+                                                            {resource.type}
+                                                        </span>
+                                                    </td>
+                                                    <td style={{ padding: '0.5rem' }}>{resource.capacity > 0 ? resource.capacity : '-'}</td>
+                                                    <td style={{ padding: '0.5rem' }}>
+                                                        <button
+                                                            onClick={() => handleDeleteResource(resource.id, resource.name)}
+                                                            style={{ color: '#ef4444', border: 'none', background: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem' }}
+                                                        >
+                                                            <Trash2 size={16} /> Delete
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                )}
+                            </div>
+                        </div>
+                        <CreateResourceModal
+                            isOpen={isCreateResourceModalOpen}
+                            onClose={() => setIsCreateResourceModalOpen(false)}
+                            onCreate={handleCreateResource}
+                        />
                     </div>
                 )
             }
