@@ -130,19 +130,33 @@ function MessagesContent() {
         <div className={styles.container}>
             {/* Sidebar List */}
             <div className={styles.sidebar}>
-                <div className={styles.sidebarHeader} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span>Messages</span>
+                <div className={styles.sidebarHeader} style={{ paddingBottom: '0.5rem' }}>
+                    Messages
+                </div>
+
+                <div style={{ padding: '0 1rem 1rem 1rem' }}>
                     <button
                         onClick={() => setIsNewMessageModalOpen(true)}
                         style={{
-                            background: 'none', border: 'none', cursor: 'pointer',
-                            color: 'var(--primary)', display: 'flex', alignItems: 'center'
+                            width: '100%',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '0.5rem',
+                            padding: '0.6rem',
+                            borderRadius: '4px',
+                            background: 'var(--primary)',
+                            color: 'var(--primary-foreground)',
+                            border: 'none',
+                            cursor: 'pointer',
+                            fontWeight: 500,
+                            fontSize: '0.9rem'
                         }}
-                        title="New Message"
                     >
-                        <Plus size={20} />
+                        <Plus size={16} /> New Conversation
                     </button>
                 </div>
+
                 <div className={styles.conversationList}>
                     {loading && conversations.length === 0 && <div style={{ padding: '1rem' }}>Loading...</div>}
                     {!loading && conversations.length === 0 && <div style={{ padding: '1rem', color: '#666' }}>No conversations yet.</div>}

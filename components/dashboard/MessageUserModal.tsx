@@ -58,15 +58,41 @@ export function MessageUserModal({ isOpen, onClose, onSelectUser }: MessageUserM
 
     return (
         <div className={styles.overlay}>
-            <div className={styles.modal} style={{ maxWidth: '400px', height: '500px', display: 'flex', flexDirection: 'column' }}>
-                <div className={styles.header}>
-                    <h2>New Message</h2>
-                    <button onClick={onClose} className={styles.closeButton}>
-                        <X size={20} />
+            <div className={styles.modal} style={{ maxWidth: '450px', height: '600px', display: 'flex', flexDirection: 'column', gap: '0' }}>
+                <div className={styles.header} style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    padding: '1.25rem',
+                    borderBottom: '1px solid var(--border)',
+                    backgroundColor: 'var(--muted)',
+                    borderTopLeftRadius: 'var(--radius)',
+                    borderTopRightRadius: 'var(--radius)'
+                }}>
+                    <h2 style={{ fontSize: '1.2rem', fontWeight: 600, margin: 0 }}>New Message</h2>
+                    <button
+                        onClick={onClose}
+                        style={{
+                            background: 'rgba(0,0,0,0.1)',
+                            border: 'none',
+                            cursor: 'pointer',
+                            color: 'var(--foreground)',
+                            width: '32px',
+                            height: '32px',
+                            borderRadius: '50%',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            transition: 'background 0.2s'
+                        }}
+                        onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,0,0,0.2)'}
+                        onMouseLeave={e => e.currentTarget.style.background = 'rgba(0,0,0,0.1)'}
+                    >
+                        <X size={18} />
                     </button>
                 </div>
 
-                <div className={styles.body} style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
+                <div className={styles.body} style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', padding: '1rem' }}>
                     <div style={{ position: 'relative', marginBottom: '1rem' }}>
                         <Search size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--muted-foreground)' }} />
                         <input
