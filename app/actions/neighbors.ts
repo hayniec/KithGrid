@@ -15,16 +15,33 @@ export type NeighborActionState = {
 /**
  * Register a new neighbor
  */
+import { validateInvitation, markInvitationUsed } from "@/app/actions/invitations";
+
 export async function registerNeighbor(data: {
     communityId: string;
     email: string;
     password?: string;
     name: string;
     address?: string;
-    role?: 'Admin' | 'Resident' | 'Board Member';
+    invitationCode: string;
 }): Promise<NeighborActionState> {
     try {
         console.log("[registerNeighbor] Registering neighbor:", data.email);
+
+        // 0. Verify Invitation
+        const invResult = await validateInvitation(data.invitationCode);
+        if (!invResult.success || !invResult.data) {
+            return { success: false, error: "Invalid or expired invitation code." };
+        }
+
+        // precise validation
+        if (invResult.data.email && invResult.data.email.toLowerCase() !== data.email.toLowerCase()) {
+            return { success: false, error: "Email address does not match invitation." };
+        }
+
+        if (invResult.data.communityId !== data.communityId) {
+            return { success: false, error: "Invitation is for a different community." };
+        }
 
         // 1. Check/Create Global User
         let [user] = await db.select().from(users).where(eq(users.email, data.email));
@@ -60,11 +77,14 @@ export async function registerNeighbor(data: {
         const [newMember] = await db.insert(members).values({
             userId: user.id,
             communityId: data.communityId,
-            role: data.role || 'Resident',
+            role: 'Resident', // Start as Resident by default, admin can promote
             address: data.address,
             joinedDate: new Date(),
             isOnline: true
         }).returning();
+
+        // 4. Mark Invitation Used
+        await markInvitationUsed(data.invitationCode);
 
         return {
             success: true,

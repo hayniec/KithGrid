@@ -69,7 +69,7 @@ export default function JoinPage() {
                 password: formData.password,
                 name: `${formData.firstName} ${formData.lastName}`,
                 address: formData.address || "",
-                role: 'Resident'
+                invitationCode: formData.code
             });
 
             if (!registerResult.success) {
@@ -78,10 +78,10 @@ export default function JoinPage() {
                 return;
             }
 
-            // 2. Mark invitation used
-            if (invitationId) {
-                await markInvitationUsed(formData.code);
-            }
+            // 2. Mark invitation used (Handled by server action now)
+            // if (invitationId) {
+            //     await markInvitationUsed(formData.code);
+            // }
 
             // 3. Update User Context
             const newUserProfile = {
