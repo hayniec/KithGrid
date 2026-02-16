@@ -43,6 +43,8 @@ export default function AdminPage() {
     // HOA Settings State
     const [hoaDuesAmount, setHoaDuesAmount] = useState("");
     const [hoaDuesFrequency, setHoaDuesFrequency] = useState("Monthly");
+    const [hoaDuesDate, setHoaDuesDate] = useState("1st");
+    const [hoaContactEmail, setHoaContactEmail] = useState("");
     const [isSavingHoa, setIsSavingHoa] = useState(false);
 
     // Fetch real Community ID and Settings
@@ -58,6 +60,8 @@ export default function AdminPage() {
                     if (current.hoaSettings) {
                         setHoaDuesAmount(current.hoaSettings.duesAmount || "");
                         setHoaDuesFrequency(current.hoaSettings.duesFrequency || "Monthly");
+                        setHoaDuesDate(current.hoaSettings.duesDate || "1st");
+                        setHoaContactEmail(current.hoaSettings.contactEmail || "");
                     }
                 }
             } catch (error) {
@@ -72,7 +76,9 @@ export default function AdminPage() {
         setIsSavingHoa(true);
         const res = await updateCommunityHoaSettings(communityId, {
             duesAmount: hoaDuesAmount,
-            duesFrequency: hoaDuesFrequency
+            duesFrequency: hoaDuesFrequency,
+            duesDate: hoaDuesDate,
+            contactEmail: hoaContactEmail
         });
         setIsSavingHoa(false);
         if (res.success) {
@@ -637,6 +643,27 @@ export default function AdminPage() {
                                     <option value="Quarterly">Quarterly</option>
                                     <option value="Annually">Annually</option>
                                 </select>
+                            </div>
+                            <div className={styles.formGroup}>
+                                <label className={styles.label}>Due Date (e.g. "1st")</label>
+                                <input
+                                    className={styles.input}
+                                    value={hoaDuesDate}
+                                    onChange={(e) => setHoaDuesDate(e.target.value)}
+                                    placeholder="e.g. 1st of month"
+                                    aria-label="Due Date"
+                                />
+                            </div>
+                            <div className={styles.formGroup}>
+                                <label className={styles.label}>Board Contact Email</label>
+                                <input
+                                    type="email"
+                                    className={styles.input}
+                                    value={hoaContactEmail}
+                                    onChange={(e) => setHoaContactEmail(e.target.value)}
+                                    placeholder="board@example.com"
+                                    aria-label="Board Contact Email"
+                                />
                             </div>
                             <button
                                 onClick={handleSaveHoaSettings}

@@ -2,7 +2,7 @@
 
 import { db } from "@/db";
 import { documents, members, users } from "@/db/schema";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, and } from "drizzle-orm";
 
 export type DocumentActionState = {
     success: boolean;
@@ -51,12 +51,22 @@ export async function createDocument(data: {
     uploadedBy: string;
 }): Promise<DocumentActionState> {
     try {
+        // Resolve member ID first
+        const [member] = await db
+            .select({ id: members.id })
+            .from(members)
+            .where(and(eq(members.userId, data.uploadedBy), eq(members.communityId, data.communityId)));
+
+        if (!member) {
+            throw new Error("User is not a member of this community");
+        }
+
         const [newDoc] = await db.insert(documents).values({
             communityId: data.communityId,
             name: data.name,
             category: data.category,
             url: data.filePath, // Mapping usage of filePath to db column url
-            uploaderId: data.uploadedBy, // Mapping usage of uploadedBy to db column uploaderId
+            uploaderId: member.id, // Use resolved member ID
         }).returning();
 
         return {

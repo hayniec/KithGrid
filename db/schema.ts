@@ -38,6 +38,8 @@ export const communities = pgTable('communities', {
     // HOA Settings
     hoaDuesAmount: decimal('hoa_dues_amount', { precision: 10, scale: 2 }),
     hoaDuesFrequency: text('hoa_dues_frequency').default('Monthly'),
+    hoaDuesDate: text('hoa_dues_date').default('1st'),
+    hoaContactEmail: text('hoa_contact_email'),
 
     createdAt: timestamp('created_at').defaultNow(),
 });

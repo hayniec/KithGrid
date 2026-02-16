@@ -43,8 +43,11 @@ const mapToUI = (row: any) => ({
     },
     hoaSettings: {
         duesAmount: row.hoaDuesAmount || null,
-        duesFrequency: row.hoaDuesFrequency || 'Monthly'
+        duesFrequency: row.hoaDuesFrequency || 'Monthly',
+        duesDate: row.hoaDuesDate || '1st',
+        contactEmail: row.hoaContactEmail || ''
     }
+}
 });
 
 import { getServerSession } from "next-auth";
@@ -86,6 +89,8 @@ export async function getCommunities() {
                 emergencyInstructions: communities.emergencyInstructions,
                 hoaDuesAmount: communities.hoaDuesAmount,
                 hoaDuesFrequency: communities.hoaDuesFrequency,
+                hoaDuesDate: communities.hoaDuesDate,
+                hoaContactEmail: communities.hoaContactEmail,
             })
             .from(communities)
             .innerJoin(members, eq(communities.id, members.communityId))
@@ -227,14 +232,16 @@ export async function updateEmergencySettings(id: string, data: { accessCode: st
     }
 }
 
-export async function updateCommunityHoaSettings(id: string, data: { duesAmount: string; duesFrequency: string }) {
+export async function updateCommunityHoaSettings(id: string, data: { duesAmount: string; duesFrequency: string; duesDate: string; contactEmail: string }) {
     try {
         // Parse duesAmount as a string for decimal field, ensure it's valid
         const amount = parseFloat(data.duesAmount).toFixed(2);
 
         await db.update(communities).set({
             hoaDuesAmount: amount,
-            hoaDuesFrequency: data.duesFrequency
+            hoaDuesFrequency: data.duesFrequency,
+            hoaDuesDate: data.duesDate,
+            hoaContactEmail: data.contactEmail
         }).where(eq(communities.id, id));
         return { success: true };
     } catch (e) {

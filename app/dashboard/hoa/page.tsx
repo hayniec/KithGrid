@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useUser } from "@/contexts/UserContext";
 import styles from "./hoa.module.css";
-import { FileText, Download, Mail, Phone, MapPin, Upload } from "lucide-react";
+import { FileText, Download, Mail, Phone, MapPin, Upload, MessageSquare, X, ChevronDown } from "lucide-react";
 import { UploadDocumentModal } from "@/components/dashboard/UploadDocumentModal";
 import { getNeighbors, getCommunityOfficers } from "@/app/actions/neighbors";
 import { ContactOfficerModal } from "@/components/dashboard/ContactOfficerModal";
@@ -38,7 +38,8 @@ export default function HoaPage() {
     const [officers, setOfficers] = useState<Officer[]>([]);
     const [isLoadingOfficers, setIsLoadingOfficers] = useState(true);
     const [isLoadingDocs, setIsLoadingDocs] = useState(true);
-    const [hoaSettings, setHoaSettings] = useState<{ duesAmount: string | null; duesFrequency: string | null } | null>(null);
+    const [hoaSettings, setHoaSettings] = useState<{ duesAmount: string | null; duesFrequency: string | null; duesDate: string | null; contactEmail: string | null } | null>(null);
+    const [isBoardContactOpen, setIsBoardContactOpen] = useState(false);
 
     const role = user?.role?.toLowerCase();
     const canUpload = role === 'admin' || role === 'board member';
@@ -151,16 +152,29 @@ export default function HoaPage() {
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                             <div className={styles.cardValue}>
                                 <Mail size={18} className="text-muted-foreground" />
-                                board@maplegrovehoa.com
+                                {hoaSettings?.contactEmail || 'Contact board via button below'}
                             </div>
-                            <div className={styles.cardValue}>
-                                <Phone size={18} className="text-muted-foreground" />
-                                (555) 123-4567
-                            </div>
-                            <div className={styles.cardValue}>
-                                <MapPin size={18} className="text-muted-foreground" />
-                                P.O. Box 42, Springfield
-                            </div>
+                            <button
+                                onClick={() => setIsBoardContactOpen(true)}
+                                style={{
+                                    marginTop: '0.5rem',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '0.5rem',
+                                    padding: '0.5rem 1rem',
+                                    borderRadius: 'var(--radius)',
+                                    background: 'var(--primary)',
+                                    color: 'white',
+                                    border: 'none',
+                                    cursor: 'pointer',
+                                    fontWeight: 500,
+                                    fontSize: '0.9rem',
+                                    width: 'fit-content'
+                                }}
+                            >
+                                <MessageSquare size={16} />
+                                Contact Board
+                            </button>
                         </div>
                     </div>
 
@@ -212,7 +226,7 @@ export default function HoaPage() {
                                 </span>
                             </span>
                             <p style={{ fontSize: '0.85rem', color: 'var(--muted-foreground)' }}>
-                                {hoaSettings?.duesAmount ? 'Current period' : 'Contact board for details'}
+                                {hoaSettings?.duesAmount ? `Due: ${hoaSettings.duesDate || '1st of month'}` : 'Contact board for details'}
                             </p>
                         </div>
                     </div>
@@ -295,6 +309,83 @@ export default function HoaPage() {
                     email: user?.email || ""
                 }}
             />
+            <ContactBoardModal
+                isOpen={isBoardContactOpen}
+                onClose={() => setIsBoardContactOpen(false)}
+                boardEmail={hoaSettings?.contactEmail || ""}
+            />
         </div >
+    );
+}
+
+function ContactBoardModal({ isOpen, onClose, boardEmail }: { isOpen: boolean; onClose: () => void; boardEmail: string }) {
+    if (!isOpen) return null;
+
+    const categories = ["General Inquiry", "Design Review", "Violation Report", "Maintenance Request", "Other"];
+    const [category, setCategory] = useState(categories[0]);
+    const [subject, setSubject] = useState("");
+    const [body, setBody] = useState("");
+
+    const handleSend = () => {
+        const mailtoLink = `mailto:${boardEmail || "board@example.com"}?subject=[${category}] ${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+        window.open(mailtoLink, '_blank');
+        onClose();
+    };
+
+    return (
+        <div className={styles.modalOverlay} style={{
+            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000
+        }}>
+            <div className={styles.modalContent} style={{
+                background: 'var(--card)', padding: '1.5rem', borderRadius: 'var(--radius)', width: '100%', maxWidth: '500px',
+                border: '1px solid var(--border)', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+            }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
+                    <h3 style={{ fontSize: '1.25rem', fontWeight: 600 }}>Contact the Board</h3>
+                    <button onClick={onClose} aria-label="Close" style={{ background: 'none', border: 'none', cursor: 'pointer' }}><X size={20} /></button>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                    <div>
+                        <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500 }}>Category</label>
+                        <select
+                            value={category}
+                            onChange={(e) => setCategory(e.target.value)}
+                            style={{ width: '100%', padding: '0.5rem', borderRadius: 'var(--radius)', border: '1px solid var(--border)', background: 'var(--background)' }}
+                        >
+                            {categories.map(c => <option key={c} value={c}>{c}</option>)}
+                        </select>
+                    </div>
+
+                    <div>
+                        <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500 }}>Subject</label>
+                        <input
+                            value={subject}
+                            onChange={(e) => setSubject(e.target.value)}
+                            placeholder="Brief subject..."
+                            style={{ width: '100%', padding: '0.5rem', borderRadius: 'var(--radius)', border: '1px solid var(--border)', background: 'var(--background)' }}
+                        />
+                    </div>
+
+                    <div>
+                        <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500 }}>Message</label>
+                        <textarea
+                            value={body}
+                            onChange={(e) => setBody(e.target.value)}
+                            rows={4}
+                            placeholder="Describe your inquiry..."
+                            style={{ width: '100%', padding: '0.5rem', borderRadius: 'var(--radius)', border: '1px solid var(--border)', background: 'var(--background)' }}
+                        />
+                    </div>
+
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', marginTop: '0.5rem' }}>
+                        <button onClick={onClose} style={{ padding: '0.5rem 1rem', borderRadius: 'var(--radius)', border: '1px solid var(--border)', background: 'transparent', cursor: 'pointer' }}>Cancel</button>
+                        <button onClick={handleSend} style={{ padding: '0.5rem 1rem', borderRadius: 'var(--radius)', border: 'none', background: 'var(--primary)', color: 'white', fontWeight: 500, cursor: 'pointer' }}>
+                            Open Email Client
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
     );
 }
