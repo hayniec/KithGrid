@@ -47,7 +47,6 @@ const mapToUI = (row: any) => ({
         duesDate: row.hoaDuesDate || '1st',
         contactEmail: row.hoaContactEmail || ''
     }
-}
 });
 
 import { getServerSession } from "next-auth";
