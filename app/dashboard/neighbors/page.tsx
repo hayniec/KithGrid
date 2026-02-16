@@ -181,8 +181,8 @@ export default function NeighborsPage() {
                                 try {
                                     const res = await switchCommunity(user.id, switchId);
                                     if (res.success) {
-                                        alert('Switched! Reloading...');
-                                        window.location.reload();
+                                        alert('Switched! Logging you out to refresh your session. Please log in again.');
+                                        window.location.href = '/api/auth/signout?callbackUrl=/login';
                                     } else {
                                         // @ts-ignore - Handle dynamic response types during debug
                                         alert('Failed: ' + (res.error || res.message || 'Unknown error'));
@@ -232,8 +232,8 @@ export default function NeighborsPage() {
                                     try {
                                         const res = await switchCommunity(user.id, switchId);
                                         if (res.success) {
-                                            alert('Switched!');
-                                            window.location.reload();
+                                            alert('Switched! Logging you out to refresh permissions. Please log in again.');
+                                            window.location.href = '/api/auth/signout?callbackUrl=/login';
                                         } else {
                                             // @ts-ignore
                                             alert('Failed: ' + (res.error || res.message || 'Unknown error'));

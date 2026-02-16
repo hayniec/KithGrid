@@ -40,13 +40,13 @@ async function main() {
         return;
     }
 
-    const userEmail = "erich.haynie@gmail.com";
-    console.log(`\n🔍 Checking User: ${userEmail} (and mixed case variants)...\n`);
+    const TARGET_EMAIL = 'eric.haynie@gmail.com';
+    console.log(`\n🔍 Checking User: ${TARGET_EMAIL} (and mixed case variants)...\n`);
 
     // 1. Find User
     const userRows = await sql`
         SELECT * FROM users 
-        WHERE LOWER(email) = LOWER(${userEmail})
+        WHERE LOWER(email) = LOWER(${TARGET_EMAIL})
     `;
 
     if (userRows.length === 0) {
