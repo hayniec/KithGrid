@@ -77,7 +77,7 @@ export async function registerNeighbor(data: {
         const [newMember] = await db.insert(members).values({
             userId: user.id,
             communityId: data.communityId,
-            role: 'Resident', // Start as Resident by default, admin can promote
+            role: (invResult.data.role as 'Admin' | 'Resident' | 'Board Member' | 'Event Manager') || 'Resident',
             address: data.address,
             joinedDate: new Date(),
             isOnline: true

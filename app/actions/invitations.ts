@@ -42,6 +42,7 @@ async function isAdmin(memberId?: string): Promise<boolean> {
 export async function createInvitation(data: {
     communityId: string;
     email: string;
+    role?: 'Admin' | 'Resident' | 'Board Member';
     createdBy?: string;
 }): Promise<InvitationActionState> {
     try {
@@ -59,6 +60,7 @@ export async function createInvitation(data: {
             communityId: data.communityId,
             email: data.email,
             code,
+            role: data.role || 'Resident',
             createdBy: (data.createdBy && data.createdBy !== "mock-super-admin-id") ? data.createdBy : null,
             status: 'pending',
         }).returning();
@@ -223,6 +225,7 @@ export async function validateInvitation(code: string): Promise<InvitationAction
                 code: invitation.code,
                 email: invitation.email,
                 communityId: invitation.communityId,
+                role: invitation.role,
             }
         };
     } catch (error: any) {

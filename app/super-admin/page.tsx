@@ -2,10 +2,11 @@
 
 import { useState, useEffect } from "react";
 import { signOut, useSession } from "next-auth/react";
-import { Shield, Plus, Check, PowerOff, Building, Download, Trash2, Database, LogOut } from "lucide-react";
+import { Shield, Plus, Check, PowerOff, Building, Download, Trash2, Database, LogOut, UserPlus, X } from "lucide-react";
 import styles from "./admin.module.css";
 import { getTenants } from "@/app/actions/super-admin";
 import { createCommunity, toggleCommunityStatus, deleteCommunity, toggleCommunityFeature } from "@/app/actions/communities";
+import { createInvitation } from "@/app/actions/invitations";
 import type { Community } from "@/types/community";
 
 export default function SuperAdminPage() {
@@ -23,6 +24,12 @@ export default function SuperAdminPage() {
             forum: true, messages: true, services: true, local: true, emergency: true
         }
     });
+
+    // Invite Admin State
+    const [inviteModalOpen, setInviteModalOpen] = useState(false);
+    const [inviteEmail, setInviteEmail] = useState("");
+    const [selectedCommunityId, setSelectedCommunityId] = useState<string | null>(null);
+    const [generatedCode, setGeneratedCode] = useState<string | null>(null);
 
     useEffect(() => {
         loadCommunities();
@@ -138,6 +145,34 @@ export default function SuperAdminPage() {
         } : c));
     };
 
+    const handleInviteAdmin = async () => {
+        if (!selectedCommunityId || !inviteEmail) return;
+
+        try {
+            const res = await createInvitation({
+                communityId: selectedCommunityId,
+                email: inviteEmail,
+                role: 'Admin',
+                createdBy: "mock-super-admin-id" // Explicitly use super admin override
+            });
+
+            if (res.success && res.data) {
+                setGeneratedCode(res.data.code);
+            } else {
+                alert(`Failed to create invitation: ${res.error}`);
+            }
+        } catch (e) {
+            alert("Error creating invitation");
+        }
+    };
+
+    const closeInviteModal = () => {
+        setInviteModalOpen(false);
+        setInviteEmail("");
+        setGeneratedCode(null);
+        setSelectedCommunityId(null);
+    };
+
     return (
         <div className={styles.container}>
             <div className={styles.header}>
@@ -198,7 +233,18 @@ export default function SuperAdminPage() {
                                         className={styles.iconButton}
                                         aria-label={`Export data for ${comm.name}`}
                                     >
-                                        <Download size={16} />
+                                        <Download size={18} />
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            setSelectedCommunityId(comm.id);
+                                            setInviteModalOpen(true);
+                                        }}
+                                        title="Invite Administrator"
+                                        className={styles.iconButton}
+                                        aria-label={`Invite admin to ${comm.name}`}
+                                    >
+                                        <UserPlus size={18} />
                                     </button>
                                     <button
                                         onClick={() => handleToggleActive(comm.id)}
@@ -337,6 +383,56 @@ export default function SuperAdminPage() {
                             <button onClick={handleAdd} className={styles.createButton} disabled={isCreating}>
                                 {isCreating ? 'Creating...' : 'Create Tenant'}
                             </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+            {/* Invite Admin Modal */}
+            {inviteModalOpen && (
+                <div className={styles.modalOverlay}>
+                    <div className={styles.modalContent}>
+                        <div className={styles.modalHeader}>
+                            <h2>Invite Initial Administrator</h2>
+                            <button onClick={closeInviteModal} className={styles.closeButton}>
+                                <X size={20} />
+                            </button>
+                        </div>
+                        <div className={styles.modalBody}>
+                            {!generatedCode ? (
+                                <>
+                                    <p style={{ marginBottom: '1rem' }}>
+                                        Enter the email address of the primary administrator for this community.
+                                        They will receive an invite code with <strong>Admin</strong> privileges.
+                                    </p>
+                                    <div className={styles.formGroup}>
+                                        <label className={styles.label}>Admin Email</label>
+                                        <input
+                                            className={styles.input}
+                                            value={inviteEmail}
+                                            onChange={(e) => setInviteEmail(e.target.value)}
+                                            placeholder="admin@example.com"
+                                        />
+                                    </div>
+                                </>
+                            ) : (
+                                <div style={{ textAlign: 'center', padding: '1rem', background: 'var(--muted)', borderRadius: 'var(--radius)' }}>
+                                    <h3>Invitation Generated!</h3>
+                                    <p style={{ fontSize: '1.5rem', fontWeight: 'bold', margin: '1rem 0', fontFamily: 'monospace' }}>
+                                        {generatedCode}
+                                    </p>
+                                    <p>Share this code with the administrator. They should use it at <strong>/join</strong>.</p>
+                                </div>
+                            )}
+                        </div>
+                        <div className={styles.modalFooter}>
+                            {!generatedCode ? (
+                                <>
+                                    <button onClick={closeInviteModal} className={styles.secondaryButton}>Cancel</button>
+                                    <button onClick={handleInviteAdmin} className={styles.primaryButton}>Generate Invitation</button>
+                                </>
+                            ) : (
+                                <button onClick={closeInviteModal} className={styles.primaryButton}>Close</button>
+                            )}
                         </div>
                     </div>
                 </div>
