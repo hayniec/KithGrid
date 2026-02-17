@@ -135,25 +135,33 @@ export default function DashboardPage() {
 
     const fetchCommunitySettings = async () => {
         if (!user?.communityId) return;
+        console.log("[Dashboard] Fetching community settings for:", user.communityId);
         try {
             const res = await getCommunityById(user.communityId);
+            console.log("[Dashboard] getCommunityById response:", res);
             if (res.success && res.data) {
                 const current = res.data;
+                console.log("[Dashboard] Community data:", current);
                 // Set community name
                 setDbCommunityName(current.name || "Community HOA");
 
                 // Set basic HOA settings
                 if (current.hoaSettings) {
+                    console.log("[Dashboard] Setting HOA settings:", current.hoaSettings);
                     setHoaSettings(current.hoaSettings);
+                } else {
+                    console.warn("[Dashboard] No hoaSettings found in response");
                 }
 
                 // Set extended settings (amenities, rules, vendors)
                 if (current.hoaExtendedSettings) {
                     setExtendedSettings(current.hoaExtendedSettings);
                 }
+            } else {
+                console.warn("[Dashboard] Failed to fetch community:", res.error);
             }
         } catch (e) {
-            console.error(e);
+            console.error("[Dashboard] Error fetching community:", e);
         }
     };
 
@@ -186,6 +194,15 @@ export default function DashboardPage() {
             setIsLoadingDocs(false);
         }
     };
+
+    // Fetch community settings on mount and when communityId changes
+    useEffect(() => {
+        if (user?.communityId) {
+            fetchCommunitySettings();
+            fetchOfficers();
+            fetchDocuments();
+        }
+    }, [user?.communityId]);
 
     const handleCreateAnnouncement = async (data: { title: string; content: string; activateAt: string; expiresAt: string }) => {
         if (!user?.communityId || !user?.id) return;
