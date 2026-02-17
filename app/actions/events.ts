@@ -76,8 +76,12 @@ export async function createEvent(data: {
         // Permission check
         const [member] = await db.select().from(members).where(eq(members.id, data.organizerId));
         const role = member?.role?.toLowerCase();
+        const roles = member?.roles?.map(r => r.toLowerCase()) || [];
 
-        if (role !== 'admin' && role !== 'event manager') {
+        const canCreate = role === 'admin' || role === 'event manager' ||
+            roles.includes('admin') || roles.includes('event manager');
+
+        if (!canCreate) {
             return { success: false, error: 'Unauthorized: Only Admins or Event Managers can create events.' };
         }
 
@@ -119,8 +123,12 @@ export async function deleteEvent(eventId: string, memberId: string): Promise<Ev
     try {
         const [member] = await db.select().from(members).where(eq(members.id, memberId));
         const role = member?.role?.toLowerCase();
+        const roles = member?.roles?.map(r => r.toLowerCase()) || [];
 
-        if (role !== 'admin' && role !== 'event manager') {
+        const canDelete = role === 'admin' || role === 'event manager' ||
+            roles.includes('admin') || roles.includes('event manager');
+
+        if (!canDelete) {
             return { success: false, error: 'Unauthorized: Only Admins or Event Managers can delete events.' };
         }
 
