@@ -9,6 +9,7 @@ import { getNeighbors } from "@/app/actions/neighbors";
 import { getUserProfile, switchCommunity } from "@/app/actions/user";
 import { createInvitation } from "@/app/actions/invitations";
 import { Neighbor } from "@/types/neighbor";
+import { isAdmin, getUserRoles } from "@/utils/roleHelpers";
 
 export default function NeighborsPage() {
     const { user, setUser } = useUser();
@@ -28,8 +29,8 @@ export default function NeighborsPage() {
         const fetchNeighbors = async () => {
             if (!user.communityId) {
                 // If user context is loaded but missing communityId, stop loading.
-                // We check user.id or role to ensure we aren't just briefly undefined during auth load
-                if (user.role) {
+                // We check user.id or roles to ensure we aren't just briefly undefined during auth load
+                if (user.id || getUserRoles(user).length > 0) {
                     setIsLoading(false);
                 }
                 return;
@@ -55,7 +56,7 @@ export default function NeighborsPage() {
         };
 
         fetchNeighbors();
-    }, [user.communityId, user.role]);
+    }, [user.communityId, user.id]);
 
     const filteredNeighbors = neighbors.filter((neighbor) => {
         const term = searchTerm.toLowerCase();
@@ -251,7 +252,7 @@ export default function NeighborsPage() {
                             </button>
                         </div>
                     </div>
-                    {(user.role as string) === 'Admin' && (
+                    {isAdmin(user) && (
                         <button
                             onClick={() => setIsInviteModalOpen(true)}
                             style={{

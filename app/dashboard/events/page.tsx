@@ -9,6 +9,7 @@ import { Plus } from "lucide-react";
 import { Event } from "@/types/event";
 import { useUser } from "@/contexts/UserContext";
 import { getCommunityEvents, createEvent, deleteEvent, updateRsvp } from "@/app/actions/events";
+import { canCreateEvents } from "@/utils/roleHelpers";
 
 export default function EventsPage() {
     const { user } = useUser();
@@ -125,19 +126,8 @@ export default function EventsPage() {
         }
     };
 
-    // Check for any leadership role
-    const userRole = user.role?.toLowerCase() || '';
-    const canManageEvents = [
-        'admin',
-        'super admin',
-        'event manager',
-        'board member',
-        'hoa officer',
-        'president',
-        'vice president',
-        'secretary',
-        'treasurer'
-    ].includes(userRole);
+    // Check if user can manage events using role helper
+    const canManageEvents = canCreateEvents(user);
 
     return (
         <div className={styles.container}>

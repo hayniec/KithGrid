@@ -7,6 +7,7 @@ import { ShoppingBag, Plus, Tag, Clock, User, Check, X, Image as ImageIcon, Uplo
 import { MarketplaceItem } from "@/types/marketplace";
 import { useUser } from "@/contexts/UserContext";
 import { getCommunityMarketplaceItems, createMarketplaceItem } from "@/app/actions/marketplace";
+import { getUserRoles } from "@/utils/roleHelpers";
 
 export default function MarketplacePage() {
     const { user } = useUser();
@@ -53,7 +54,7 @@ export default function MarketplacePage() {
     useEffect(() => {
         const fetchItems = async () => {
             if (!user.communityId) {
-                if (user.role) setIsLoading(false);
+                if (user.id || getUserRoles(user).length > 0) setIsLoading(false);
                 return;
             }
             try {
@@ -68,7 +69,7 @@ export default function MarketplacePage() {
             }
         };
         fetchItems();
-    }, [user.communityId, user.role]);
+    }, [user.communityId, user.id]);
 
     const handleCreate = async () => {
         if (!newItem.title || !user.communityId) return;

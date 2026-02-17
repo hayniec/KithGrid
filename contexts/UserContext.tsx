@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
+import { getPrimaryRole, getUserRoles } from "@/utils/roleHelpers";
 
 export type UserRole = "admin" | "resident" | "event manager" | "board member";
 
@@ -50,12 +51,9 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         console.log("UserContext Effect - Status:", status);
         console.log("UserContext Effect - Session:", session);
         if (status === "authenticated" && session?.user) {
-            // Normalize roles to lowercase
-            const sessionRoles = (session.user.roles || []).map(r => r.toLowerCase() as UserRole);
-            const primaryRole = (session.user.role?.toLowerCase() as UserRole) || "resident";
-
-            // Ensure roles array includes primary role if missing
-            const finalRoles = sessionRoles.length > 0 ? sessionRoles : [primaryRole];
+            // Get roles using helper function
+            const finalRoles = getUserRoles(session.user).map(r => r.toLowerCase() as UserRole);
+            const primaryRole = getPrimaryRole(session.user).toLowerCase() as UserRole;
 
             setUserState({
                 id: session.user.id,
@@ -96,8 +94,19 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     };
 
     const toggleRole = () => {
-        const newRole = user.role === "admin" ? "resident" : "admin";
-        setUser({ ...user, role: newRole });
+        // Toggle between admin and resident for primary role
+        const newPrimaryRole = user.role === "admin" ? "resident" : "admin";
+
+        // Update roles array to include the new primary role
+        let newRoles = [...user.roles];
+        if (!newRoles.includes(newPrimaryRole)) {
+            newRoles = [newPrimaryRole, ...newRoles.filter(r => r !== newPrimaryRole)];
+        } else {
+            // Move the role to the front (make it primary)
+            newRoles = [newPrimaryRole, ...newRoles.filter(r => r !== newPrimaryRole)];
+        }
+
+        setUser({ ...user, role: newPrimaryRole, roles: newRoles });
     };
 
     return (

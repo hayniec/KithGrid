@@ -6,6 +6,7 @@ import { User, Bell, Wrench, X, Save, Stethoscope, Phone, Plus, Trash2, Palette,
 import { MOCK_NEIGHBORS } from "@/lib/data";
 import { useTheme, THEMES } from "@/contexts/ThemeContext";
 import { useUser } from "@/contexts/UserContext";
+import { isAdmin } from "@/utils/roleHelpers";
 
 // ... (Rest of existing interfaces: EquipmentItem, ExternalContact, UserProfile)
 interface EquipmentItem {
@@ -687,7 +688,7 @@ export default function SettingsPage() {
                     onClick={toggleRole}
                     className={`${styles.outlineButton} ${styles.devRoleButton}`}
                 >
-                    Switch to {user.role === 'admin' ? 'Resident' : 'Admin'} Mode
+                    Switch to {isAdmin(user) ? 'Resident' : 'Admin'} Mode
                 </button>
             </div>
         </div >

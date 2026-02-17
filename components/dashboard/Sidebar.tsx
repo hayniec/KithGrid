@@ -8,6 +8,7 @@ import styles from "./dashboard.module.css";
 
 import { useTheme } from "@/contexts/ThemeContext";
 import { useUser } from "@/contexts/UserContext";
+import { isAdmin, formatRolesForDisplay } from "@/utils/roleHelpers";
 
 const navigation = [
     { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -56,7 +57,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
     const filteredNavigation = navigation.filter(item => {
         // Role check
         if (item.name === "Admin Console") {
-            return user.role === "admin" || (user.roles && user.roles.includes("admin"));
+            return isAdmin(user);
         }
 
         // Emergency Visibility
@@ -136,7 +137,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                     <div className={styles.avatar}>{user.avatar}</div>
                     <div className={styles.userInfo}>
                         <span className={styles.userName}>{user.name}</span>
-                        <span className={`${styles.userRole} ${styles.userRoleText}`}>{user.role}</span>
+                        <span className={`${styles.userRole} ${styles.userRoleText}`}>{formatRolesForDisplay(user)}</span>
                     </div>
                     <button
                         className={`${styles.iconButton} ${styles.logoutButtonSidebar}`}
