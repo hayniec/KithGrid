@@ -59,8 +59,16 @@ export async function createInvitation(data: {
         }
 
         // Feature Requirement: Only Admins can create invitations
-        const isUserAdmin = await isAdmin(session.user.id, data.communityId);
-        if (!isUserAdmin) {
+        // Feature Requirement: Only Admins can create invitations
+        const [adminMember] = await db
+            .select()
+            .from(members)
+            .where(and(
+                eq(members.userId, session.user.id),
+                eq(members.communityId, data.communityId)
+            ));
+
+        if (!adminMember || adminMember.role !== 'Admin') {
             return { success: false, error: "Only admins can send invitations." };
         }
 
@@ -72,7 +80,7 @@ export async function createInvitation(data: {
             email: data.email,
             code,
             role: data.role || 'Resident',
-            createdBy: (data.createdBy && data.createdBy !== "mock-super-admin-id") ? data.createdBy : null,
+            createdBy: adminMember.id, // Use the resolved Admin Member ID
             status: 'pending',
         }).returning();
 
