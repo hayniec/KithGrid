@@ -5,12 +5,9 @@ import { communities } from "@/db/schema";
 import { eq } from "drizzle-orm";
 
 // Type definition matching the UI but mapped from DB
-export type CommunityActionState = {
-    success: boolean;
-    message?: string;
-    data?: any;
-    error?: string;
-};
+export type CommunityActionState =
+    | { success: true; data: any }
+    | { success: false; error: string };
 
 // Map DB row to UI Community type
 const mapToUI = (row: any) => ({
@@ -103,9 +100,7 @@ export async function getCommunities() {
     }
 }
 
-export type CommunityActionState =
-    | { success: true; data: any }
-    | { success: false; error: string };
+
 
 export async function createCommunity(data: any): Promise<CommunityActionState> {
     try {
