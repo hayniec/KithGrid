@@ -98,14 +98,14 @@ export async function createEvent(data: {
             time: data.time,
             location: data.location,
             category: data.category as "Social" | "HOA" | "Maintenance" | "Security",
-            organizerId: data.organizerId,
+            organizerId: member.id, // Use member ID, not user ID
             attendeesCount: 0
         }).returning();
 
-        // Auto-RSVP organizer?
+        // Auto-RSVP organizer
         await db.insert(eventRsvps).values({
             eventId: newEvent.id,
-            neighborId: data.organizerId,
+            neighborId: member.id, // Use member ID, not user ID
             guestCount: 1,
             status: 'Going'
         });
