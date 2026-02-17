@@ -40,6 +40,7 @@ export const communities = pgTable('communities', {
     hoaDuesFrequency: text('hoa_dues_frequency').default('Monthly'),
     hoaDuesDate: text('hoa_dues_date').default('1st'),
     hoaContactEmail: text('hoa_contact_email'),
+    hoaExtendedSettings: json('hoa_extended_settings').default({}),
 
     createdAt: timestamp('created_at').defaultNow(),
 });

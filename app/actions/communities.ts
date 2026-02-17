@@ -43,7 +43,8 @@ const mapToUI = (row: any) => ({
         duesFrequency: row.hoaDuesFrequency || 'Monthly',
         duesDate: row.hoaDuesDate || '1st',
         contactEmail: row.hoaContactEmail || ''
-    }
+    },
+    hoaExtendedSettings: row.hoaExtendedSettings || null
 });
 
 import { getServerSession } from "next-auth";
@@ -87,6 +88,7 @@ export async function getCommunities() {
                 hoaDuesFrequency: communities.hoaDuesFrequency,
                 hoaDuesDate: communities.hoaDuesDate,
                 hoaContactEmail: communities.hoaContactEmail,
+                hoaExtendedSettings: communities.hoaExtendedSettings,
             })
             .from(communities)
             .innerJoin(members, eq(communities.id, members.communityId))

@@ -1,0 +1,33 @@
+-- Add HOA extended settings JSON field to communities table
+ALTER TABLE communities 
+ADD COLUMN hoa_extended_settings JSONB DEFAULT '{}'::jsonb;
+
+-- Example structure for hoa_extended_settings:
+-- {
+--   "amenities": [
+--     {
+--       "icon": "🏊",
+--       "name": "Community Pool",
+--       "hours": "6 AM - 10 PM Daily",
+--       "season": "Memorial Day - Labor Day",
+--       "note": "Pool key required. Contact board for access."
+--     }
+--   ],
+--   "rules": [
+--     {
+--       "category": "Property Maintenance",
+--       "icon": "🏡",
+--       "items": ["Lawns must be mowed regularly", "..."]
+--     }
+--   ],
+--   "vendors": [
+--     {
+--       "type": "Landscaping",
+--       "icon": "🌿",
+--       "company": "GreenScape Services",
+--       "services": "Common area maintenance, irrigation",
+--       "schedule": "Tuesdays & Fridays",
+--       "contact": "(555) 123-4567"
+--     }
+--   ]
+-- }

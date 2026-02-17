@@ -40,9 +40,33 @@ export default function HoaPage() {
     const [isLoadingDocs, setIsLoadingDocs] = useState(true);
     const [hoaSettings, setHoaSettings] = useState<{ duesAmount: string | null; duesFrequency: string | null; duesDate: string | null; contactEmail: string | null } | null>(null);
     const [isBoardContactOpen, setIsBoardContactOpen] = useState(false);
+    const [communityName, setCommunityName] = useState<string>("Community HOA");
+    const [extendedSettings, setExtendedSettings] = useState<any>(null);
 
     const role = user?.role?.toLowerCase();
     const canUpload = role === 'admin' || role === 'board member';
+
+    // Fallback data for amenities, rules, and vendors
+    const defaultAmenities = [
+        { icon: "🏊", name: "Community Pool", hours: "6 AM - 10 PM Daily", season: "Memorial Day - Labor Day", note: "Pool key required. Contact board for access." },
+        { icon: "🏛️", name: "Clubhouse", hours: "8 AM - 9 PM", capacity: "50 people", note: "Reservation required. $50 deposit for events." },
+        { icon: "🎾", name: "Tennis Courts", hours: "Dawn to Dusk", courts: "2 available", note: "First come, first served. 1-hour limit when others waiting." },
+        { icon: "🏋️", name: "Fitness Center", hours: "24/7 Access", equipment: "Cardio & Weights", note: "Access code required. See board for details." }
+    ];
+
+    const defaultRules = [
+        { category: "Property Maintenance", icon: "🏡", items: ["Lawns must be mowed regularly and kept free of weeds", "Exterior paint colors must be approved by Architectural Committee", "Holiday decorations may be displayed 30 days before and after holidays", "Trash bins must be stored out of sight except on collection days"] },
+        { category: "Parking & Vehicles", icon: "🚗", items: ["No parking on streets overnight (11 PM - 6 AM)", "Guest parking available in designated areas", "RVs and boats must be stored in garages or approved storage areas", "Vehicle repairs in driveways limited to minor maintenance"] },
+        { category: "Pets", icon: "🐕", items: ["Maximum of 2 pets per household", "Dogs must be leashed in common areas", "Owners must clean up after pets immediately", "Excessive barking or aggressive behavior must be addressed"] },
+        { category: "Noise & Nuisance", icon: "🔇", items: ["Quiet hours: 10 PM - 7 AM on weekdays, 11 PM - 8 AM on weekends", "Construction and lawn work: 8 AM - 6 PM only", "Notify neighbors 48 hours before hosting large gatherings"] }
+    ];
+
+    const defaultVendors = [
+        { type: "Landscaping", icon: "🌿", company: "GreenScape Services", services: "Common area maintenance, irrigation", schedule: "Tuesdays & Fridays", contact: "(555) 123-4567" },
+        { type: "Pool Maintenance", icon: "🏊", company: "Crystal Clear Pools", services: "Cleaning, chemical balance, repairs", schedule: "Mondays & Thursdays", contact: "(555) 234-5678" },
+        { type: "Security", icon: "🔒", company: "SafeGuard Security", services: "Patrol, gate monitoring, emergency response", schedule: "24/7 Coverage", emergency: "(555) 911-0000" },
+        { type: "Property Management", icon: "🏢", company: "Premier HOA Management", services: "Financial, compliance, maintenance coordination", hours: "Mon-Fri 9 AM - 5 PM", contact: "(555) 345-6789", email: "info@premierhoa.com" }
+    ];
 
     useEffect(() => {
         if (user?.communityId) {
@@ -58,8 +82,19 @@ export default function HoaPage() {
             const res = await getCommunities();
             if (res.success && res.data) {
                 const current = res.data.find((c: any) => c.id === user.communityId);
-                if (current && current.hoaSettings) {
-                    setHoaSettings(current.hoaSettings);
+                if (current) {
+                    // Set community name
+                    setCommunityName(current.name || "Community HOA");
+
+                    // Set basic HOA settings
+                    if (current.hoaSettings) {
+                        setHoaSettings(current.hoaSettings);
+                    }
+
+                    // Set extended settings (amenities, rules, vendors)
+                    if (current.hoaExtendedSettings) {
+                        setExtendedSettings(current.hoaExtendedSettings);
+                    }
                 }
             }
         } catch (e) {
@@ -137,9 +172,9 @@ export default function HoaPage() {
     return (
         <div className={styles.container}>
             <div className={styles.intro}>
-                <h1>Maple Grove HOA</h1>
+                <h1>{communityName}</h1>
                 <p>
-                    Welcome to the official information hub for the Maple Grove community.
+                    Welcome to the official information hub for the {communityName} community.
                     Here you can find board contacts, community rules, and financial reports.
                 </p>
             </div>
@@ -233,46 +268,25 @@ export default function HoaPage() {
                 </div>
             </div>
 
+
             {/* Amenities & Facilities */}
             <div className={styles.section}>
                 <h2 className={styles.title}>Community Amenities</h2>
                 <div className={styles.amenitiesGrid}>
-                    <div className={styles.amenityCard}>
-                        <div className={styles.amenityIcon}>🏊</div>
-                        <h3 className={styles.amenityTitle}>Community Pool</h3>
-                        <p className={styles.amenityHours}>
-                            <strong>Hours:</strong> 6 AM - 10 PM Daily<br />
-                            <strong>Season:</strong> Memorial Day - Labor Day
-                        </p>
-                        <p className={styles.amenityNote}>Pool key required. Contact board for access.</p>
-                    </div>
-                    <div className={styles.amenityCard}>
-                        <div className={styles.amenityIcon}>🏛️</div>
-                        <h3 className={styles.amenityTitle}>Clubhouse</h3>
-                        <p className={styles.amenityHours}>
-                            <strong>Hours:</strong> 8 AM - 9 PM<br />
-                            <strong>Capacity:</strong> 50 people
-                        </p>
-                        <p className={styles.amenityNote}>Reservation required. $50 deposit for events.</p>
-                    </div>
-                    <div className={styles.amenityCard}>
-                        <div className={styles.amenityIcon}>🎾</div>
-                        <h3 className={styles.amenityTitle}>Tennis Courts</h3>
-                        <p className={styles.amenityHours}>
-                            <strong>Hours:</strong> Dawn to Dusk<br />
-                            <strong>Courts:</strong> 2 available
-                        </p>
-                        <p className={styles.amenityNote}>First come, first served. 1-hour limit when others waiting.</p>
-                    </div>
-                    <div className={styles.amenityCard}>
-                        <div className={styles.amenityIcon}>🏋️</div>
-                        <h3 className={styles.amenityTitle}>Fitness Center</h3>
-                        <p className={styles.amenityHours}>
-                            <strong>Hours:</strong> 24/7 Access<br />
-                            <strong>Equipment:</strong> Cardio & Weights
-                        </p>
-                        <p className={styles.amenityNote}>Access code required. See board for details.</p>
-                    </div>
+                    {(extendedSettings?.amenities || defaultAmenities).map((amenity: any, index: number) => (
+                        <div key={index} className={styles.amenityCard}>
+                            <div className={styles.amenityIcon}>{amenity.icon}</div>
+                            <h3 className={styles.amenityTitle}>{amenity.name}</h3>
+                            <p className={styles.amenityHours}>
+                                {amenity.hours && <><strong>Hours:</strong> {amenity.hours}<br /></>}
+                                {amenity.season && <><strong>Season:</strong> {amenity.season}<br /></>}
+                                {amenity.capacity && <><strong>Capacity:</strong> {amenity.capacity}<br /></>}
+                                {amenity.courts && <><strong>Courts:</strong> {amenity.courts}<br /></>}
+                                {amenity.equipment && <><strong>Equipment:</strong> {amenity.equipment}</>}
+                            </p>
+                            {amenity.note && <p className={styles.amenityNote}>{amenity.note}</p>}
+                        </div>
+                    ))}
                 </div>
             </div>
 
@@ -280,41 +294,16 @@ export default function HoaPage() {
             <div className={styles.section}>
                 <h2 className={styles.title}>Community Rules & Guidelines</h2>
                 <div className={styles.rulesContainer}>
-                    <div className={styles.ruleCategory}>
-                        <h3 className={styles.ruleCategoryTitle}>🏡 Property Maintenance</h3>
-                        <ul className={styles.rulesList}>
-                            <li>Lawns must be mowed regularly and kept free of weeds</li>
-                            <li>Exterior paint colors must be approved by Architectural Committee</li>
-                            <li>Holiday decorations may be displayed 30 days before and after holidays</li>
-                            <li>Trash bins must be stored out of sight except on collection days</li>
-                        </ul>
-                    </div>
-                    <div className={styles.ruleCategory}>
-                        <h3 className={styles.ruleCategoryTitle}>🚗 Parking & Vehicles</h3>
-                        <ul className={styles.rulesList}>
-                            <li>No parking on streets overnight (11 PM - 6 AM)</li>
-                            <li>Guest parking available in designated areas</li>
-                            <li>RVs and boats must be stored in garages or approved storage areas</li>
-                            <li>Vehicle repairs in driveways limited to minor maintenance</li>
-                        </ul>
-                    </div>
-                    <div className={styles.ruleCategory}>
-                        <h3 className={styles.ruleCategoryTitle}>🐕 Pets</h3>
-                        <ul className={styles.rulesList}>
-                            <li>Maximum of 2 pets per household</li>
-                            <li>Dogs must be leashed in common areas</li>
-                            <li>Owners must clean up after pets immediately</li>
-                            <li>Excessive barking or aggressive behavior must be addressed</li>
-                        </ul>
-                    </div>
-                    <div className={styles.ruleCategory}>
-                        <h3 className={styles.ruleCategoryTitle}>🔇 Noise & Nuisance</h3>
-                        <ul className={styles.rulesList}>
-                            <li>Quiet hours: 10 PM - 7 AM on weekdays, 11 PM - 8 AM on weekends</li>
-                            <li>Construction and lawn work: 8 AM - 6 PM only</li>
-                            <li>Notify neighbors 48 hours before hosting large gatherings</li>
-                        </ul>
-                    </div>
+                    {(extendedSettings?.rules || defaultRules).map((ruleCategory: any, index: number) => (
+                        <div key={index} className={styles.ruleCategory}>
+                            <h3 className={styles.ruleCategoryTitle}>{ruleCategory.icon} {ruleCategory.category}</h3>
+                            <ul className={styles.rulesList}>
+                                {ruleCategory.items.map((item: string, itemIndex: number) => (
+                                    <li key={itemIndex}>{item}</li>
+                                ))}
+                            </ul>
+                        </div>
+                    ))}
                     <div className={styles.rulesFooter}>
                         <p>📄 <strong>Full CC&Rs and Bylaws available in Documents section below</strong></p>
                         <p>Violations may result in fines. Contact the board with questions or to report violations.</p>
@@ -326,63 +315,25 @@ export default function HoaPage() {
             <div className={styles.section}>
                 <h2 className={styles.title}>Community Service Providers</h2>
                 <div className={styles.vendorsGrid}>
-                    <div className={styles.vendorCard}>
-                        <div className={styles.vendorHeader}>
-                            <div className={styles.vendorIcon}>🌿</div>
-                            <div>
-                                <h3 className={styles.vendorTitle}>Landscaping</h3>
-                                <p className={styles.vendorCompany}>GreenScape Services</p>
+                    {(extendedSettings?.vendors || defaultVendors).map((vendor: any, index: number) => (
+                        <div key={index} className={styles.vendorCard}>
+                            <div className={styles.vendorHeader}>
+                                <div className={styles.vendorIcon}>{vendor.icon}</div>
+                                <div>
+                                    <h3 className={styles.vendorTitle}>{vendor.type}</h3>
+                                    <p className={styles.vendorCompany}>{vendor.company}</p>
+                                </div>
+                            </div>
+                            <div className={styles.vendorDetails}>
+                                {vendor.services && <p><strong>Services:</strong> {vendor.services}</p>}
+                                {vendor.schedule && <p><strong>Schedule:</strong> {vendor.schedule}</p>}
+                                {vendor.hours && <p><strong>Office Hours:</strong> {vendor.hours}</p>}
+                                {vendor.contact && <p><strong>Contact:</strong> {vendor.contact}</p>}
+                                {vendor.emergency && <p><strong>Emergency:</strong> {vendor.emergency}</p>}
+                                {vendor.email && <p><strong>Email:</strong> {vendor.email}</p>}
                             </div>
                         </div>
-                        <div className={styles.vendorDetails}>
-                            <p><strong>Services:</strong> Common area maintenance, irrigation</p>
-                            <p><strong>Schedule:</strong> Tuesdays & Fridays</p>
-                            <p><strong>Contact:</strong> (555) 123-4567</p>
-                        </div>
-                    </div>
-                    <div className={styles.vendorCard}>
-                        <div className={styles.vendorHeader}>
-                            <div className={styles.vendorIcon}>🏊</div>
-                            <div>
-                                <h3 className={styles.vendorTitle}>Pool Maintenance</h3>
-                                <p className={styles.vendorCompany}>Crystal Clear Pools</p>
-                            </div>
-                        </div>
-                        <div className={styles.vendorDetails}>
-                            <p><strong>Services:</strong> Cleaning, chemical balance, repairs</p>
-                            <p><strong>Schedule:</strong> Mondays & Thursdays</p>
-                            <p><strong>Contact:</strong> (555) 234-5678</p>
-                        </div>
-                    </div>
-                    <div className={styles.vendorCard}>
-                        <div className={styles.vendorHeader}>
-                            <div className={styles.vendorIcon}>🔒</div>
-                            <div>
-                                <h3 className={styles.vendorTitle}>Security</h3>
-                                <p className={styles.vendorCompany}>SafeGuard Security</p>
-                            </div>
-                        </div>
-                        <div className={styles.vendorDetails}>
-                            <p><strong>Services:</strong> Patrol, gate monitoring, emergency response</p>
-                            <p><strong>Schedule:</strong> 24/7 Coverage</p>
-                            <p><strong>Emergency:</strong> (555) 911-0000</p>
-                        </div>
-                    </div>
-                    <div className={styles.vendorCard}>
-                        <div className={styles.vendorHeader}>
-                            <div className={styles.vendorIcon}>🏢</div>
-                            <div>
-                                <h3 className={styles.vendorTitle}>Property Management</h3>
-                                <p className={styles.vendorCompany}>Premier HOA Management</p>
-                            </div>
-                        </div>
-                        <div className={styles.vendorDetails}>
-                            <p><strong>Services:</strong> Financial, compliance, maintenance coordination</p>
-                            <p><strong>Office Hours:</strong> Mon-Fri 9 AM - 5 PM</p>
-                            <p><strong>Contact:</strong> (555) 345-6789</p>
-                            <p><strong>Email:</strong> info@premierhoa.com</p>
-                        </div>
-                    </div>
+                    ))}
                 </div>
             </div>
 
