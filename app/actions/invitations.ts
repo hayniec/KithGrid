@@ -147,12 +147,7 @@ export async function bulkCreateInvitations(data: {
 /**
  * Get all invitations for a community
  */
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/lib/auth";
 
-/**
- * Get all invitations for a community
- */
 export async function getInvitations(communityId: string): Promise<InvitationActionState> {
     try {
         const session = await getServerSession(authOptions);
