@@ -492,7 +492,10 @@ export default function DashboardPage() {
                                 <div style={{ padding: '1.5rem', borderRadius: 'var(--radius)', backgroundColor: 'var(--muted)', border: '1px solid var(--border)' }}>
                                     <div style={{ fontSize: '0.85rem', color: 'var(--muted-foreground)', marginBottom: '0.5rem' }}>HOA Dues</div>
                                     <div style={{ fontSize: '1.25rem', fontWeight: 600 }}>
-                                        {hoaSettings?.duesAmount && hoaSettings.duesAmount !== 'null' && hoaSettings.duesAmount !== '' ? `$${hoaSettings.duesAmount}` : 'Not set'}
+                                        {(() => {
+                                            console.log('[Dashboard Render] hoaSettings:', hoaSettings, 'duesAmount:', hoaSettings?.duesAmount, 'type:', typeof hoaSettings?.duesAmount);
+                                            return hoaSettings?.duesAmount && hoaSettings.duesAmount !== 'null' && hoaSettings.duesAmount !== '' ? `$${hoaSettings.duesAmount}` : 'Not set';
+                                        })()}
                                         {hoaSettings?.duesAmount && hoaSettings.duesAmount !== 'null' && hoaSettings.duesAmount !== '' && hoaSettings?.duesFrequency && <span style={{ fontSize: '0.85rem', fontWeight: 400, color: 'var(--muted-foreground)' }}> / {hoaSettings.duesFrequency}</span>}
                                     </div>
                                     {hoaSettings?.duesDate && hoaSettings.duesAmount && hoaSettings.duesAmount !== 'null' && hoaSettings.duesAmount !== '' && (

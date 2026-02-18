@@ -11,7 +11,15 @@ export type CommunityActionState =
 
 // Map DB row to UI Community type
 const mapToUI = (row: any) => {
-    return {
+    console.log('[mapToUI] BEFORE mapping - row.hoaDuesAmount:', row.hoaDuesAmount, 'type:', typeof row.hoaDuesAmount);
+    console.log('[mapToUI] BEFORE mapping - Full row HOA fields:', {
+        hoaDuesAmount: row.hoaDuesAmount,
+        hoaDuesFrequency: row.hoaDuesFrequency,
+        hoaDuesDate: row.hoaDuesDate,
+        hoaContactEmail: row.hoaContactEmail
+    });
+
+    const mapped = {
         id: row.id,
         name: row.name,
         slug: row.slug || '',
@@ -47,6 +55,11 @@ const mapToUI = (row: any) => {
         },
         hoaExtendedSettings: row.hoaExtendedSettings || null
     };
+
+    console.log('[mapToUI] AFTER mapping - hoaSettings:', mapped.hoaSettings);
+    console.log('[mapToUI] AFTER mapping - duesAmount specifically:', mapped.hoaSettings.duesAmount, 'type:', typeof mapped.hoaSettings.duesAmount);
+
+    return mapped;
 };
 
 import { getServerSession } from "next-auth";
@@ -283,6 +296,8 @@ export async function updateCommunityHoaSettings(id: string, data: { duesAmount:
  */
 export async function getCommunityById(id: string) {
     try {
+        console.log('[getCommunityById] Starting query for ID:', id);
+
         const [community] = await db
             .select({
                 id: communities.id,
@@ -314,15 +329,30 @@ export async function getCommunityById(id: string) {
             .from(communities)
             .where(eq(communities.id, id));
 
+        console.log('[getCommunityById] Query completed successfully');
+
         if (!community) {
+            console.log('[getCommunityById] No community found with ID:', id);
             return { success: false, error: "Community not found" };
         }
 
-        return { success: true, data: mapToUI(community) };
+        console.log('[getCommunityById] Raw DB values:', {
+            hoaDuesAmount: community.hoaDuesAmount,
+            hoaDuesAmountType: typeof community.hoaDuesAmount,
+            hoaDuesFrequency: community.hoaDuesFrequency,
+            hoaDuesDate: community.hoaDuesDate,
+            hoaContactEmail: community.hoaContactEmail
+        });
+
+        const mapped = mapToUI(community);
+
+        console.log('[getCommunityById] Mapped hoaSettings:', mapped.hoaSettings);
+
+        return { success: true, data: mapped };
     } catch (error: any) {
-        console.error("Failed to fetch community by ID:", error);
+        console.error("[getCommunityById] ERROR DETAILS:", error);
+        console.error("[getCommunityById] Error message:", error.message);
+        console.error("[getCommunityById] Error stack:", error.stack);
         return { success: false, error: "Failed to fetch community" };
     }
 }
-
-
