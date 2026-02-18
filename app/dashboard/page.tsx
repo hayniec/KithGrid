@@ -10,11 +10,14 @@ import { getCommunityAnnouncements, createAnnouncement, deleteAnnouncement } fro
 import { getCommunityDocuments, createDocument } from "@/app/actions/documents";
 import { getCommunityOfficers } from "@/app/actions/neighbors";
 import { getCommunityById } from "@/app/actions/communities";
+import { getServiceProviders, createServiceProvider } from "@/app/actions/services";
 import { Event } from "@/types/event";
-import { Plus, Trash2, Megaphone, FileText, Download, Upload, Mail, Phone, MapPin, MessageSquare, X, ChevronDown } from "lucide-react";
+import { Plus, Trash2, Megaphone, FileText, Download, Upload, Mail, Phone, MapPin, MessageSquare, X, ChevronDown, Eye } from "lucide-react";
 import { CreateAnnouncementModal } from "@/components/dashboard/CreateAnnouncementModal";
 import { UploadDocumentModal } from "@/components/dashboard/UploadDocumentModal";
 import { ContactOfficerModal } from "@/components/dashboard/ContactOfficerModal";
+import { CreateServiceModal } from "@/components/dashboard/CreateServiceModal";
+import { DocumentPreviewModal } from "@/components/dashboard/DocumentPreviewModal";
 
 interface Announcement {
     id: string;
@@ -45,7 +48,17 @@ interface Officer {
     avatar?: string;
 }
 
-type CommunityTab = 'info' | 'rules' | 'services' | 'documents';
+interface ServiceProvider {
+    id: string;
+    name: string;
+    category: string;
+    phone: string | null;
+    rating: string | null;
+    description: string | null;
+    recommendedBy: string | null;
+}
+
+type CommunityTab = 'info' | 'services' | 'documents';
 
 export default function DashboardPage() {
     const { communityName } = useTheme();
@@ -69,6 +82,15 @@ export default function DashboardPage() {
     const [dbCommunityName, setDbCommunityName] = useState<string>("Community HOA");
     const [extendedSettings, setExtendedSettings] = useState<any>(null);
 
+    // Service Providers State
+    const [serviceProviders, setServiceProviders] = useState<ServiceProvider[]>([]);
+    const [isLoadingServices, setIsLoadingServices] = useState(true);
+    const [isServiceModalOpen, setIsServiceModalOpen] = useState(false);
+
+    // Document Preview State
+    const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
+    const [previewDoc, setPreviewDoc] = useState<{ url: string, name: string } | null>(null);
+
     const isAdmin = user?.role === 'admin' || user?.role === 'board member';
     const canUpload = isAdmin;
 
@@ -80,19 +102,7 @@ export default function DashboardPage() {
         { icon: "🏋️", name: "Fitness Center", hours: "24/7 Access", equipment: "Cardio & Weights", note: "Access code required. See board for details." }
     ];
 
-    const defaultRules = [
-        { category: "Property Maintenance", icon: "🏡", items: ["Lawns must be mowed regularly and kept free of weeds", "Exterior paint colors must be approved by Architectural Committee", "Holiday decorations may be displayed 30 days before and after holidays", "Trash bins must be stored out of sight except on collection days"] },
-        { category: "Parking & Vehicles", icon: "🚗", items: ["No parking on streets overnight (11 PM - 6 AM)", "Guest parking available in designated areas", "RVs and boats must be stored in garages or approved storage areas", "Vehicle repairs in driveways limited to minor maintenance"] },
-        { category: "Pets", icon: "🐕", items: ["Maximum of 2 pets per household", "Dogs must be leashed in common areas", "Owners must clean up after pets immediately", "Excessive barking or aggressive behavior must be addressed"] },
-        { category: "Noise & Nuisance", icon: "🔇", items: ["Quiet hours: 10 PM - 7 AM on weekdays, 11 PM - 8 AM on weekends", "Construction and lawn work: 8 AM - 6 PM only", "Notify neighbors 48 hours before hosting large gatherings"] }
-    ];
 
-    const defaultVendors = [
-        { type: "Landscaping", icon: "🌿", company: "GreenScape Services", services: "Common area maintenance, irrigation", schedule: "Tuesdays & Fridays", contact: "(555) 123-4567" },
-        { type: "Pool Maintenance", icon: "🏊", company: "Crystal Clear Pools", services: "Cleaning, chemical balance, repairs", schedule: "Mondays & Thursdays", contact: "(555) 234-5678" },
-        { type: "Security", icon: "🔒", company: "SafeGuard Security", services: "Patrol, gate monitoring, emergency response", schedule: "24/7 Coverage", emergency: "(555) 911-0000" },
-        { type: "Property Management", icon: "🏢", company: "Premier HOA Management", services: "Financial, compliance, maintenance coordination", hours: "Mon-Fri 9 AM - 5 PM", contact: "(555) 345-6789", email: "info@premierhoa.com" }
-    ];
 
     useEffect(() => {
         const fetchEvents = async () => {
@@ -195,12 +205,28 @@ export default function DashboardPage() {
         }
     };
 
+    const fetchServices = async () => {
+        if (!user?.communityId) return;
+        try {
+            setIsLoadingServices(true);
+            const res = await getServiceProviders(user.communityId);
+            if (res.success && res.data) {
+                setServiceProviders(res.data);
+            }
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setIsLoadingServices(false);
+        }
+    };
+
     // Fetch community settings on mount and when communityId changes
     useEffect(() => {
         if (user?.communityId) {
             fetchCommunitySettings();
             fetchOfficers();
             fetchDocuments();
+            fetchServices();
         }
     }, [user?.communityId]);
 
@@ -232,9 +258,30 @@ export default function DashboardPage() {
         if (res.success) {
             setAnnouncements(announcements.filter(a => a.id !== id));
         } else {
-            alert("Failed to delete: " + res.error);
+            alert("Failed to delete announcement: " + res.error);
         }
     };
+
+    const handleCreateService = async (data: any) => {
+        if (!user?.communityId) return;
+
+        const res = await createServiceProvider({
+            communityId: user.communityId,
+            name: data.name,
+            category: data.category,
+            phone: data.phone,
+            description: data.description,
+            recommendedBy: user.name || "Neighbor"
+        });
+
+        if (res.success && res.data) {
+            setServiceProviders([res.data, ...serviceProviders]);
+            setIsServiceModalOpen(false);
+        } else {
+            alert("Failed to create recommendation: " + res.error);
+        }
+    };
+
 
     const handleUploadDocument = async (data: { name: string; category: string; url: string; size: string }) => {
         if (!user?.communityId || !user?.id) return;
@@ -444,7 +491,6 @@ export default function DashboardPage() {
                 }}>
                     {[
                         { id: 'info' as CommunityTab, label: 'Community Info' },
-                        { id: 'rules' as CommunityTab, label: 'Rules & Guidelines' },
                         { id: 'services' as CommunityTab, label: 'Service Providers' },
                         { id: 'documents' as CommunityTab, label: 'Documents' }
                     ].map(tab => (
@@ -593,84 +639,88 @@ export default function DashboardPage() {
                         </div>
                     )}
 
-                    {/* Rules Tab */}
-                    {activeTab === 'rules' && (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                            {(extendedSettings?.rules || defaultRules).map((ruleCategory: any, index: number) => (
-                                <div key={index} style={{
-                                    padding: '1.5rem',
-                                    borderRadius: 'var(--radius)',
-                                    border: '1px solid var(--border)',
-                                    backgroundColor: 'var(--card)'
-                                }}>
-                                    <h3 style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                        <span style={{ fontSize: '1.5rem' }}>{ruleCategory.icon}</span>
-                                        {ruleCategory.category}
-                                    </h3>
-                                    <ul style={{ listStyle: 'disc', paddingLeft: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                                        {ruleCategory.items.map((item: string, itemIndex: number) => (
-                                            <li key={itemIndex} style={{ color: 'var(--muted-foreground)', lineHeight: 1.6 }}>{item}</li>
-                                        ))}
-                                    </ul>
-                                </div>
-                            ))}
-                            <div style={{
-                                padding: '1rem',
-                                borderRadius: 'var(--radius)',
-                                backgroundColor: 'var(--muted)',
-                                fontSize: '0.9rem',
-                                color: 'var(--muted-foreground)',
-                                textAlign: 'center'
-                            }}>
-                                📄 <strong>Full CC&Rs and Bylaws available in Documents tab</strong>
-                                <br />
-                                Violations may result in fines. Contact the board with questions or to report violations.
-                            </div>
-                        </div>
-                    )}
+
 
                     {/* Services Tab */}
                     {activeTab === 'services' && (
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem' }}>
-                            {(extendedSettings?.vendors || defaultVendors).map((vendor: any, index: number) => (
-                                <div key={index} style={{
-                                    padding: '1.5rem',
-                                    borderRadius: 'var(--radius)',
-                                    border: '1px solid var(--border)',
-                                    backgroundColor: 'var(--card)'
-                                }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
-                                        <div style={{ fontSize: '2.5rem' }}>{vendor.icon}</div>
-                                        <div>
-                                            <h3 style={{ fontWeight: 600, marginBottom: '0.25rem' }}>{vendor.type}</h3>
-                                            <div style={{ fontSize: '0.9rem', color: 'var(--muted-foreground)' }}>{vendor.company}</div>
-                                        </div>
-                                    </div>
-                                    <div style={{ fontSize: '0.85rem', color: 'var(--muted-foreground)', lineHeight: 1.8 }}>
-                                        {vendor.services && <div><strong>Services:</strong> {vendor.services}</div>}
-                                        {vendor.schedule && <div><strong>Schedule:</strong> {vendor.schedule}</div>}
-                                        {vendor.hours && <div><strong>Office Hours:</strong> {vendor.hours}</div>}
-                                        {vendor.contact && (
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.5rem' }}>
-                                                <Phone size={14} />
-                                                {vendor.contact}
-                                            </div>
-                                        )}
-                                        {vendor.emergency && (
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.5rem', color: 'var(--destructive)' }}>
-                                                <Phone size={14} />
-                                                <strong>Emergency:</strong> {vendor.emergency}
-                                            </div>
-                                        )}
-                                        {vendor.email && (
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.5rem' }}>
-                                                <Mail size={14} />
-                                                {vendor.email}
-                                            </div>
-                                        )}
-                                    </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                            <div style={{ marginBottom: '1rem' }}>
+                                <button
+                                    onClick={() => setIsServiceModalOpen(true)}
+                                    style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '0.5rem',
+                                        padding: '0.75rem 1.5rem',
+                                        borderRadius: 'var(--radius)',
+                                        border: '1px solid var(--border)',
+                                        background: 'var(--primary)',
+                                        color: 'white',
+                                        cursor: 'pointer',
+                                        fontSize: '0.95rem',
+                                        fontWeight: 500
+                                    }}
+                                >
+                                    <Plus size={18} />
+                                    Recommend Pro
+                                </button>
+                            </div>
+
+                            {isLoadingServices ? (
+                                <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--muted-foreground)' }}>
+                                    Loading service providers...
                                 </div>
-                            ))}
+                            ) : serviceProviders.length > 0 ? (
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem' }}>
+                                    {serviceProviders.map((vendor, index) => (
+                                        <div key={index} style={{
+                                            padding: '1.5rem',
+                                            borderRadius: 'var(--radius)',
+                                            border: '1px solid var(--border)',
+                                            backgroundColor: 'var(--card)'
+                                        }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
+                                                <div style={{ fontSize: '2rem', padding: '0.5rem', backgroundColor: 'var(--muted)', borderRadius: '50%' }}>
+                                                    {vendor.category === 'Plumber' ? '🔧' :
+                                                        vendor.category === 'Electrician' ? '⚡' :
+                                                            vendor.category === 'Landscaping' ? '🌿' :
+                                                                vendor.category === 'Cleaning' ? '🧹' :
+                                                                    vendor.category === 'HVAC' ? '❄️' : '🛠️'}
+                                                </div>
+                                                <div>
+                                                    <h3 style={{ fontWeight: 600, marginBottom: '0.25rem' }}>{vendor.name}</h3>
+                                                    <div style={{ fontSize: '0.9rem', color: 'var(--muted-foreground)' }}>{vendor.category}</div>
+                                                </div>
+                                            </div>
+                                            <div style={{ fontSize: '0.85rem', color: 'var(--muted-foreground)', lineHeight: 1.8 }}>
+                                                {vendor.description && <div style={{ marginBottom: '0.5rem', fontStyle: 'italic' }}>"{vendor.description}"</div>}
+                                                {vendor.phone && (
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.5rem' }}>
+                                                        <Phone size={14} />
+                                                        {vendor.phone}
+                                                    </div>
+                                                )}
+                                                {vendor.recommendedBy && (
+                                                    <div style={{ fontSize: '0.8rem', marginTop: '0.75rem', opacity: 0.8 }}>
+                                                        Recommended by {vendor.recommendedBy}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div style={{
+                                    padding: '3rem',
+                                    textAlign: 'center',
+                                    color: 'var(--muted-foreground)',
+                                    border: '2px dashed var(--border)',
+                                    borderRadius: 'var(--radius)'
+                                }}>
+                                    <p>No service providers listed yet.</p>
+                                    <p style={{ fontSize: '0.9rem', marginTop: '0.5rem' }}>Know a good pro? Recommend them!</p>
+                                </div>
+                            )}
                         </div>
                     )}
 
@@ -728,27 +778,51 @@ export default function DashboardPage() {
                                                     </div>
                                                 </div>
                                             </div>
-                                            <a
-                                                href={doc.url}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                style={{
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    gap: '0.5rem',
-                                                    padding: '0.5rem 1rem',
-                                                    borderRadius: 'var(--radius)',
-                                                    border: '1px solid var(--border)',
-                                                    background: 'var(--secondary)',
-                                                    color: 'var(--foreground)',
-                                                    textDecoration: 'none',
-                                                    fontSize: '0.85rem',
-                                                    transition: 'all 0.2s'
-                                                }}
-                                            >
-                                                <Download size={16} />
-                                                Download
-                                            </a>
+                                            <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                                <button
+                                                    onClick={() => {
+                                                        setPreviewDoc({ url: doc.url, name: doc.name });
+                                                        setIsPreviewModalOpen(true);
+                                                    }}
+                                                    style={{
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        gap: '0.5rem',
+                                                        padding: '0.5rem 1rem',
+                                                        borderRadius: 'var(--radius)',
+                                                        border: '1px solid var(--border)',
+                                                        background: 'transparent',
+                                                        color: 'var(--foreground)',
+                                                        cursor: 'pointer',
+                                                        fontSize: '0.85rem',
+                                                        transition: 'all 0.2s'
+                                                    }}
+                                                >
+                                                    <Eye size={16} />
+                                                    Preview
+                                                </button>
+                                                <a
+                                                    href={doc.url}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    style={{
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        gap: '0.5rem',
+                                                        padding: '0.5rem 1rem',
+                                                        borderRadius: 'var(--radius)',
+                                                        border: '1px solid var(--border)',
+                                                        background: 'var(--secondary)',
+                                                        color: 'var(--foreground)',
+                                                        textDecoration: 'none',
+                                                        fontSize: '0.85rem',
+                                                        transition: 'all 0.2s'
+                                                    }}
+                                                >
+                                                    <Download size={16} />
+                                                    Download
+                                                </a>
+                                            </div>
                                         </div>
                                     ))}
                                 </div>
@@ -800,6 +874,19 @@ export default function DashboardPage() {
                     }}
                 />
             )}
-        </div>
+
+            <CreateServiceModal
+                isOpen={isServiceModalOpen}
+                onClose={() => setIsServiceModalOpen(false)}
+                onCreate={handleCreateService}
+            />
+
+            <DocumentPreviewModal
+                isOpen={isPreviewModalOpen}
+                onClose={() => setIsPreviewModalOpen(false)}
+                doc={previewDoc}
+            />
+
+        </div >
     );
 }
