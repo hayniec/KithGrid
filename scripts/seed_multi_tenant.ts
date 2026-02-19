@@ -80,16 +80,17 @@ async function main() {
         communities, users, members,
         events, eventRsvps, marketplaceItems, serviceProviders,
         resources, documents, invitations, directMessages,
-        forumPosts, forumComments, forumLikes, announcements, localPlaces
+        forumPosts, forumComments, forumLikes, announcements, localPlaces, reservations
     } = await import("@/db/schema");
     const { eq } = await import("drizzle-orm");
 
     console.log("🧹 Wiping existing data...");
-    // 1. Deepest Dependencies (Likes, RSVPs, Comments, Messages)
+    // 1. Deepest Dependencies (Likes, RSVPs, Comments, Messages, Reservations)
     try { await db.delete(forumLikes); } catch { }
     try { await db.delete(forumComments); } catch { }
     try { await db.delete(eventRsvps); } catch { }
     try { await db.delete(directMessages); } catch { }
+    try { await db.delete(reservations); } catch { }
 
     // 2. Member/Community Content
     try { await db.delete(forumPosts); } catch { }

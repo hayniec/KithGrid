@@ -32,9 +32,9 @@ export function CreateResourceModal({ isOpen, onClose, onCreate }: CreateResourc
     return (
         <div className={styles.overlay}>
             <div className={styles.modal}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div className={styles.header}>
                     <h3 className={styles.title}>Add New Resource</h3>
-                    <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted-foreground)' }}>
+                    <button className={styles.closeButton} onClick={onClose} aria-label="Close">
                         <X size={20} />
                     </button>
                 </div>
@@ -50,8 +50,9 @@ export function CreateResourceModal({ isOpen, onClose, onCreate }: CreateResourc
                 </div>
 
                 <div className={styles.field}>
-                    <label className={styles.label}>Type</label>
+                    <label className={styles.label} htmlFor="resource-type">Type</label>
                     <select
+                        id="resource-type"
                         className={styles.select}
                         value={formData.type}
                         onChange={(e) => setFormData({ ...formData, type: e.target.value })}

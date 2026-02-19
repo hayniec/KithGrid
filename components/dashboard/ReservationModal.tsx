@@ -15,6 +15,7 @@ export function ReservationModal({ isOpen, onClose, resourceName, onConfirm }: R
     const [date, setDate] = useState("");
     const [startTime, setStartTime] = useState("");
     const [endTime, setEndTime] = useState("");
+    const [error, setError] = useState("");
 
     // Reset form when opening for a new resource
     useEffect(() => {
@@ -22,34 +23,52 @@ export function ReservationModal({ isOpen, onClose, resourceName, onConfirm }: R
             setDate("");
             setStartTime("");
             setEndTime("");
+            setError("");
         }
     }, [isOpen]);
+
+    // Validate time range whenever times change
+    useEffect(() => {
+        if (startTime && endTime && startTime >= endTime) {
+            setError("End time must be after start time");
+        } else {
+            setError("");
+        }
+    }, [startTime, endTime]);
 
     if (!isOpen) return null;
 
     const handleConfirm = () => {
         if (!date || !startTime || !endTime) return;
+        if (startTime >= endTime) {
+            setError("End time must be after start time");
+            return;
+        }
         onConfirm(date, startTime, endTime);
     };
+
+    // Get today's date for min attribute
+    const today = new Date().toISOString().split('T')[0];
+    const isValid = date && startTime && endTime && !error;
 
     return (
         <div className={styles.overlay}>
             <div className={styles.modal}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div className={styles.header}>
                     <h3 className={styles.title}>Reserve {resourceName}</h3>
-                    <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted-foreground)' }}>
+                    <button className={styles.closeButton} onClick={onClose} aria-label="Close">
                         <X size={20} />
                     </button>
                 </div>
 
                 <div className={styles.field}>
                     <label className={styles.label}>Date</label>
-                    <div style={{ position: 'relative' }}>
-                        <Calendar size={18} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--muted-foreground)', pointerEvents: 'none' }} />
+                    <div className={styles.inputWrapper}>
+                        <Calendar size={18} className={styles.inputIcon} />
                         <input
                             type="date"
-                            className={styles.input}
-                            style={{ paddingLeft: '2.5rem' }}
+                            min={today}
+                            className={`${styles.input} ${styles.inputWithIcon}`}
                             value={date}
                             onChange={(e) => setDate(e.target.value)}
                         />
@@ -59,12 +78,11 @@ export function ReservationModal({ isOpen, onClose, resourceName, onConfirm }: R
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
                     <div className={styles.field}>
                         <label className={styles.label}>Start Time</label>
-                        <div style={{ position: 'relative' }}>
-                            <Clock size={18} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--muted-foreground)', pointerEvents: 'none' }} />
+                        <div className={styles.inputWrapper}>
+                            <Clock size={18} className={styles.inputIcon} />
                             <input
                                 type="time"
-                                className={styles.input}
-                                style={{ paddingLeft: '2.5rem' }}
+                                className={`${styles.input} ${styles.inputWithIcon}`}
                                 value={startTime}
                                 onChange={(e) => setStartTime(e.target.value)}
                             />
@@ -72,18 +90,23 @@ export function ReservationModal({ isOpen, onClose, resourceName, onConfirm }: R
                     </div>
                     <div className={styles.field}>
                         <label className={styles.label}>End Time</label>
-                        <div style={{ position: 'relative' }}>
-                            <Clock size={18} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--muted-foreground)', pointerEvents: 'none' }} />
+                        <div className={styles.inputWrapper}>
+                            <Clock size={18} className={styles.inputIcon} />
                             <input
                                 type="time"
-                                className={styles.input}
-                                style={{ paddingLeft: '2.5rem' }}
+                                className={`${styles.input} ${styles.inputWithIcon}`}
                                 value={endTime}
                                 onChange={(e) => setEndTime(e.target.value)}
                             />
                         </div>
                     </div>
                 </div>
+
+                {error && (
+                    <div className={styles.errorText}>
+                        {error}
+                    </div>
+                )}
 
                 <div className={styles.actions}>
                     <button className={`${styles.button} ${styles.secondaryButton}`} onClick={onClose}>
@@ -92,7 +115,7 @@ export function ReservationModal({ isOpen, onClose, resourceName, onConfirm }: R
                     <button
                         className={`${styles.button} ${styles.primaryButton}`}
                         onClick={handleConfirm}
-                        disabled={!date || !startTime || !endTime}
+                        disabled={!isValid}
                     >
                         Confirm Booking
                     </button>

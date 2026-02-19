@@ -134,6 +134,19 @@ export const resources = pgTable('resources', {
     imageUrl: text('image_url'),
 });
 
+// 6b. Resource Reservations
+export const reservations = pgTable('reservations', {
+    id: uuid('id').primaryKey().defaultRandom(),
+    communityId: uuid('community_id').references(() => communities.id).notNull(),
+    resourceId: uuid('resource_id').references(() => resources.id, { onDelete: 'cascade' }).notNull(),
+    userId: uuid('user_id').references(() => members.id).notNull(),
+    date: date('date').notNull(),
+    startTime: time('start_time').notNull(),
+    endTime: time('end_time').notNull(),
+    status: text('status', { enum: ['Confirmed', 'Pending', 'Cancelled'] }).default('Confirmed'),
+    createdAt: timestamp('created_at').defaultNow(),
+});
+
 // 7. HOA Documents
 export const documents = pgTable('documents', {
     id: uuid('id').primaryKey().defaultRandom(),

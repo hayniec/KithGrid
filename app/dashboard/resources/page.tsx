@@ -6,7 +6,7 @@ import styles from "./resources.module.css";
 import { Building2, Wrench, Car, Users, CheckCircle, Plus, Trash2 } from "lucide-react";
 import { CreateResourceModal } from "@/components/dashboard/CreateResourceModal";
 import { ReservationModal } from "@/components/dashboard/ReservationModal";
-import { getCommunityResources, createResource, deleteResource } from "@/app/actions/resources";
+import { getCommunityResources, createResource, deleteResource, createReservation } from "@/app/actions/resources";
 
 interface Resource {
     id: string;
@@ -54,9 +54,24 @@ export default function ResourcesPage() {
         setReservationResource(resource);
     };
 
-    const handleReservationConfirm = (date: string, start: string, end: string) => {
-        alert(`Request sent for ${reservationResource.name} on ${date} from ${start} to ${end}.`);
-        setReservationResource(null);
+    const handleReservationConfirm = async (date: string, start: string, end: string) => {
+        if (!user?.communityId || !user?.id) return;
+
+        const res = await createReservation({
+            communityId: user.communityId,
+            resourceId: reservationResource?.id,
+            userId: user.id,
+            date: date,
+            startTime: start,
+            endTime: end
+        });
+
+        if (res.success) {
+            alert(`Reservation confirmed for ${reservationResource.name}!`);
+            setReservationResource(null);
+        } else {
+            alert(`Failed to reserve: ${res.error}`);
+        }
     };
 
     const handleCreate = async (data: any) => {

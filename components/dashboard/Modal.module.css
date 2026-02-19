@@ -9,6 +9,7 @@
     align-items: center;
     justify-content: center;
     z-index: 50;
+    -webkit-backdrop-filter: blur(4px);
     backdrop-filter: blur(4px);
     animation: fadeIn 0.15s ease-out;
 }
@@ -25,6 +26,30 @@
     display: flex;
     flex-direction: column;
     gap: 1.25rem;
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.closeButton {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--muted-foreground);
+    padding: 0.25rem;
+    border-radius: 4px;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.closeButton:hover {
+    color: var(--foreground);
+    background-color: var(--muted);
 }
 
 .title {
@@ -51,6 +76,20 @@
     color: var(--foreground);
 }
 
+.inputWrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.inputIcon {
+    position: absolute;
+    left: 0.75rem;
+    color: var(--muted-foreground);
+    pointer-events: none;
+    z-index: 10;
+}
+
 .input,
 .select,
 .textarea {
@@ -62,6 +101,11 @@
     font-size: 0.95rem;
     font-family: inherit;
     width: 100%;
+    transition: border-color 0.2s;
+}
+
+.inputWithIcon {
+    padding-left: 2.5rem;
 }
 
 .textarea {
@@ -74,6 +118,7 @@
 .textarea:focus {
     outline: 2px solid var(--primary);
     outline-offset: -1px;
+    border-color: var(--primary);
 }
 
 .actions {
@@ -92,7 +137,12 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: opacity 0.2s;
+    transition: all 0.2s;
+}
+
+.button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
 }
 
 .primaryButton {
@@ -101,7 +151,7 @@
     border: none;
 }
 
-.primaryButton:hover {
+.primaryButton:hover:not(:disabled) {
     opacity: 0.9;
 }
 
@@ -111,8 +161,15 @@
     border: 1px solid var(--border);
 }
 
-.secondaryButton:hover {
+.secondaryButton:hover:not(:disabled) {
     background-color: var(--muted);
+}
+
+.errorText {
+    color: var(--destructive, #ef4444);
+    font-size: 0.85rem;
+    margin-top: -0.5rem;
+    font-weight: 500;
 }
 
 @keyframes fadeIn {
