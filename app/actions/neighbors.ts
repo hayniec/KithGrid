@@ -1,7 +1,7 @@
 'use server'
 
 import { db } from "@/db";
-import { members, users } from "@/db/schema";
+import { members, users, communities } from "@/db/schema";
 import { eq, and, isNotNull, ne, or } from "drizzle-orm";
 
 export type NeighborActionState = {
@@ -9,6 +9,7 @@ export type NeighborActionState = {
     message?: string;
     data?: any;
     error?: string;
+    communityName?: string;
 };
 
 
@@ -152,8 +153,11 @@ export async function getNeighbors(communityId: string): Promise<NeighborActionS
             .innerJoin(users, eq(members.userId, users.id))
             .where(eq(members.communityId, communityId));
 
+        const [community] = await db.select().from(communities).where(eq(communities.id, communityId));
+
         return {
             success: true,
+            communityName: community?.name || "Unknown Community",
             data: results.map(n => ({
                 id: n.id,
                 name: n.name,

@@ -14,6 +14,7 @@ import { isAdmin, getUserRoles } from "@/utils/roleHelpers";
 export default function NeighborsPage() {
     const { user, setUser } = useUser();
     const [neighbors, setNeighbors] = useState<Neighbor[]>([]);
+    const [communityName, setCommunityName] = useState("");
     const [searchTerm, setSearchTerm] = useState("");
     const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
     const [inviteEmail, setInviteEmail] = useState("");
@@ -38,15 +39,19 @@ export default function NeighborsPage() {
 
             try {
                 const result = await getNeighbors(user.communityId);
-                if (result.success && result.data) {
-                    const mapped: Neighbor[] = result.data.map((n: any) => ({
-                        ...n,
-                        skills: n.skills || [],
-                        equipment: n.equipment || [],
-                        joinedDate: n.joinedDate ? new Date(n.joinedDate).toLocaleDateString() : 'Unknown',
-                        isOnline: n.isOnline || false
-                    }));
-                    setNeighbors(mapped);
+                if (result.success) {
+                    if (result.communityName) setCommunityName(result.communityName);
+
+                    if (result.data) {
+                        const mapped: Neighbor[] = result.data.map((n: any) => ({
+                            ...n,
+                            skills: n.skills || [],
+                            equipment: n.equipment || [],
+                            joinedDate: n.joinedDate ? new Date(n.joinedDate).toLocaleDateString() : 'Unknown',
+                            isOnline: n.isOnline || false
+                        }));
+                        setNeighbors(mapped);
+                    }
                 }
             } catch (e) {
                 console.error("Failed to load neighbors", e);
@@ -211,7 +216,10 @@ export default function NeighborsPage() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}>
                     <div>
-                        <h1 style={{ fontSize: '2rem', fontWeight: 700 }}>Neighbors Directory</h1>
+                        <h1 style={{ fontSize: '2rem', fontWeight: 700 }}>
+                            Neighbors Directory
+                            {communityName && <span style={{ fontWeight: 400, color: 'var(--muted-foreground)', fontSize: '0.6em', marginLeft: '0.5rem' }}>for {communityName}</span>}
+                        </h1>
                         <p style={{ color: 'var(--muted-foreground)', maxWidth: '600px' }}>
                             Connect with neighbors, find help with skills you need, or borrow equipment for your next project.
                         </p>
@@ -406,13 +414,16 @@ export default function NeighborsPage() {
             <div style={{ marginTop: '3rem', padding: '1rem', borderTop: '1px solid var(--border)', opacity: 0.7 }}>
                 <p style={{ fontSize: '0.8rem', fontWeight: 'bold', marginBottom: '0.5rem' }}>Debug: Switch Community</p>
                 <div style={{ display: 'flex', gap: '0.5rem' }}>
-                    <input
-                        type="text"
-                        placeholder="Paste Community ID here..."
-                        value={switchId}
-                        onChange={(e) => setSwitchId(e.target.value)}
-                        style={{ padding: '0.5rem', background: 'var(--background)', border: '1px solid var(--border)', borderRadius: '4px', flex: 1 }}
-                    />
+                    <div style={{ display: 'flex', flexDirection: 'column', width: '100%', gap: '0.25rem' }}>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--muted-foreground)' }}>Current ID: {user?.communityId}</div>
+                        <input
+                            type="text"
+                            placeholder="Paste Community ID here..."
+                            value={switchId}
+                            onChange={(e) => setSwitchId(e.target.value)}
+                            style={{ padding: '0.5rem', background: 'var(--background)', border: '1px solid var(--border)', borderRadius: '4px', width: '100%' }}
+                        />
+                    </div>
                     <button
                         onClick={async () => {
                             if (!switchId || !user?.id) return;
