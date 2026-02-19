@@ -412,6 +412,7 @@ export default function AdminPage() {
     const [resources, setResources] = useState<any[]>([]);
     const [isLoadingResources, setIsLoadingResources] = useState(false);
     const [isCreateResourceModalOpen, setIsCreateResourceModalOpen] = useState(false);
+    const [isCreatingResource, setIsCreatingResource] = useState(false);
 
     const loadResources = useCallback(async () => {
         if (!communityId) return;
@@ -436,8 +437,12 @@ export default function AdminPage() {
     }, [activeTab, communityId, loadResources]);
 
     const handleCreateResource = async (data: any) => {
-        if (!communityId) return;
+        if (!communityId) {
+            alert("Error: Community ID not found. Please refresh the page.");
+            return;
+        }
 
+        setIsCreatingResource(true);
         const res = await createResource({
             communityId: communityId,
             name: data.name,
@@ -446,6 +451,7 @@ export default function AdminPage() {
             description: data.description,
             isReservable: true
         });
+        setIsCreatingResource(false);
 
         if (res.success) {
             loadResources();
@@ -1074,6 +1080,7 @@ export default function AdminPage() {
                             isOpen={isCreateResourceModalOpen}
                             onClose={() => setIsCreateResourceModalOpen(false)}
                             onCreate={handleCreateResource}
+                            isLoading={isCreatingResource}
                         />
                     </div>
                 )

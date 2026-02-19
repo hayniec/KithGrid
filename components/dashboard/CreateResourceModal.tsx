@@ -1,22 +1,34 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import styles from "@/components/dashboard/Modal.module.css";
-import { X, Plus } from "lucide-react";
+import { X } from "lucide-react";
 
 interface CreateResourceModalProps {
     isOpen: boolean;
     onClose: () => void;
     onCreate: (data: any) => void;
+    isLoading?: boolean;
 }
 
-export function CreateResourceModal({ isOpen, onClose, onCreate }: CreateResourceModalProps) {
+export function CreateResourceModal({ isOpen, onClose, onCreate, isLoading = false }: CreateResourceModalProps) {
     const [formData, setFormData] = useState({
         name: "",
         type: "Tool",
         description: "",
         capacity: "",
     });
+
+    useEffect(() => {
+        if (isOpen) {
+            setFormData({
+                name: "",
+                type: "Tool",
+                description: "",
+                capacity: "",
+            });
+        }
+    }, [isOpen]);
 
     if (!isOpen) return null;
 
@@ -26,7 +38,6 @@ export function CreateResourceModal({ isOpen, onClose, onCreate }: CreateResourc
             ...formData,
             capacity: formData.capacity ? parseInt(formData.capacity) : undefined
         });
-        setFormData({ name: "", type: "Tool", description: "", capacity: "" });
     };
 
     return (
@@ -46,6 +57,7 @@ export function CreateResourceModal({ isOpen, onClose, onCreate }: CreateResourc
                         placeholder="e.g. Community Grill"
                         value={formData.name}
                         onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                        disabled={isLoading}
                     />
                 </div>
 
@@ -56,6 +68,7 @@ export function CreateResourceModal({ isOpen, onClose, onCreate }: CreateResourc
                         className={styles.select}
                         value={formData.type}
                         onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+                        disabled={isLoading}
                     >
                         <option value="Facility">Facility (Room, Park, etc.)</option>
                         <option value="Tool">Tool / Equipment</option>
@@ -72,6 +85,7 @@ export function CreateResourceModal({ isOpen, onClose, onCreate }: CreateResourc
                             placeholder="e.g. 50"
                             value={formData.capacity}
                             onChange={(e) => setFormData({ ...formData, capacity: e.target.value })}
+                            disabled={isLoading}
                         />
                     </div>
                 )}
@@ -83,19 +97,20 @@ export function CreateResourceModal({ isOpen, onClose, onCreate }: CreateResourc
                         placeholder="Describe the item and any rules for use..."
                         value={formData.description}
                         onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                        disabled={isLoading}
                     />
                 </div>
 
                 <div className={styles.actions}>
-                    <button className={`${styles.button} ${styles.secondaryButton}`} onClick={onClose}>
+                    <button className={`${styles.button} ${styles.secondaryButton}`} onClick={onClose} disabled={isLoading}>
                         Cancel
                     </button>
                     <button
                         className={`${styles.button} ${styles.primaryButton}`}
                         onClick={handleSubmit}
-                        disabled={!formData.name}
+                        disabled={!formData.name || isLoading}
                     >
-                        Create Resource
+                        {isLoading ? 'Creating...' : 'Create Resource'}
                     </button>
                 </div>
             </div>
