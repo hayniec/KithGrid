@@ -681,7 +681,7 @@ export default function SettingsPage() {
                 </button>
             </div>
 
-            {/* Debug / Dev Tools */}
+            {/* Debug / Dev Tools 
             <div className={styles.debugTools}>
                 <p className={styles.sectionSubtitleLarge}>Development Tools</p>
                 <button
@@ -691,6 +691,7 @@ export default function SettingsPage() {
                     Switch to {isAdmin(user) ? 'Resident' : 'Admin'} Mode
                 </button>
             </div>
+            */}
         </div >
     );
 }

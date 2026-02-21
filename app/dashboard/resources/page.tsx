@@ -108,7 +108,7 @@ export default function ResourcesPage() {
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
 
-// Removed Admin Toggle and Buttons
+            {/* Removed Admin Toggle and Buttons */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'end' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                     <h1 style={{ fontSize: '2rem', fontWeight: 700 }}>Community Resources</h1>

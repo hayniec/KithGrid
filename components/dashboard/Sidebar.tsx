@@ -22,7 +22,7 @@ const navigation = [
     { name: "Service Pros", href: "/dashboard/services", icon: Wrench },
     { name: "Local Guide", href: "/dashboard/local", icon: MapPin },
     { name: "Community Resources", href: "/dashboard/resources", icon: BoxSelect },
-    { name: "HOA Info", href: "/dashboard/documents", icon: FileText },
+    // { name: "HOA Info", href: "/dashboard/documents", icon: FileText },
     { name: "Emergency", href: "/dashboard/emergency", icon: Siren },
     { name: "Settings", href: "/dashboard/settings", icon: Settings },
     { name: "Admin Console", href: "/dashboard/admin", icon: Shield },
@@ -131,6 +131,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                         </svg>
                     </div>
                     {/* Community Switcher or Name */}
+                    {/*
                     {communities.length > 1 ? (
                         <div style={{ position: 'relative', width: '100%' }}>
                             <select
@@ -158,6 +159,8 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                     ) : (
                         <span className={styles.logoText}>{communityName}</span>
                     )}
+                    */}
+                    <span className={styles.logoText}>{communityName}</span>
 
                     {/* Close button for mobile inside sidebar */}
                     <button
