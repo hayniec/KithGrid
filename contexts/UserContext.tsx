@@ -33,12 +33,12 @@ const UserContext = createContext<UserContextType | undefined>(undefined);
 
 export function UserProvider({ children }: { children: React.ReactNode }) {
     const [user, setUserState] = useState<UserProfile>({
-        name: "Eric H.",
-        role: "admin",
-        roles: ["admin"],
-        avatar: "EH",
-        address: "123 Oak St, Unit 4",
-        communityId: "00000000-0000-0000-0000-000000000000",
+        name: "",
+        role: "resident",
+        roles: ["resident"],
+        avatar: "",
+        address: "",
+        communityId: "",
         emergencyButtonSettings: {
             visible: true,
             position: 'bottom-left'
