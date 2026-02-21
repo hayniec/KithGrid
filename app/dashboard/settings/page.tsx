@@ -50,24 +50,18 @@ export default function SettingsPage() {
     );
 
     const [profile, setProfile] = useState<UserProfile>({
-        firstName: "Eric",
-        lastName: "H.",
-        email: "eric.h@example.com",
-        address: "123 Maple Drive",
-        bio: "Love gardening and woodworking. Happy to help neighbors with small repairs!",
-        skills: ["Woodworking", "Gardening", "Grilling"],
-        equipment: [
-            { id: '1', name: 'Lawn Mower', isAvailable: true },
-            { id: '2', name: 'Cordless Drill', isAvailable: true }
-        ],
+        firstName: "",
+        lastName: "",
+        email: "",
+        address: "",
+        bio: "",
+        skills: [],
+        equipment: [],
         selectedMedicalNeighbors: [], // Start empty, will hydrate from local storage
-        externalContacts: [
-            { id: 'mock1', name: 'Dr. Williams', relationship: 'Primary Care Physician', phone: '555-0199' },
-            { id: 'mock2', name: 'Jane Doe', relationship: 'Sister', phone: '555-0123' }
-        ],
+        externalContacts: [],
         personalEmergencyCode: "",
         personalEmergencyInstructions: "",
-        primaryContactId: "mock1" // Default for demo
+        primaryContactId: ""
     });
 
     // Load from LocalStorage on mount
@@ -80,7 +74,7 @@ export default function SettingsPage() {
             } catch (e) {
                 console.error("Failed to parse profile", e);
             }
-        } else if (user && user.name !== "Eric H.") {
+        } else if (user && user.name) {
             // 2. Fallback: If no detailed profile, but we have a logged-in user (from registration), use that name
             const names = user.name.split(' ');
             const firstName = names[0] || "";
