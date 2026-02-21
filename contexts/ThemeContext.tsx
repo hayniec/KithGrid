@@ -50,7 +50,7 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
     const [theme, setThemeState] = useState<ThemeColor>(THEMES[0]);
     const [colorMode, setColorModeState] = useState<ColorMode>('system');
-    const [communityName, setCommunityNameState] = useState("KithGrid Community");
+    const [communityName, setCommunityNameState] = useState("");
     const [communityLogo, setCommunityLogoState] = useState("");
 
     // Helper to determine text color (black or white) based on background hex
