@@ -83,6 +83,12 @@ async function main() {
         forumPosts, forumComments, forumLikes, announcements, localPlaces, reservations
     } = await import("@/db/schema");
     const { eq } = await import("drizzle-orm");
+    const { createClient } = await import("@supabase/supabase-js");
+
+    const supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
 
     console.log("🧹 Wiping existing data...");
     // 1. Deepest Dependencies (Likes, RSVPs, Comments, Messages, Reservations)
@@ -116,7 +122,12 @@ async function main() {
         console.log(`👤 Found Super Admin: ${SUPER_ADMIN_EMAIL}`);
     } else {
         console.log(`👤 Creating Super Admin: ${SUPER_ADMIN_EMAIL}`);
+
+        // Supabase Signup
+        const { data: suData } = await supabase.auth.signUp({ email: SUPER_ADMIN_EMAIL, password: "temp123", options: { data: { name: "Super Admin" } } });
+
         const [newAdmin] = await db.insert(users).values({
+            id: suData.user?.id, // Optional depending on schema insert
             email: SUPER_ADMIN_EMAIL,
             name: "Super Admin",
             password: "temp123",
@@ -157,12 +168,18 @@ async function main() {
             if (exUser) {
                 uid = exUser.id;
             } else {
-                const [newUser] = await db.insert(users).values({
+                // Supabase Signup
+                const { data: tbUser } = await supabase.auth.signUp({ email: u.email, password: "password123", options: { data: { name: u.name } } });
+
+                const insertVals: any = {
                     email: u.email,
                     name: u.name,
                     password: "password123",
                     avatar: u.initial
-                }).returning();
+                };
+                if (tbUser?.user?.id) insertVals.id = tbUser.user.id;
+
+                const [newUser] = await db.insert(users).values(insertVals).returning();
                 uid = newUser.id;
             }
 
@@ -224,11 +241,6 @@ async function main() {
 }
 
 main().catch((err: any) => {
-    console.error("❌ Seeding failed with error:");
-    console.error("Message:", err.message);
-    if (err.table) console.error("Table:", err.table);
-    if (err.constraint) console.error("Constraint:", err.constraint);
-    if (err.detail) console.error("Detail:", err.detail);
-    if (err.routine) console.error("Routine:", err.routine);
+    console.dir(err, { depth: null });
     process.exit(1);
 });
