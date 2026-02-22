@@ -649,7 +649,7 @@ export default function SettingsPage() {
                                     <div className={styles.medicalNameContainer}>
                                         <span className={styles.medicalName}>{neighbor.name}</span>
                                         <span className={styles.medicalSkills}>
-                                            {neighbor.skills.filter(s => medicalKeywords.some(k => s.toLowerCase().includes(k.toLowerCase()))).join(", ")}
+                                            {neighbor.skills.filter((s: string) => medicalKeywords.some((k: string) => s.toLowerCase().includes(k.toLowerCase()))).join(", ")}
                                         </span>
                                     </div>
                                 </label>
