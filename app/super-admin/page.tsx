@@ -1,16 +1,16 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { signOut, useSession } from "next-auth/react";
 import { Shield, Plus, Check, PowerOff, Building, Download, Trash2, Database, LogOut, UserPlus, X, Copy } from "lucide-react";
 import styles from "./admin.module.css";
 import { getTenants } from "@/app/actions/super-admin";
 import { createCommunity, toggleCommunityStatus, deleteCommunity, toggleCommunityFeature } from "@/app/actions/communities";
 import { createInvitation } from "@/app/actions/invitations";
 import type { Community } from "@/types/community";
+import { createClient } from "@/utils/supabase/client";
 
 export default function SuperAdminPage() {
-    const { data: session, status, update } = useSession();
+    const supabase = createClient();
     const [communities, setCommunities] = useState<Community[]>([]);
     const [loading, setLoading] = useState(true);
     const [isCreating, setIsCreating] = useState(false);
@@ -173,6 +173,11 @@ export default function SuperAdminPage() {
         setSelectedCommunityId(null);
     };
 
+    const handleSignOut = async () => {
+        await supabase.auth.signOut();
+        window.location.href = '/login';
+    };
+
     return (
         <div className={styles.container}>
             <div className={styles.header}>
@@ -185,7 +190,7 @@ export default function SuperAdminPage() {
                 </div>
                 <div className={styles.actionsContainer}>
                     <button
-                        onClick={() => signOut({ callbackUrl: '/login' })}
+                        onClick={handleSignOut}
                         className={styles.signOutButton}
                     >
                         <LogOut size={16} />
@@ -332,8 +337,10 @@ export default function SuperAdminPage() {
                                             localStorage.setItem('kithGrid_customAccent', comm.branding.accentColor);
                                             localStorage.setItem('kithGrid_communityLogo', comm.branding.logoUrl);
 
-                                            // Update NextAuth Session to switch context
-                                            await update({ user: { communityId: comm.id } });
+                                            const { data: { user } } = await supabase.auth.getUser();
+                                            if (user) {
+                                                await supabase.auth.updateUser({ data: { communityId: comm.id } });
+                                            }
 
                                             alert(`Simulating login for ${comm.name}!`);
                                             window.location.href = '/dashboard';

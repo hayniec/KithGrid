@@ -2,8 +2,7 @@
 
 import { db } from "@/db";
 import { communities, users } from "@/db/schema";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/lib/auth";
+import { createClient } from "@/utils/supabase/server";
 import { eq } from "drizzle-orm";
 
 // Hardcoded Super Admins for now - typically this would be in the DB or env
@@ -17,9 +16,10 @@ const SUPER_ADMINS = [
 
 // Helper to check Super Admin capabilities
 async function isSuperAdmin() {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.email) return false;
-    return SUPER_ADMINS.includes(session.user.email.toLowerCase());
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user?.email) return false;
+    return SUPER_ADMINS.includes(user.email.toLowerCase());
 }
 
 // Map DB row to UI Community type (Shared logic, duplicated slightly to avoid importing from client-heavy files if any)
@@ -57,13 +57,14 @@ export async function getTenants() {
         console.log("[SuperAdmin] getTenants called");
 
         // Explicitly check for config (redundant but safe)
-        if (!process.env.NEXTAUTH_SECRET || !process.env.DATABASE_URL) {
+        if (!process.env.DATABASE_URL) {
             console.error("Server Configuration Error: Missing env vars");
-            return { success: false, error: "Server Configuration Error: NEXTAUTH_SECRET or DATABASE_URL is missing." };
+            return { success: false, error: "Server Configuration Error: DATABASE_URL is missing." };
         }
 
-        const session = await getServerSession(authOptions);
-        const email = session?.user?.email?.toLowerCase();
+        const supabase = await createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        const email = user?.email?.toLowerCase();
         const isAllowed = email && SUPER_ADMINS.includes(email);
 
         if (!isAllowed) {

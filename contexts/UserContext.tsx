@@ -1,8 +1,8 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect } from "react";
-import { useSession } from "next-auth/react";
 import { getPrimaryRole, getUserRoles } from "@/utils/roleHelpers";
+import { createClient } from "@/utils/supabase/client";
 
 export type UserRole = "admin" | "resident" | "event manager" | "board member";
 
@@ -32,6 +32,7 @@ interface UserContextType {
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
 export function UserProvider({ children }: { children: React.ReactNode }) {
+    const supabase = createClient();
     const [user, setUserState] = useState<UserProfile>({
         name: "",
         role: "resident",
@@ -45,11 +46,9 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         }
     });
 
-    const { data: session, status } = useSession();
+    const [status, setStatus] = useState<"loading" | "authenticated" | "unauthenticated">("loading");
 
     useEffect(() => {
-
-        // Try to recover settings from localStorage if available, to merge with session
         let savedSettings = undefined;
         try {
             const saved = localStorage.getItem("neighborNet_user");
@@ -63,53 +62,74 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
             console.error("Failed to parse saved user settings", e);
         }
 
-        if (status === "authenticated" && session?.user) {
-            // Get roles using helper function
-            const finalRoles = getUserRoles(session.user).map(r => r.toLowerCase() as UserRole);
-            const primaryRole = getPrimaryRole(session.user).toLowerCase() as UserRole;
+        const handleSession = (session: any) => {
+            if (session?.user) {
+                // Get roles using helper function (this might need refactoring to match Supabase schema later)
+                // For now, assuming user_metadata might contain roles, or falling back to defaults.
+                const meta = session.user.user_metadata || {};
+                const sessionUser = {
+                    ...session.user,
+                    name: meta.name || meta.full_name || session.user.email?.split('@')[0],
+                    image: meta.avatar_url || meta.picture || "",
+                    communityId: meta.communityId || session.user.communityId || "2bf6bc8a-899c-4e29-8ee7-f2038c804260",
+                    communityRoles: meta.communityRoles || session.user.communityRoles || []
+                };
 
-            setUserState(prev => ({
-                id: session.user.id,
-                name: session.user.name || "Neighbor",
-                email: session.user.email || "",
-                role: primaryRole,
-                roles: finalRoles,
-                avatar: session.user.image || "",
-                communityId: session.user.communityId || undefined,
-                // Preserve existing settings -> prefer local storage -> then current state -> then default
-                emergencyButtonSettings: savedSettings || prev.emergencyButtonSettings || {
-                    visible: false,
-                    position: 'bottom-left'
-                }
-            }));
-        } else if (status === "unauthenticated" || status === "loading") {
-            // MOCK USER FOR DEVELOPMENT/BYPASS
-            setUserState(prev => ({
-                id: "cd48f9df-4096-4f8d-b76c-9a6dca90ceab",
-                name: "Super Admin (Bypass)",
-                email: "admin@neighbornet.com",
-                role: "admin",
-                roles: ["admin", "resident"],
-                avatar: "SA",
-                communityId: "2bf6bc8a-899c-4e29-8ee7-f2038c804260",
-                // Preserve existing settings
-                emergencyButtonSettings: savedSettings || prev.emergencyButtonSettings || {
-                    visible: false,
-                    position: 'bottom-left'
-                }
-            }));
-        }
-    }, [session, status]);
+                const finalRoles = getUserRoles(sessionUser as any).map(r => r.toLowerCase() as UserRole);
+                const primaryRole = getPrimaryRole(sessionUser as any).toLowerCase() as UserRole;
 
-    // Keep localStorage for now as fallback or for manual overrides if any? 
-    // Actually, let's allow localStorage to initialize ONLY if session is not yet loaded or unauth?
-    // But session is better. Let's keep existing logic but session takes precedence.
+                setUserState(prev => ({
+                    id: session.user.id,
+                    name: sessionUser.name || "Neighbor",
+                    email: session.user.email || "",
+                    role: primaryRole,
+                    roles: finalRoles.length ? finalRoles : ["resident"],
+                    avatar: sessionUser.image || "",
+                    communityId: sessionUser.communityId || undefined,
+                    emergencyButtonSettings: savedSettings || prev.emergencyButtonSettings || {
+                        visible: false,
+                        position: 'bottom-left'
+                    }
+                }));
+                setStatus("authenticated");
+            } else {
+                // MOCK USER FOR DEVELOPMENT/BYPASS
+                setUserState(prev => ({
+                    id: "cd48f9df-4096-4f8d-b76c-9a6dca90ceab",
+                    name: "Super Admin (Bypass)",
+                    email: "admin@neighbornet.com",
+                    role: "admin",
+                    roles: ["admin", "resident"],
+                    avatar: "SA",
+                    communityId: "2bf6bc8a-899c-4e29-8ee7-f2038c804260",
+                    emergencyButtonSettings: savedSettings || prev.emergencyButtonSettings || {
+                        visible: false,
+                        position: 'bottom-left'
+                    }
+                }));
+                setStatus("unauthenticated");
+            }
+        };
+
+        // Check initial session
+        supabase.auth.getSession().then(({ data: { session } }) => {
+            handleSession(session);
+        });
+
+        // Listen for changes
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+            handleSession(session);
+        });
+
+        return () => subscription.unsubscribe();
+    }, [supabase.auth]);
+
     useEffect(() => {
         const savedUser = localStorage.getItem("neighborNet_user");
         if (savedUser && status !== "authenticated") {
             setUserState(JSON.parse(savedUser));
         }
-    }, []);
+    }, [status]);
 
     const setUser = (newUser: UserProfile) => {
         setUserState(newUser);
@@ -117,18 +137,13 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     };
 
     const toggleRole = () => {
-        // Toggle between admin and resident for primary role
         const newPrimaryRole = user.role === "admin" ? "resident" : "admin";
-
-        // Update roles array to include the new primary role
         let newRoles = [...user.roles];
         if (!newRoles.includes(newPrimaryRole)) {
             newRoles = [newPrimaryRole, ...newRoles.filter(r => r !== newPrimaryRole)];
         } else {
-            // Move the role to the front (make it primary)
             newRoles = [newPrimaryRole, ...newRoles.filter(r => r !== newPrimaryRole)];
         }
-
         setUser({ ...user, role: newPrimaryRole, roles: newRoles });
     };
 

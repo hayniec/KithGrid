@@ -52,27 +52,29 @@ const mapToUI = (row: any) => {
     return mapped;
 };
 
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/lib/auth";
+
 import { members } from "@/db/schema";
+import { createClient } from "@/utils/supabase/server";
 
 export async function getCommunities() {
     try {
-        const session = await getServerSession(authOptions);
+        const supabase = await createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+
         console.log("[getCommunities] Session check:", {
-            hasSession: !!session,
-            hasUser: !!session?.user,
-            hasUserId: !!session?.user?.id,
-            userId: session?.user?.id,
-            userEmail: session?.user?.email
+            hasSession: !!user,
+            hasUser: !!user,
+            hasUserId: !!user?.id,
+            userId: user?.id,
+            userEmail: user?.email
         });
 
-        if (!session?.user?.id) {
+        if (!user?.id) {
             console.error("[getCommunities] UNAUTHORIZED: No valid session found");
             return { success: false, error: "Unauthorized" };
         }
 
-        console.log("[getCommunities] Fetching communities for user:", session.user.id);
+        console.log("[getCommunities] Fetching communities for user:", user.id);
 
         // Fetch user's communities via membership
         const userCommunities = await db
@@ -106,7 +108,7 @@ export async function getCommunities() {
             })
             .from(communities)
             .innerJoin(members, eq(communities.id, members.communityId))
-            .where(eq(members.userId, session.user.id));
+            .where(eq(members.userId, user.id));
 
         console.log(`[getCommunities] Found ${userCommunities.length} communities.`);
         return { success: true, data: userCommunities.map(mapToUI) };
@@ -120,8 +122,10 @@ export async function getCommunities() {
 
 export async function createCommunity(data: any): Promise<CommunityActionState> {
     try {
-        const session = await getServerSession(authOptions);
-        if (!session?.user?.id) {
+        const supabase = await createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+
+        if (!user?.id) {
             return { success: false, error: "Unauthorized: No user session found" };
         }
 
@@ -154,7 +158,7 @@ export async function createCommunity(data: any): Promise<CommunityActionState> 
             // 2. Add Creator as Admin
             try {
                 await tx.insert(members).values({
-                    userId: session.user.id,
+                    userId: user.id,
                     communityId: inserted.id,
                     role: 'Admin',
                     address: 'Admin Address',

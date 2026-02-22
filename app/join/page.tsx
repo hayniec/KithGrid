@@ -7,6 +7,7 @@ import styles from "./join.module.css";
 import { validateInvitation, markInvitationUsed } from "@/app/actions/invitations";
 import { registerNeighbor } from "@/app/actions/neighbors";
 import { useUser, type UserRole } from "@/contexts/UserContext";
+import { createClient } from "@/utils/supabase/client";
 
 export default function JoinPage() {
     const router = useRouter();
@@ -54,6 +55,8 @@ export default function JoinPage() {
         }
     };
 
+    const supabase = createClient();
+
     const handleRegister = async () => {
         if (!formData.firstName || !formData.lastName || !formData.password) {
             alert("Please fill in all required fields.");
@@ -62,26 +65,40 @@ export default function JoinPage() {
 
         setIsRegistering(true);
         try {
-            // 1. Create the user account
-            const registerResult = await registerNeighbor({
-                communityId: communityId,
+            // 1. Create the user account in Supabase
+            const { data: authData, error: authError } = await supabase.auth.signUp({
                 email: formData.email,
                 password: formData.password,
-                name: `${formData.firstName} ${formData.lastName}`,
-                address: formData.address || "",
-                invitationCode: formData.code
+                options: {
+                    data: {
+                        first_name: formData.firstName,
+                        last_name: formData.lastName,
+                    }
+                }
             });
 
-            if (!registerResult.success) {
-                alert(`Registration failed: ${registerResult.error}`);
+            if (authError || !authData.user) {
+                alert(`Registration failed: ${authError?.message || "Unknown error"}`);
                 setIsRegistering(false);
                 return;
             }
 
-            // 2. Mark invitation used (Handled by server action now)
-            // if (invitationId) {
-            //     await markInvitationUsed(formData.code);
-            // }
+            // 2. Link with custom Drizzle tables via registerNeighbor action
+            const registerResult = await registerNeighbor({
+                communityId: communityId,
+                email: formData.email,
+                password: formData.password, // Remove if not saving in our DB
+                name: `${formData.firstName} ${formData.lastName}`,
+                address: formData.address || "",
+                invitationCode: formData.code,
+                authId: authData.user.id
+            });
+
+            if (!registerResult.success) {
+                alert(`Community linking failed: ${registerResult.error}`);
+                setIsRegistering(false);
+                return;
+            }
 
             // 3. Update User Context
             const newUserProfile = {

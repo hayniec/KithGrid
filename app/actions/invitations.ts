@@ -1,11 +1,10 @@
 'use server'
 
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/lib/auth";
 import { db } from "@/db";
 import { invitations, members, communities } from "@/db/schema";
 import { eq, and, inArray } from "drizzle-orm";
 import { sendInvitationEmail } from "@/app/lib/email";
+import { createClient } from "@/utils/supabase/server";
 
 export type InvitationActionState = {
     success: boolean;
@@ -53,18 +52,19 @@ export async function createInvitation(data: {
     createdBy?: string; // Legacy parameter, ignored in favor of session
 }): Promise<InvitationActionState> {
     try {
-        const session = await getServerSession(authOptions);
-        if (!session?.user?.id) {
+        const supabase = await createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+
+        if (!user?.id) {
             return { success: false, error: "Unauthorized" };
         }
 
-        // Feature Requirement: Only Admins can create invitations
         // Feature Requirement: Only Admins can create invitations
         const [adminMember] = await db
             .select()
             .from(members)
             .where(and(
-                eq(members.userId, session.user.id),
+                eq(members.userId, user.id),
                 eq(members.communityId, data.communityId)
             ));
 
@@ -120,9 +120,10 @@ export async function bulkCreateInvitations(data: {
     createdBy: string;
 }): Promise<InvitationActionState> {
     try {
-        const session = await getServerSession(authOptions);
-        // Fallback to data.createdBy if session is missing (e.g. mock user), but prefer session
-        const userId = session?.user?.id || data.createdBy;
+        const supabase = await createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        // Fallback to data.createdBy if user is missing (e.g. mock user), but prefer session
+        const userId = user?.id || data.createdBy;
 
         // Resolve Admin Member
         const [adminMember] = await db
@@ -174,8 +175,9 @@ export async function bulkCreateInvitations(data: {
 
 export async function getInvitations(communityId: string): Promise<InvitationActionState> {
     try {
-        const session = await getServerSession(authOptions);
-        if (!session?.user?.id) {
+        const supabase = await createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user?.id) {
             return { success: false, error: "Unauthorized" };
         }
 
@@ -185,7 +187,7 @@ export async function getInvitations(communityId: string): Promise<InvitationAct
             .from(members)
             .where(
                 and(
-                    eq(members.userId, session.user.id),
+                    eq(members.userId, user.id),
                     eq(members.communityId, communityId)
                 )
             );

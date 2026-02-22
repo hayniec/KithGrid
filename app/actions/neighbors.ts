@@ -25,6 +25,7 @@ export async function registerNeighbor(data: {
     name: string;
     address?: string;
     invitationCode: string;
+    authId?: string;
 }): Promise<NeighborActionState> {
     try {
         console.log("[registerNeighbor] Registering neighbor:", data.email);
@@ -48,12 +49,17 @@ export async function registerNeighbor(data: {
         let [user] = await db.select().from(users).where(eq(users.email, data.email));
 
         if (!user) {
-            [user] = await db.insert(users).values({
+            // We ensure we insert the ID as authId if supplied. Drizzle handles defaultRandom otherwise
+            const insertValues: any = {
                 email: data.email,
                 name: data.name,
                 password: data.password || 'temp123',
-                // avatar: ...
-            }).returning();
+            };
+            if (data.authId) {
+                insertValues.id = data.authId;
+            }
+
+            [user] = await db.insert(users).values(insertValues).returning();
         }
 
         // 2. Check Member Existence
@@ -107,16 +113,17 @@ export async function registerNeighbor(data: {
 /**
  * Get all neighbors for a community (for Admin Panel)
  */
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/lib/auth";
+import { createClient } from "@/utils/supabase/server";
 
 /**
  * Get all neighbors for a community (for Admin Panel)
  */
 export async function getNeighbors(communityId: string): Promise<NeighborActionState> {
     try {
-        const session = await getServerSession(authOptions);
-        if (!session?.user?.id) {
+        const supabase = await createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+
+        if (!user?.id) {
             return { success: false, error: "Unauthorized" };
         }
 
@@ -126,7 +133,7 @@ export async function getNeighbors(communityId: string): Promise<NeighborActionS
             .from(members)
             .where(
                 and(
-                    eq(members.userId, session.user.id),
+                    eq(members.userId, user.id),
                     eq(members.communityId, communityId)
                 )
             );
@@ -294,8 +301,9 @@ export async function getNeighbor(id: string): Promise<NeighborActionState> {
 
 export async function getCommunityOfficers(communityId: string): Promise<NeighborActionState> {
     try {
-        const session = await getServerSession(authOptions);
-        if (!session?.user?.id) {
+        const supabase = await createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user?.id) {
             return { success: false, error: "Unauthorized" };
         }
 
@@ -305,7 +313,7 @@ export async function getCommunityOfficers(communityId: string): Promise<Neighbo
             .from(members)
             .where(
                 and(
-                    eq(members.userId, session.user.id),
+                    eq(members.userId, user.id),
                     eq(members.communityId, communityId)
                 )
             );

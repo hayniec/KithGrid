@@ -1,20 +1,15 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useUser } from "@/contexts/UserContext";
 import styles from "../join/join.module.css";
-import { signIn } from "next-auth/react";
-
-// import { authenticateUser } from "@/app/actions/auth"; // Removed in favor of NextAuth
+import { createClient } from "@/utils/supabase/client";
 
 export default function LoginPage() {
     const router = useRouter();
     const { setUser } = useUser();
-
-    // useEffect(() => {
-    //     router.push("/dashboard");
-    // }, [router]);
+    const supabase = createClient();
 
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
@@ -27,15 +22,14 @@ export default function LoginPage() {
         setIsLoading(true);
 
         try {
-            const result = await signIn("credentials", {
-                redirect: false,
+            const { data, error } = await supabase.auth.signInWithPassword({
                 email,
                 password,
             });
 
-            if (result?.error) {
-                setError("Invalid email or password");
-            } else {
+            if (error) {
+                setError(error.message || "Invalid email or password");
+            } else if (data.user) {
                 // Successful login
                 router.push("/dashboard");
             }
@@ -47,9 +41,19 @@ export default function LoginPage() {
         }
     };
 
-    const handleSocialLogin = (provider: string) => {
+    const handleSocialLogin = async (provider: 'google' | 'facebook' | 'apple') => {
         setIsLoading(true);
-        signIn(provider, { callbackUrl: "/dashboard" });
+        const { error } = await supabase.auth.signInWithOAuth({
+            provider,
+            options: {
+                redirectTo: `${window.location.origin}/dashboard`,
+            },
+        });
+        if (error) {
+            console.error("OAuth error:", error);
+            setError("Failed to initialize social login.");
+            setIsLoading(false);
+        }
     };
 
     return (
