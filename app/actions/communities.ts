@@ -53,7 +53,7 @@ const mapToUI = (row: any) => {
 };
 
 
-import { members } from "@/db/schema";
+import { members, users } from "@/db/schema";
 import { createClient } from "@/utils/supabase/server";
 
 export async function getCommunities() {
@@ -74,7 +74,20 @@ export async function getCommunities() {
             return { success: false, error: "Unauthorized" };
         }
 
-        console.log("[getCommunities] Fetching communities for user:", user.id);
+        console.log("[getCommunities] Fetching communities for user:", user.email);
+
+        if (!user.email) {
+            return { success: false, error: "Unauthorized: No email found in session" };
+        }
+
+        // Cross-reference DB user by email
+        const [dbUser] = await db.select().from(users).where(eq(users.email, user.email));
+        if (!dbUser) {
+            console.error("[getCommunities] DB user not found for email:", user.email);
+            return { success: false, error: "Database user not found" };
+        }
+
+        const userId = dbUser.id;
 
         // Fetch user's communities via membership
         const userCommunities = await db
@@ -90,7 +103,6 @@ export async function getCommunities() {
                 hasForum: communities.hasForum,
                 hasMessages: communities.hasMessages,
                 hasServicePros: communities.hasServicePros,
-
                 hasLocalGuide: communities.hasLocalGuide,
                 hasEmergency: communities.hasEmergency,
                 isActive: communities.isActive,
@@ -108,7 +120,7 @@ export async function getCommunities() {
             })
             .from(communities)
             .innerJoin(members, eq(communities.id, members.communityId))
-            .where(eq(members.userId, user.id));
+            .where(eq(members.userId, userId));
 
         console.log(`[getCommunities] Found ${userCommunities.length} communities.`);
         return { success: true, data: userCommunities.map(mapToUI) };

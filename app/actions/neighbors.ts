@@ -177,10 +177,24 @@ export async function getNeighbors(communityId: string): Promise<NeighborActionS
 
         const [community] = await db.select().from(communities).where(eq(communities.id, communityId));
 
+        // Define hardcoded super admins to exclude
+        const SUPER_ADMINS = [
+            "sally.johnson@example.com",
+            "erich.haynie@gmail.com",
+            "eric.haynie@gmail.com",
+            (process.env.SUPER_ADMIN_EMAIL || "").toLowerCase()
+        ];
+
+        // Filter out Super Admins and the user themselves from showing up
+        const activeNeighbors = results.filter(n => {
+            if (!n.email) return false;
+            return !SUPER_ADMINS.includes(n.email.toLowerCase());
+        });
+
         return {
             success: true,
             communityName: community?.name || "Unknown Community",
-            data: results.map(n => ({
+            data: activeNeighbors.map(n => ({
                 id: n.id,
                 name: n.name,
                 email: n.email,
