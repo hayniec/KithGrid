@@ -300,12 +300,11 @@ export async function getNeighbor(id: string): Promise<NeighborActionState> {
                 address: n.address,
                 avatar: n.avatar,
                 joinedDate: n.joinedDate,
-                skills: (n.skills && n.skills.length > 0) ? n.skills : ['Gardening', 'Community Organizing', 'Home Repair'],
+                skills: n.skills || [],
                 isOnline: n.isOnline,
-                // Defaults for missing table columns
-                phone: "(555) 123-4567",
-                interests: ['Hiking', 'Board Games', 'Local History'],
-                equipment: ['Ladder', 'Power Drill', 'Lawn Mower']
+                phone: "",
+                interests: [],
+                equipment: []
             }
         };
     } catch (error: any) {

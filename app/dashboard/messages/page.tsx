@@ -11,6 +11,7 @@ import { useSearchParams } from "next/navigation";
 // Local types matching what we expect from actions
 interface Conversation {
     otherId: string;
+    otherUserId?: string;
     otherName: string;
     lastMessage: string;
     timestamp: Date;
@@ -63,35 +64,35 @@ function MessagesContent() {
     }, [activeChatId, user]);
 
     const loadConversations = async () => {
-        if (!user?.id) return;
+        if (!user?.id || !user?.communityId) return;
         setLoading(true);
-        const res = await getConversations(user.id);
+        const res = await getConversations(user.id, user.communityId);
         if (res.success && res.data) {
             setConversations(res.data);
             // Default select first if none selected and not directed by URL
             // Only if we haven't manually selected one via modal (tempChatName check?)
             if (!activeChatId && !toId && res.data.length > 0 && !tempChatName) {
-                setActiveChatId(res.data[0].otherId);
+                setActiveChatId(res.data[0].otherUserId || res.data[0].otherId);
             }
         }
         setLoading(false);
     };
 
     const loadThread = async (otherId: string) => {
-        if (!user?.id) return;
-        const res = await getThread(user.id, otherId);
+        if (!user?.id || !user?.communityId) return;
+        const res = await getThread(user.id, otherId, user.communityId);
         if (res.success && res.data) {
             setMessages(res.data);
         }
     };
 
     const handleSendMessage = async () => {
-        if (!newMessage.trim() || !user?.id || !activeChatId) return;
+        if (!newMessage.trim() || !user?.id || !activeChatId || !user?.communityId) return;
 
         // Optimistic append
         const tempMsg: DirectMessage = {
             id: 'temp-' + Date.now(),
-            senderId: user.id,
+            senderId: user.id, // For UI purposes
             recipientId: activeChatId,
             content: newMessage,
             createdAt: new Date(),
@@ -100,7 +101,7 @@ function MessagesContent() {
         setMessages([...messages, tempMsg]);
         setNewMessage("");
 
-        const res = await sendMessage(user.id, activeChatId, tempMsg.content);
+        const res = await sendMessage(user.id, activeChatId, tempMsg.content, user.communityId);
         if (res.success && res.data) {
             // Refresh conversation list to update last message snippet
             loadConversations();
@@ -113,7 +114,7 @@ function MessagesContent() {
     };
 
     const getActiveChatName = () => {
-        const conv = conversations.find(c => c.otherId === activeChatId);
+        const conv = conversations.find(c => (c.otherUserId || c.otherId) === activeChatId);
         return conv ? conv.otherName : (tempChatName || "Chat");
     };
 
@@ -161,17 +162,20 @@ function MessagesContent() {
                     {loading && conversations.length === 0 && <div style={{ padding: '1rem' }}>Loading...</div>}
                     {!loading && conversations.length === 0 && <div style={{ padding: '1rem', color: '#666' }}>No conversations yet.</div>}
 
-                    {conversations.map(conv => (
-                        <div
-                            key={conv.otherId}
-                            className={`${styles.conversationItem} ${activeChatId === conv.otherId ? styles.activeConversation : ''}`}
-                            onClick={() => { setActiveChatId(conv.otherId); setTempChatName(""); }}
-                        >
-                            <div className={styles.conversationName}>{conv.otherName}</div>
-                            <div className={styles.lastMessage}>{conv.lastMessage}</div>
-                            {conv.unreadCount > 0 && <span className={styles.unreadBadge}>{conv.unreadCount}</span>}
-                        </div>
-                    ))}
+                    {conversations.map(conv => {
+                        const chatId = conv.otherUserId || conv.otherId;
+                        return (
+                            <div
+                                key={chatId}
+                                className={`${styles.conversationItem} ${activeChatId === chatId ? styles.activeConversation : ''}`}
+                                onClick={() => { setActiveChatId(chatId); setTempChatName(""); }}
+                            >
+                                <div className={styles.conversationName}>{conv.otherName}</div>
+                                <div className={styles.lastMessage}>{conv.lastMessage}</div>
+                                {conv.unreadCount > 0 && <span className={styles.unreadBadge}>{conv.unreadCount}</span>}
+                            </div>
+                        );
+                    })}
                 </div>
             </div>
 

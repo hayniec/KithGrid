@@ -10,8 +10,20 @@ export type MessageActionState = {
     error?: string;
 };
 
-export async function getConversations(currentMemberId: string): Promise<MessageActionState> {
+// Helper to get memberId from userId and communityId
+async function getMemberId(userId: string, communityId: string): Promise<string | null> {
+    const [member] = await db
+        .select()
+        .from(members)
+        .where(and(eq(members.userId, userId), eq(members.communityId, communityId)));
+    return member ? member.id : null;
+}
+
+export async function getConversations(currentUserId: string, communityId: string): Promise<MessageActionState> {
     try {
+        const currentMemberId = await getMemberId(currentUserId, communityId);
+        if (!currentMemberId) return { success: false, error: 'Member not found.' };
+
         // Naive approach due to lack of distinct on in complex query easily
         const msgs = await db
             .select()
@@ -39,22 +51,26 @@ export async function getConversations(currentMemberId: string): Promise<Message
         }
 
         const conversationList = Array.from(conversationMap.values());
-        const otherIds = conversationList.map(c => c.otherId);
+        const otherMemberIds = conversationList.map(c => c.otherId);
 
-        if (otherIds.length > 0) {
+        if (otherMemberIds.length > 0) {
             const usersData = await db
                 .select({
                     memberId: members.id,
+                    userId: users.id,
                     name: users.name
                 })
                 .from(members)
                 .leftJoin(users, eq(members.userId, users.id))
-                .where(inArray(members.id, otherIds));
+                .where(and(inArray(members.id, otherMemberIds), eq(members.communityId, communityId)));
 
-            const nameMap = new Map(usersData.map(u => [u.memberId, u.name]));
+            const nameMap = new Map(usersData.map(u => [u.memberId, { name: u.name, userId: u.userId }]));
 
             conversationList.forEach(c => {
-                c.otherName = nameMap.get(c.otherId) || "Neighbor";
+                const mappedUser = nameMap.get(c.otherId);
+                // We use mappedUser.userId so the frontend can still route/identify using USER IDs
+                c.otherUserId = mappedUser?.userId || c.otherId;
+                c.otherName = mappedUser?.name || "Neighbor";
             });
         }
 
@@ -65,8 +81,13 @@ export async function getConversations(currentMemberId: string): Promise<Message
     }
 }
 
-export async function getThread(currentMemberId: string, otherMemberId: string): Promise<MessageActionState> {
+export async function getThread(currentUserId: string, otherUserId: string, communityId: string): Promise<MessageActionState> {
     try {
+        const currentMemberId = await getMemberId(currentUserId, communityId);
+        const otherMemberId = await getMemberId(otherUserId, communityId);
+
+        if (!currentMemberId || !otherMemberId) return { success: false, error: 'Members not found in this community.' };
+
         const msgs = await db
             .select()
             .from(directMessages)
@@ -84,24 +105,17 @@ export async function getThread(currentMemberId: string, otherMemberId: string):
     }
 }
 
-export async function sendMessage(senderUserId: string, recipientUserId: string, content: string): Promise<MessageActionState> {
+export async function sendMessage(senderUserId: string, recipientUserId: string, content: string, communityId: string): Promise<MessageActionState> {
     try {
-        // Look up sender member by user ID
-        const [senderMember] = await db.select().from(members).where(eq(members.userId, senderUserId));
-        if (!senderMember) {
-            return { success: false, error: 'Sender member not found.' };
-        }
+        const senderMemberId = await getMemberId(senderUserId, communityId);
+        if (!senderMemberId) return { success: false, error: 'Sender member not found in this community.' };
 
-        // Look up recipient member by user ID
-        const [recipientMember] = await db.select().from(members).where(eq(members.userId, recipientUserId));
-        if (!recipientMember) {
-            return { success: false, error: 'Recipient member not found.' };
-        }
+        const recipientMemberId = await getMemberId(recipientUserId, communityId);
+        if (!recipientMemberId) return { success: false, error: 'Recipient member not found in this community.' };
 
-        // Insert message using member IDs
         const [msg] = await db.insert(directMessages).values({
-            senderId: senderMember.id,
-            recipientId: recipientMember.id,
+            senderId: senderMemberId,
+            recipientId: recipientMemberId,
             content
         }).returning();
 
