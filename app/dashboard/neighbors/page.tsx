@@ -125,13 +125,15 @@ export default function NeighborsPage() {
                 <h2>Session Information Missing</h2>
                 <p>We couldn't detect your community information.</p>
 
-                <div style={{ marginTop: '1rem', padding: '1rem', background: '#333', color: '#fff', borderRadius: '4px', textAlign: 'left', fontSize: '0.8rem', fontFamily: 'monospace' }}>
-                    <strong>Debug Info:</strong><br />
-                    User ID: {user?.id || 'Missing'}<br />
-                    Email: {user?.email || 'Missing'}<br />
-                    Community ID: {user?.communityId || 'Missing'}<br />
-                    Role: {user?.role || 'Missing'}<br />
-                </div>
+                {isAdmin(user) && (
+                    <div style={{ marginTop: '1rem', padding: '1rem', background: '#333', color: '#fff', borderRadius: '4px', textAlign: 'left', fontSize: '0.8rem', fontFamily: 'monospace' }}>
+                        <strong>Debug Info:</strong><br />
+                        User ID: {user?.id || 'Missing'}<br />
+                        Email: {user?.email || 'Missing'}<br />
+                        Community ID: {user?.communityId || 'Missing'}<br />
+                        Role: {user?.role || 'Missing'}<br />
+                    </div>
+                )}
 
                 <div style={{ marginTop: '1.5rem', display: 'flex', gap: '1rem', justifyContent: 'center' }}>
                     <button
@@ -185,42 +187,44 @@ export default function NeighborsPage() {
                 </div>
 
                 {/* DEBUG: Force Switch Community (Rescue Mode) */}
-                <div style={{ marginTop: '2rem', padding: '1rem', background: '#333', border: '1px solid #555', borderRadius: '4px', maxWidth: '400px', margin: '2rem auto 0' }}>
-                    <p style={{ fontSize: '0.8rem', fontWeight: 'bold', marginBottom: '0.5rem', color: '#fff' }}>Debug: Rescue Account</p>
-                    <div style={{ display: 'flex', gap: '0.5rem' }}>
-                        <input
-                            type="text"
-                            placeholder="Paste ID..."
-                            value={switchId}
-                            onChange={(e) => setSwitchId(e.target.value)}
-                            style={{ padding: '0.5rem', background: '#222', border: '1px solid #555', borderRadius: '4px', flex: 1, color: '#fff' }}
-                        />
-                        <button
-                            onClick={async () => {
-                                if (!switchId || !user?.id) return;
-                                setIsSwitching(true);
-                                try {
-                                    const res = await switchCommunity(user.id, switchId);
-                                    if (res.success) {
-                                        alert('Switched! Logging you out to refresh your session. Please log in again.');
-                                        window.location.href = '/api/auth/signout?callbackUrl=/login';
-                                    } else {
-                                        // @ts-ignore - Handle dynamic response types during debug
-                                        alert('Failed: ' + (res.error || res.message || 'Unknown error'));
+                {isAdmin(user) && (
+                    <div style={{ marginTop: '2rem', padding: '1rem', background: '#333', border: '1px solid #555', borderRadius: '4px', maxWidth: '400px', margin: '2rem auto 0' }}>
+                        <p style={{ fontSize: '0.8rem', fontWeight: 'bold', marginBottom: '0.5rem', color: '#fff' }}>Debug: Rescue Account</p>
+                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                            <input
+                                type="text"
+                                placeholder="Paste ID..."
+                                value={switchId}
+                                onChange={(e) => setSwitchId(e.target.value)}
+                                style={{ padding: '0.5rem', background: '#222', border: '1px solid #555', borderRadius: '4px', flex: 1, color: '#fff' }}
+                            />
+                            <button
+                                onClick={async () => {
+                                    if (!switchId || !user?.id) return;
+                                    setIsSwitching(true);
+                                    try {
+                                        const res = await switchCommunity(user.id, switchId);
+                                        if (res.success) {
+                                            alert('Switched! Logging you out to refresh your session. Please log in again.');
+                                            window.location.href = '/api/auth/signout?callbackUrl=/login';
+                                        } else {
+                                            // @ts-ignore - Handle dynamic response types during debug
+                                            alert('Failed: ' + (res.error || res.message || 'Unknown error'));
+                                        }
+                                    } catch (err: any) {
+                                        alert('Error: ' + err.message);
+                                    } finally {
+                                        setIsSwitching(false);
                                     }
-                                } catch (err: any) {
-                                    alert('Error: ' + err.message);
-                                } finally {
-                                    setIsSwitching(false);
-                                }
-                            }}
-                            disabled={isSwitching}
-                            style={{ padding: '0.5rem 1rem', background: '#dc2626', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
-                        >
-                            {isSwitching ? '...' : 'Force Switch'}
-                        </button>
+                                }}
+                                disabled={isSwitching}
+                                style={{ padding: '0.5rem 1rem', background: '#dc2626', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+                            >
+                                {isSwitching ? '...' : 'Force Switch'}
+                            </button>
+                        </div>
                     </div>
-                </div>
+                )}
             </div>
         );
 
@@ -240,40 +244,42 @@ export default function NeighborsPage() {
                         </p>
 
                         {/* DEBUG: Force Switch Community (Top) */}
-                        <div style={{ marginTop: '1rem', padding: '0.5rem', background: '#f5f5f5', border: '1px solid #ddd', borderRadius: '4px', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                            <span style={{ fontSize: '0.8rem', fontWeight: 'bold' }}>Debug Switch:</span>
-                            <input
-                                type="text"
-                                placeholder="Paste ID..."
-                                value={switchId}
-                                onChange={(e) => setSwitchId(e.target.value)}
-                                style={{ padding: '0.25rem', fontSize: '0.8rem' }}
-                            />
-                            <button
-                                onClick={async () => {
-                                    if (!switchId || !user?.id) return;
-                                    setIsSwitching(true);
-                                    try {
-                                        const res = await switchCommunity(user.id, switchId);
-                                        if (res.success) {
-                                            alert('Switched! Logging you out to refresh permissions. Please log in again.');
-                                            window.location.href = '/api/auth/signout?callbackUrl=/login';
-                                        } else {
-                                            // @ts-ignore
-                                            alert('Failed: ' + (res.error || res.message || 'Unknown error'));
+                        {isAdmin(user) && (
+                            <div style={{ marginTop: '1rem', padding: '0.5rem', background: '#f5f5f5', border: '1px solid #ddd', borderRadius: '4px', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                                <span style={{ fontSize: '0.8rem', fontWeight: 'bold' }}>Debug Switch:</span>
+                                <input
+                                    type="text"
+                                    placeholder="Paste ID..."
+                                    value={switchId}
+                                    onChange={(e) => setSwitchId(e.target.value)}
+                                    style={{ padding: '0.25rem', fontSize: '0.8rem' }}
+                                />
+                                <button
+                                    onClick={async () => {
+                                        if (!switchId || !user?.id) return;
+                                        setIsSwitching(true);
+                                        try {
+                                            const res = await switchCommunity(user.id, switchId);
+                                            if (res.success) {
+                                                alert('Switched! Logging you out to refresh permissions. Please log in again.');
+                                                window.location.href = '/api/auth/signout?callbackUrl=/login';
+                                            } else {
+                                                // @ts-ignore
+                                                alert('Failed: ' + (res.error || res.message || 'Unknown error'));
+                                            }
+                                        } catch (err: any) {
+                                            alert('Error: ' + err.message);
+                                        } finally {
+                                            setIsSwitching(false);
                                         }
-                                    } catch (err: any) {
-                                        alert('Error: ' + err.message);
-                                    } finally {
-                                        setIsSwitching(false);
-                                    }
-                                }}
-                                disabled={isSwitching}
-                                style={{ padding: '0.25rem 0.5rem', fontSize: '0.8rem', cursor: 'pointer' }}
-                            >
-                                Switch
-                            </button>
-                        </div>
+                                    }}
+                                    disabled={isSwitching}
+                                    style={{ padding: '0.25rem 0.5rem', fontSize: '0.8rem', cursor: 'pointer' }}
+                                >
+                                    Switch
+                                </button>
+                            </div>
+                        )}
                     </div>
                     {isAdmin(user) && (
                         <button
@@ -457,45 +463,47 @@ export default function NeighborsPage() {
             )}
 
             {/* DEBUG: Force Switch Community */}
-            <div style={{ marginTop: '3rem', padding: '1rem', borderTop: '1px solid var(--border)', opacity: 0.7 }}>
-                <p style={{ fontSize: '0.8rem', fontWeight: 'bold', marginBottom: '0.5rem' }}>Debug: Switch Community</p>
-                <div style={{ display: 'flex', gap: '0.5rem' }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', width: '100%', gap: '0.25rem' }}>
-                        <div style={{ fontSize: '0.75rem', color: 'var(--muted-foreground)' }}>Current ID: {user?.communityId}</div>
-                        <input
-                            type="text"
-                            placeholder="Paste Community ID here..."
-                            value={switchId}
-                            onChange={(e) => setSwitchId(e.target.value)}
-                            style={{ padding: '0.5rem', background: 'var(--background)', border: '1px solid var(--border)', borderRadius: '4px', width: '100%' }}
-                        />
-                    </div>
-                    <button
-                        onClick={async () => {
-                            if (!switchId || !user?.id) return;
-                            setIsSwitching(true);
-                            try {
-                                const res = await switchCommunity(user.id, switchId);
-                                if (res.success) {
-                                    alert('Switched! Reloading...');
-                                    window.location.reload();
-                                } else {
-                                    // @ts-ignore
-                                    alert('Switch failed: ' + (res.error || res.message || 'Unknown error'));
+            {isAdmin(user) && (
+                <div style={{ marginTop: '3rem', padding: '1rem', borderTop: '1px solid var(--border)', opacity: 0.7 }}>
+                    <p style={{ fontSize: '0.8rem', fontWeight: 'bold', marginBottom: '0.5rem' }}>Debug: Switch Community</p>
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', width: '100%', gap: '0.25rem' }}>
+                            <div style={{ fontSize: '0.75rem', color: 'var(--muted-foreground)' }}>Current ID: {user?.communityId}</div>
+                            <input
+                                type="text"
+                                placeholder="Paste Community ID here..."
+                                value={switchId}
+                                onChange={(e) => setSwitchId(e.target.value)}
+                                style={{ padding: '0.5rem', background: 'var(--background)', border: '1px solid var(--border)', borderRadius: '4px', width: '100%' }}
+                            />
+                        </div>
+                        <button
+                            onClick={async () => {
+                                if (!switchId || !user?.id) return;
+                                setIsSwitching(true);
+                                try {
+                                    const res = await switchCommunity(user.id, switchId);
+                                    if (res.success) {
+                                        alert('Switched! Reloading...');
+                                        window.location.reload();
+                                    } else {
+                                        // @ts-ignore
+                                        alert('Switch failed: ' + (res.error || res.message || 'Unknown error'));
+                                    }
+                                } catch (err: any) {
+                                    alert('Switch error: ' + err.message);
+                                } finally {
+                                    setIsSwitching(false);
                                 }
-                            } catch (err: any) {
-                                alert('Switch error: ' + err.message);
-                            } finally {
-                                setIsSwitching(false);
-                            }
-                        }}
-                        disabled={isSwitching}
-                        style={{ padding: '0.5rem 1rem', background: '#333', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
-                    >
-                        {isSwitching ? 'Switching...' : 'Force Switch'}
-                    </button>
+                            }}
+                            disabled={isSwitching}
+                            style={{ padding: '0.5rem 1rem', background: '#333', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+                        >
+                            {isSwitching ? 'Switching...' : 'Force Switch'}
+                        </button>
+                    </div>
                 </div>
-            </div>
+            )}
         </div>
     );
 }

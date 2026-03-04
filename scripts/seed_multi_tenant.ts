@@ -2,7 +2,7 @@
 import dotenv from "dotenv";
 dotenv.config({ path: ".env.local" });
 
-const SUPER_ADMIN_EMAIL = process.env.SUPER_ADMIN_EMAIL || "erich.haynie@gmail.com";
+const SUPER_ADMIN_EMAIL = process.env.SUPER_ADMIN_EMAIL || "eric.haynie@gmail.com";
 
 // --- Data Definitions ---
 
