@@ -24,6 +24,7 @@ export default function NeighborsPage() {
     const [inviteEmail, setInviteEmail] = useState("");
     const [isLoading, setIsLoading] = useState(true);
     const [isSendingInvite, setIsSendingInvite] = useState(false);
+    const [debugError, setDebugError] = useState<string | null>(null);
 
     // Debug Switch Community
     const [switchId, setSwitchId] = useState("");
@@ -67,9 +68,12 @@ export default function NeighborsPage() {
                             }
                         }
                     }
+                } else {
+                    setDebugError(`getNeighbors failed: ${result.error || 'Unknown error'}`);
                 }
-            } catch (e) {
+            } catch (e: any) {
                 console.error("Failed to load neighbors", e);
+                setDebugError(`Exception fetching neighbors: ${e.message}`);
             } finally {
                 setIsLoading(false);
             }
@@ -79,9 +83,13 @@ export default function NeighborsPage() {
     }, [user.communityId, user.id]);
 
     const filteredNeighbors = neighbors.filter((neighbor) => {
+        // Exclude the current user from the Neighbors list
+        if (neighbor.email === user.email) return false;
+
         const term = searchTerm.toLowerCase();
+        const nName = neighbor.name || "";
         return (
-            neighbor.name.toLowerCase().includes(term) ||
+            nName.toLowerCase().includes(term) ||
             neighbor.skills.some((s) => s.toLowerCase().includes(term)) ||
             (neighbor.equipment || []).some((e) => e.name.toLowerCase().includes(term))
         );
@@ -384,6 +392,10 @@ export default function NeighborsPage() {
 
             {isLoading ? (
                 <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--muted-foreground)' }}>Loading neighbors...</div>
+            ) : debugError ? (
+                <div style={{ padding: '2rem', textAlign: 'center', color: 'red', fontWeight: 'bold' }}>
+                    Error: {debugError}
+                </div>
             ) : (
                 <div className={styles.grid}>
                     {filteredNeighbors.map((neighbor) => (

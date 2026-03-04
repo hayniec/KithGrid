@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { getPrimaryRole, getUserRoles } from "@/utils/roleHelpers";
 import { createClient } from "@/utils/supabase/client";
+import { getUserProfile } from "@/app/actions/user";
 
 export type UserRole = "admin" | "resident" | "event manager" | "board member";
 
@@ -62,12 +63,12 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
             console.error("Failed to parse saved user settings", e);
         }
 
-        const handleSession = (session: any) => {
+        const handleSession = async (session: any) => {
             if (session?.user) {
                 // Get roles using helper function (this might need refactoring to match Supabase schema later)
                 // For now, assuming user_metadata might contain roles, or falling back to defaults.
                 const meta = session.user.user_metadata || {};
-                const sessionUser = {
+                let sessionUser = {
                     ...session.user,
                     name: meta.name || meta.full_name || session.user.email?.split('@')[0],
                     image: meta.avatar_url || meta.picture || "",
@@ -75,10 +76,30 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
                     communityRoles: meta.communityRoles || session.user.communityRoles || []
                 };
 
+                // Sync with DB for real communityId
+                try {
+                    const profileRes = await getUserProfile(session.user.id);
+                    if (profileRes.success && profileRes.data) {
+                        if (profileRes.data.communityId) {
+                            sessionUser.communityId = profileRes.data.communityId;
+                        }
+                        if (profileRes.data.name) {
+                            sessionUser.name = profileRes.data.name;
+                        }
+                        if (profileRes.data.role) {
+                            // Update roles based on db
+                            sessionUser.communityRoles = [profileRes.data.role.toLowerCase()];
+                        }
+                    }
+                } catch (e) {
+                    console.error("UserContext DB sync failed", e);
+                }
+
                 const finalRoles = getUserRoles(sessionUser as any).map(r => r.toLowerCase() as UserRole);
                 const primaryRole = getPrimaryRole(sessionUser as any).toLowerCase() as UserRole;
 
                 setUserState(prev => ({
+                    ...prev,
                     id: session.user.id,
                     name: sessionUser.name || "Neighbor",
                     email: session.user.email || "",

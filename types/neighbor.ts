@@ -9,6 +9,7 @@ export interface Equipment {
 export interface Neighbor {
     id: string;
     name: string;
+    email?: string;
     role: 'Resident' | 'Board Member' | 'Admin' | 'Event Manager';
     address: string;
     avatar: string; // initials or image url
