@@ -121,11 +121,19 @@ import { createClient } from "@/utils/supabase/server";
 export async function getNeighbors(communityId: string): Promise<NeighborActionState> {
     try {
         const supabase = await createClient();
-        const { data: { user } } = await supabase.auth.getUser();
+        const { data: { user: authUser } } = await supabase.auth.getUser();
 
-        if (!user?.id) {
+        if (!authUser?.email) {
             return { success: false, error: "Unauthorized" };
         }
+
+        // Cross-reference DB user by email to avoid ID desync issues from database wiping/seeding
+        const [dbUser] = await db.select().from(users).where(eq(users.email, authUser.email));
+        if (!dbUser) {
+            return { success: false, error: "Database user not found" };
+        }
+
+        const userId = dbUser.id;
 
         // Verify requestor has admin/board access to this community
         const [membership] = await db
@@ -133,13 +141,20 @@ export async function getNeighbors(communityId: string): Promise<NeighborActionS
             .from(members)
             .where(
                 and(
-                    eq(members.userId, user.id),
+                    eq(members.userId, userId),
                     eq(members.communityId, communityId)
                 )
             );
 
-        if (!membership || !['Admin', 'Board Member', 'Resident', 'Event Manager'].includes(membership.role || '')) {
-            return { success: false, error: "Insufficient permissions" };
+        if (!membership) {
+            console.error(`[getNeighbors] No membership found for userId=${userId} in communityId=${communityId}`);
+            return { success: false, error: "Insufficient permissions (No membership)" };
+        }
+
+        const allowedRoles = ['Admin', 'Board Member', 'Resident', 'Event Manager', 'admin', 'resident', 'board member', 'event manager'];
+        if (!allowedRoles.includes(membership.role || '')) {
+            console.error(`[getNeighbors] Invalid role '${membership.role}' for userId=${userId}`);
+            return { success: false, error: `Insufficient permissions (Role: ${membership.role})` };
         }
 
         const results = await db

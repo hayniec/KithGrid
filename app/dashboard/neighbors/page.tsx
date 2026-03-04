@@ -251,6 +251,14 @@ export default function NeighborsPage() {
                             Connect with neighbors, find help with skills you need, or borrow equipment for your next project.
                         </p>
 
+                        <div style={{ marginTop: '1rem', padding: '1rem', background: '#333', color: '#fff', borderRadius: '4px', textAlign: 'left', fontSize: '0.8rem', fontFamily: 'monospace', maxWidth: '600px' }}>
+                            <strong>Client Check:</strong><br />
+                            User ID: {user?.id || 'Missing'}<br />
+                            Email: {user?.email || 'Missing'}<br />
+                            Community ID: {user?.communityId || 'Missing'}<br />
+                            Role: {user?.role || 'Missing'}<br />
+                        </div>
+
                         {/* DEBUG: Force Switch Community (Top) */}
                         {isAdmin(user) && (
                             <div style={{ marginTop: '1rem', padding: '0.5rem', background: '#f5f5f5', border: '1px solid #ddd', borderRadius: '4px', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
