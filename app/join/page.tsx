@@ -7,12 +7,12 @@ import styles from "./join.module.css";
 import { validateInvitation, markInvitationUsed } from "@/app/actions/invitations";
 import { registerNeighbor } from "@/app/actions/neighbors";
 import { useUser, type UserRole } from "@/contexts/UserContext";
-import { createClient } from "@/utils/supabase/client";
+import { signUp } from "@/utils/auth";
 
 export default function JoinPage() {
     const router = useRouter();
     const { setUser } = useUser();
-    const [step, setStep] = useState(1); // 1: Code, 2: Profile
+    const [step, setStep] = useState(1); // 1: Code, 2: Profile, 3: Check Email
     const [formData, setFormData] = useState({
         code: "",
         email: "",
@@ -55,8 +55,6 @@ export default function JoinPage() {
         }
     };
 
-    const supabase = createClient();
-
     const handleRegister = async () => {
         if (!formData.firstName || !formData.lastName || !formData.password) {
             setError("Please fill in all required fields.");
@@ -66,20 +64,39 @@ export default function JoinPage() {
         setIsRegistering(true);
         setError("");
         try {
-            // 1. Create the user account in Supabase
-            const { data: authData, error: authError } = await supabase.auth.signUp({
-                email: formData.email,
-                password: formData.password,
-                options: {
-                    data: {
-                        first_name: formData.firstName,
-                        last_name: formData.lastName,
-                    }
-                }
+            // 1. Create the user account via auth abstraction
+            const authResult = await signUp(formData.email, formData.password, {
+                first_name: formData.firstName,
+                last_name: formData.lastName,
             });
 
-            if (authError || !authData.user) {
-                setError(authError?.message || "Registration failed. Please try again.");
+            if (!authResult.success) {
+                setError(authResult.error);
+                setIsRegistering(false);
+                return;
+            }
+
+            // If email confirmation is required, show the check-email step
+            if (authResult.needsEmailConfirmation) {
+                // Still register in our DB so the record exists when they confirm
+                if (authResult.user) {
+                    await registerNeighbor({
+                        communityId: communityId,
+                        email: formData.email,
+                        password: formData.password,
+                        name: `${formData.firstName} ${formData.lastName}`,
+                        address: formData.address || "",
+                        invitationCode: formData.code,
+                        authId: authResult.user.id
+                    });
+                }
+                setStep(3);
+                setIsRegistering(false);
+                return;
+            }
+
+            if (!authResult.user) {
+                setError("Registration failed. Please try again.");
                 setIsRegistering(false);
                 return;
             }
@@ -88,11 +105,11 @@ export default function JoinPage() {
             const registerResult = await registerNeighbor({
                 communityId: communityId,
                 email: formData.email,
-                password: formData.password, // Remove if not saving in our DB
+                password: formData.password,
                 name: `${formData.firstName} ${formData.lastName}`,
                 address: formData.address || "",
                 invitationCode: formData.code,
-                authId: authData.user.id
+                authId: authResult.user.id
             });
 
             if (!registerResult.success) {
@@ -134,7 +151,7 @@ export default function JoinPage() {
                     </div>
                     <h1 className={styles.title}>Join KithGrid</h1>
                     <p className={styles.subtitle}>
-                        {step === 1 ? "Enter your invitation code to get started." : "Complete your profile."}
+                        {step === 1 ? "Enter your invitation code to get started." : step === 2 ? "Complete your profile." : "Almost there!"}
                     </p>
                 </div>
 
@@ -231,6 +248,36 @@ export default function JoinPage() {
                         >
                             {isRegistering ? "Creating Account..." : "Create Account"}
                         </button>
+                    </div>
+                )}
+
+                {step === 3 && (
+                    <div className={styles.formCol} style={{ textAlign: "center" }}>
+                        <div style={{
+                            width: 56,
+                            height: 56,
+                            borderRadius: "50%",
+                            background: "var(--primary)",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            margin: "0 auto 1rem",
+                        }}>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 28, height: 28 }}>
+                                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+                                <polyline points="22,6 12,13 2,6" />
+                            </svg>
+                        </div>
+                        <p style={{ color: "var(--foreground)", fontWeight: 600, fontSize: "1.1rem", marginBottom: "0.5rem" }}>
+                            Check your email
+                        </p>
+                        <p style={{ color: "var(--muted-foreground)", lineHeight: 1.6 }}>
+                            We sent a confirmation link to <strong style={{ color: "var(--foreground)" }}>{formData.email}</strong>.
+                            Click the link to verify your email and activate your account.
+                        </p>
+                        <p className={styles.footerText} style={{ marginTop: "1.5rem" }}>
+                            Already confirmed? <a href="/login" className={styles.link}>Sign in</a>
+                        </p>
                     </div>
                 )}
             </div>
