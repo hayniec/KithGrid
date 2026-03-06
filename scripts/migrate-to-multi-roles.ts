@@ -1,16 +1,15 @@
 
 import dotenv from "dotenv";
 dotenv.config({ path: ".env.local" });
-import { neon } from "@neondatabase/serverless";
-import { drizzle } from "drizzle-orm/neon-http";
+import { Pool } from "pg";
+import { drizzle } from "drizzle-orm/node-postgres";
 import { sql } from "drizzle-orm";
 
 const databaseUrl = process.env.DATABASE_URL!;
 if (!databaseUrl) throw new Error("DATABASE_URL is not set");
 
-const client = neon(databaseUrl);
-// Use any generic schema to get the db object
-const db = drizzle(client);
+const pool = new Pool({ connectionString: databaseUrl });
+const db = drizzle(pool);
 
 async function main() {
     console.log("Starting migration to multi-roles...");

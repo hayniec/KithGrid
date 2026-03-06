@@ -327,6 +327,67 @@ export async function getNeighbor(id: string): Promise<NeighborActionState> {
     }
 }
 
+/**
+ * Join a community with an invitation code (for already-authenticated users).
+ * Creates a new membership without requiring signup.
+ */
+export async function joinCommunityWithCode(data: {
+    userId: string;
+    communityId: string;
+    invitationCode: string;
+    role: string;
+}): Promise<NeighborActionState> {
+    try {
+        const supabase = await createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user?.id) {
+            return { success: false, error: "Unauthorized" };
+        }
+
+        // Verify the user ID matches the session
+        if (user.id !== data.userId) {
+            return { success: false, error: "User ID mismatch" };
+        }
+
+        // Check if already a member
+        const [existing] = await db
+            .select()
+            .from(members)
+            .where(
+                and(
+                    eq(members.userId, data.userId),
+                    eq(members.communityId, data.communityId)
+                )
+            );
+
+        if (existing) {
+            return { success: true, message: "Already a member of this community", data: existing };
+        }
+
+        // Create membership
+        const roleMap: Record<string, string> = {
+            'admin': 'Admin',
+            'resident': 'Resident',
+            'board member': 'Board Member',
+            'event manager': 'Event Manager',
+        };
+        const normalizedRole = roleMap[data.role.toLowerCase()] || 'Resident';
+
+        const [newMember] = await db.insert(members).values({
+            userId: data.userId,
+            communityId: data.communityId,
+            role: normalizedRole as any,
+            joinedDate: new Date(),
+            isOnline: true,
+        }).returning();
+
+        return { success: true, message: "Successfully joined community", data: newMember };
+    } catch (error: any) {
+        console.error("Failed to join community:", error);
+        return { success: false, error: error.message || "Failed to join community" };
+    }
+}
+
 export async function getCommunityOfficers(communityId: string): Promise<NeighborActionState> {
     try {
         const supabase = await createClient();

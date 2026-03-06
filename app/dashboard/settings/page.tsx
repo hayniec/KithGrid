@@ -60,28 +60,33 @@ export default function SettingsPage() {
         primaryContactId: ""
     });
 
-    // Load from LocalStorage on mount
+    // Load from LocalStorage on mount, but always use UserContext for name/email
     useEffect(() => {
-        // 1. Try to load detailed profile settings
+        // 1. Load supplementary profile fields from localStorage (skills, equipment, contacts, etc.)
         const savedProfile = localStorage.getItem('kithGrid_profile');
+        let localData: Partial<UserProfile> = {};
         if (savedProfile) {
             try {
-                setProfile(prev => ({ ...prev, ...JSON.parse(savedProfile) }));
+                localData = JSON.parse(savedProfile);
             } catch (e) {
                 console.error("Failed to parse profile", e);
             }
-        } else if (user && user.name) {
-            // 2. Fallback: If no detailed profile, but we have a logged-in user (from registration), use that name
-            const names = user.name.split(' ');
-            const firstName = names[0] || "";
-            const lastName = names.slice(1).join(' ') || ""; // Handle multi-word last names
-            setProfile(prev => ({
-                ...prev,
-                firstName,
-                lastName,
-                // We don't have email in UserContext context yet, but we could fetch it or just leave placeholder
-            }));
         }
+
+        // 2. Always derive name from UserContext (DB truth)
+        const names = (user?.name || "").split(' ');
+        const firstName = names[0] || "";
+        const lastName = names.slice(1).join(' ') || "";
+
+        setProfile(prev => ({
+            ...prev,
+            ...localData,
+            // DB-sourced fields always win over localStorage
+            firstName,
+            lastName,
+            email: user?.email || localData.email || "",
+            address: user?.address || localData.address || "",
+        }));
     }, [user]);
 
     const [notifications, setNotifications] = useState(() => {

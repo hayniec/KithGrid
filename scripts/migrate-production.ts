@@ -1,7 +1,7 @@
 import dotenv from "dotenv";
 dotenv.config({ path: ".env.local" });
-import { neon } from "@neondatabase/serverless";
-import { drizzle } from "drizzle-orm/neon-http";
+import { Pool } from "pg";
+import { drizzle } from "drizzle-orm/node-postgres";
 import { sql } from "drizzle-orm";
 import * as readline from "readline";
 
@@ -14,8 +14,8 @@ const dbInfo = urlParts
     ? `User: ${urlParts[1]}, Host: ${urlParts[3]}, Database: ${urlParts[4].split('?')[0]}`
     : "Unable to parse database URL";
 
-const client = neon(databaseUrl);
-const db = drizzle(client);
+const pool = new Pool({ connectionString: databaseUrl });
+const db = drizzle(pool);
 
 async function askConfirmation(question: string): Promise<boolean> {
     const rl = readline.createInterface({

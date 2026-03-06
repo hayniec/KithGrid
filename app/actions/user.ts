@@ -2,7 +2,7 @@
 
 import { db } from "@/db";
 import { users, members, communities } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 
 export async function getUserProfile(userId: string) {
     try {
@@ -20,53 +20,19 @@ export async function getUserProfile(userId: string) {
 
         if (!membership) {
             console.log("[getUserProfile] User has no memberships.");
-
-            // SPECIAL FIX: Auto-join 'Erich Haynie' to the first community if found
-            // This handles the case where the user account exists but link is lost
-            const email = dbUser.email.toLowerCase();
-            // Check for both spellings (Eric/Erich) and admin
-            if (email.includes('eric.haynie') || email.includes('erich.haynie') || email.includes('admin')) {
-                console.log(`[AutoFix] Creating admin membership for ${email}...`);
-
-                let [comm] = await db.select().from(communities).limit(1);
-
-                // Fallback: Create default community if DB is empty
-                if (!comm) {
-                    console.log("[AutoFix] No communities found! Creating 'Demo Community'...");
-                    const [newComm] = await db.insert(communities).values({
-                        name: "Demo Community",
-                        slug: `demo-${Date.now()}`,
-                        hasEmergency: true
-                    }).returning();
-                    comm = newComm;
+            return {
+                success: true,
+                data: {
+                    id: dbUser.id,
+                    email: dbUser.email,
+                    name: dbUser.name,
+                    communityId: undefined,
+                    role: 'resident'
                 }
-
-                if (comm) {
-                    console.log(`[AutoFix] Joining community: ${comm.name} (${comm.id})`);
-                    const [newMember] = await db.insert(members).values({
-                        userId: userId,
-                        communityId: comm.id,
-                        role: 'Admin', // Capitalized 'Admin' per schema enum
-                        joinedDate: new Date()
-                    }).returning();
-
-                    membership = newMember;
-                    console.log("[AutoFix] Membership created!", membership);
-                }
-            }
-
-
-            if (!membership) {
-                console.error("[getUserProfile] Auto-Fix FAILED. No membership found after create attempt.");
-                return {
-                    success: false,
-                    error: `Auto-Fix failed: Could not create membership. Email: ${email}.`
-                };
-            }
+            };
         }
 
         console.log("[getUserProfile] Found membership:", membership);
-        console.log(`[AutoFix] Deployment Check: ${new Date().toISOString()}`);
 
         // SAFE RETURN: Return ONLY simple strings to guarantee no serialization errors (No Date objects!)
         return {
@@ -86,36 +52,63 @@ export async function getUserProfile(userId: string) {
     }
 }
 
+/**
+ * Get the user's membership for a specific community.
+ * Does NOT delete or modify any memberships.
+ */
+export async function getMembershipForCommunity(userId: string, communityId: string) {
+    try {
+        const [membership] = await db
+            .select()
+            .from(members)
+            .where(and(eq(members.userId, userId), eq(members.communityId, communityId)));
+
+        if (!membership) {
+            return { success: false, error: "No membership found for this community" };
+        }
+
+        return {
+            success: true,
+            data: {
+                communityId: membership.communityId,
+                role: membership.role ? membership.role.toLowerCase() : 'resident',
+            }
+        };
+    } catch (e: any) {
+        console.error("[getMembershipForCommunity] Error:", e);
+        return { success: false, error: String(e.message || e) };
+    }
+}
+
+/**
+ * @deprecated Use client-side switchCommunity from UserContext instead.
+ * This function is kept for backwards compatibility but no longer deletes memberships.
+ */
 export async function switchCommunity(userId: string, newCommunityId: string) {
     try {
         console.log(`[switchCommunity] Request: User ${userId} -> Comm ${newCommunityId}`);
 
-        // 1. Check if user exists
+        // Verify user exists
         const [user] = await db.select().from(users).where(eq(users.id, userId));
         if (!user) {
-            console.error("[switchCommunity] User not found");
             return { success: false, error: "User ID invalid" };
         }
 
-        // 2. Clear old membership
-        console.log("[switchCommunity] Deleting old membership...");
-        await db.delete(members).where(eq(members.userId, userId));
+        // Verify membership exists for the target community
+        const [membership] = await db
+            .select()
+            .from(members)
+            .where(and(eq(members.userId, userId), eq(members.communityId, newCommunityId)));
 
-        // 3. Create new membership
-        console.log("[switchCommunity] Creating new membership...");
-        await db.insert(members).values({
-            userId: userId,
-            communityId: newCommunityId,
-            role: 'Admin',
-            joinedDate: new Date()
-        });
+        if (!membership) {
+            return { success: false, error: "You are not a member of this community" };
+        }
 
-        console.log("[switchCommunity] Success!");
+        console.log("[switchCommunity] Verified membership, switch allowed.");
         return { success: true, message: "Switched" };
 
     } catch (e: any) {
         console.error("[switchCommunity] CRITICAL FAIL:", e);
-        // Ensure error is a simple string
         return { success: false, error: String(e.message || e) };
     }
 }

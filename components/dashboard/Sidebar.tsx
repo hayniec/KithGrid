@@ -3,14 +3,13 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
-import { LayoutDashboard, Users, Calendar, Settings, Home, LogOut, Siren, BoxSelect, ShoppingBag, MessageCircle, MessageSquare, FileText, Wrench, MapPin, Shield, ChevronDown } from "lucide-react";
+import { LayoutDashboard, Users, Calendar, Settings, Home, LogOut, Siren, BoxSelect, ShoppingBag, MessageCircle, MessageSquare, FileText, Wrench, MapPin, Shield } from "lucide-react";
 import styles from "./dashboard.module.css";
 
 import { useTheme } from "@/contexts/ThemeContext";
 import { useUser } from "@/contexts/UserContext";
 import { isAdmin, formatRolesForDisplay } from "@/utils/roleHelpers";
-import { getCommunities } from "@/app/actions/communities";
-import { switchCommunity } from "@/app/actions/user";
+import { CommunitySwitcher } from "./CommunitySwitcher";
 
 const navigation = [
     { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -40,35 +39,14 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
     const handleLogout = () => {
         localStorage.removeItem('kithGrid_user');
         localStorage.removeItem('kithGrid_invites');
+        localStorage.removeItem('kithgrid_communityId');
+        localStorage.removeItem('neighborNet_user');
+        // Clear community cookie
+        document.cookie = 'kithgrid_community=;path=/;max-age=0';
         router.push('/login');
     };
-    const { communityName, setCommunityName, enabledModules, showEmergencyOnDesktop } = useTheme();
+    const { enabledModules, showEmergencyOnDesktop } = useTheme();
     const { user } = useUser();
-    const [communities, setCommunities] = useState<any[]>([]);
-
-    useEffect(() => {
-        if (user?.id) {
-            getCommunities().then(res => {
-                if (res.success && res.data) {
-                    setCommunities(res.data);
-                }
-            });
-        }
-    }, [user?.id]);
-
-    // Switch handler
-    const handleCommunityChange = async (newId: string) => {
-        if (!user?.id) return;
-        const res = await switchCommunity(user.id, newId);
-        if (res.success) {
-            // Update local name immediately to prevent flash
-            const target = communities.find(c => c.id === newId);
-            if (target) setCommunityName(target.name);
-            window.location.reload();
-        } else {
-            alert("Failed to switch community");
-        }
-    };
 
     // Check mobile status
     const [isMobile, setIsMobile] = useState(false);
@@ -130,37 +108,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                             <path d="M15 7L9 12L15 17" />
                         </svg>
                     </div>
-                    {/* Community Switcher or Name */}
-                    {/*
-                    {communities.length > 1 ? (
-                        <div style={{ position: 'relative', width: '100%' }}>
-                            <select
-                                className={styles.communitySelect}
-                                value={user?.communityId || ''}
-                                onChange={(e) => handleCommunityChange(e.target.value)}
-                                style={{
-                                    appearance: 'none',
-                                    background: 'transparent',
-                                    border: 'none',
-                                    color: 'var(--foreground)',
-                                    fontSize: '1rem',
-                                    fontWeight: 600,
-                                    width: '100%',
-                                    cursor: 'pointer',
-                                    paddingRight: '1.5rem'
-                                }}
-                            >
-                                {communities.map(c => (
-                                    <option key={c.id} value={c.id} style={{ color: 'black' }}>{c.name}</option>
-                                ))}
-                            </select>
-                            <ChevronDown size={14} style={{ position: 'absolute', right: 0, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', opacity: 0.5 }} />
-                        </div>
-                    ) : (
-                        <span className={styles.logoText}>{communityName}</span>
-                    )}
-                    */}
-                    <span className={styles.logoText}>{communityName}</span>
+                    <CommunitySwitcher />
 
                     {/* Close button for mobile inside sidebar */}
                     <button
