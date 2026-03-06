@@ -1,14 +1,14 @@
 import dotenv from "dotenv";
 dotenv.config({ path: ".env.local" });
-import { neon } from "@neondatabase/serverless";
-import { drizzle } from "drizzle-orm/neon-http";
+import { Pool } from "pg";
+import { drizzle } from "drizzle-orm/node-postgres";
 import { sql } from "drizzle-orm";
 
 const databaseUrl = process.env.DATABASE_URL!;
 if (!databaseUrl) throw new Error("DATABASE_URL is not set");
 
-const client = neon(databaseUrl);
-const db = drizzle(client);
+const pool = new Pool({ connectionString: databaseUrl });
+const db = drizzle(pool);
 
 async function main() {
     console.log("Checking roles column in members table...\n");
