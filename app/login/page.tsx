@@ -2,14 +2,11 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useUser } from "@/contexts/UserContext";
 import styles from "../join/join.module.css";
-import { createClient } from "@/utils/supabase/client";
+import { signInWithPassword, signInWithOAuth } from "@/utils/auth";
 
 export default function LoginPage() {
     const router = useRouter();
-    const { setUser } = useUser();
-    const supabase = createClient();
 
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
@@ -21,37 +18,20 @@ export default function LoginPage() {
         setError("");
         setIsLoading(true);
 
-        try {
-            const { data, error } = await supabase.auth.signInWithPassword({
-                email,
-                password,
-            });
-
-            if (error) {
-                setError(error.message || "Invalid email or password");
-            } else if (data.user) {
-                // Successful login
-                router.push("/select-community");
-            }
-        } catch (err) {
-            console.error(err);
-            setError("An unexpected error occurred.");
-        } finally {
-            setIsLoading(false);
+        const result = await signInWithPassword(email, password);
+        if (!result.success) {
+            setError(result.error);
+        } else {
+            router.push("/select-community");
         }
+        setIsLoading(false);
     };
 
-    const handleSocialLogin = async (provider: 'google' | 'facebook' | 'apple') => {
+    const handleSocialLogin = async (provider: "google" | "facebook" | "apple") => {
         setIsLoading(true);
-        const { error } = await supabase.auth.signInWithOAuth({
-            provider,
-            options: {
-                redirectTo: `${window.location.origin}/select-community`,
-            },
-        });
-        if (error) {
-            console.error("OAuth error:", error);
-            setError("Failed to initialize social login.");
+        const result = await signInWithOAuth(provider, `${window.location.origin}/select-community`);
+        if (!result.success) {
+            setError(result.error);
             setIsLoading(false);
         }
     };
@@ -60,6 +40,13 @@ export default function LoginPage() {
         <div className={styles.container}>
             <div className={styles.card}>
                 <div className={styles.header}>
+                    <div className={styles.logoBox}>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 28, height: 28 }}>
+                            <path d="M12 2L21 7V17L12 22L3 17V7L12 2Z" />
+                            <path d="M9 7V17" />
+                            <path d="M15 7L9 12L15 17" />
+                        </svg>
+                    </div>
                     <h1 className={styles.title}>Welcome Back</h1>
                     <p className={styles.subtitle}>Sign in to KithGrid</p>
                 </div>
@@ -78,7 +65,10 @@ export default function LoginPage() {
                         />
                     </div>
                     <div className={styles.fieldGroup}>
-                        <label htmlFor="password" className={styles.label}>Password</label>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+                            <label htmlFor="password" className={styles.label}>Password</label>
+                            <a href="/forgot-password" className={styles.link} style={{ fontSize: "0.8rem" }}>Forgot password?</a>
+                        </div>
                         <input
                             id="password"
                             type="password"

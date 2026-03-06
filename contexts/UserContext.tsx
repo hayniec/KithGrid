@@ -248,9 +248,13 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     }, [supabase.auth]);
 
     useEffect(() => {
-        const savedUser = localStorage.getItem("neighborNet_user");
-        if (savedUser && status !== "authenticated") {
-            setUserState(JSON.parse(savedUser));
+        // Only restore from localStorage in development for testing convenience.
+        // In production, auth state comes exclusively from the session.
+        if (process.env.NODE_ENV === "development") {
+            const savedUser = localStorage.getItem("neighborNet_user");
+            if (savedUser && status !== "authenticated") {
+                setUserState(JSON.parse(savedUser));
+            }
         }
     }, [status]);
 

@@ -4,7 +4,12 @@
       "Bash(cmd.exe /c \"code --install-extension anthropic.claude-code\")",
       "Bash(powershell.exe -Command \"code --install-extension anthropic.claude-code\")",
       "mcp__Craft_do_for_KithGrid__documents_list",
-      "mcp__Craft_do_for_KithGrid__blocks_get"
+      "mcp__Craft_do_for_KithGrid__blocks_get",
+      "mcp__Craft_do_for_KithGrid__documents_search",
+      "mcp__Craft_do_for_KithGrid__blocks_update",
+      "mcp__Craft_do_for_KithGrid__document_search",
+      "mcp__Craft_do_for_KithGrid__collectionItems_get",
+      "mcp__Craft_do_for_KithGrid__blocks_add"
     ]
   }
 }
