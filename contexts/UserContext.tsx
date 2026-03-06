@@ -155,7 +155,9 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
                         if (profileRes.data.name) {
                             sessionUser.name = profileRes.data.name;
                         }
-                        if (profileRes.data.role) {
+                        if (profileRes.data.roles && profileRes.data.roles.length > 0) {
+                            sessionUser.communityRoles = profileRes.data.roles;
+                        } else if (profileRes.data.role) {
                             sessionUser.communityRoles = [profileRes.data.role.toLowerCase()];
                         }
                     }
@@ -199,6 +201,11 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
                 if (sessionUser.communityId) {
                     setCommunityIdCookie(sessionUser.communityId);
                     localStorage.setItem("kithgrid_communityId", sessionUser.communityId);
+                }
+
+                // Map communityRoles to roles so getUserRoles() can find them
+                if (sessionUser.communityRoles && sessionUser.communityRoles.length > 0) {
+                    (sessionUser as any).roles = sessionUser.communityRoles;
                 }
 
                 const finalRoles = getUserRoles(sessionUser as any).map(r => r.toLowerCase() as UserRole);
