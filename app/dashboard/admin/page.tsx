@@ -5,7 +5,7 @@ import { useTheme, THEMES } from "@/contexts/ThemeContext";
 import styles from "./admin.module.css";
 import { Palette, Shield, Users, FileText, Trash2, CheckCircle, UserPlus, Mail, X, Edit2, Wrench, RefreshCw, Plus, Save } from "lucide-react";
 import { createInvitation, getInvitations, deleteInvitation, bulkCreateInvitations, InvitationActionState } from "@/app/actions/invitations";
-import { getCommunityById, updateCommunityHoaSettings, updateHoaExtendedSettings } from "@/app/actions/communities";
+import { getCommunityById, updateCommunityHoaSettings, updateHoaExtendedSettings, updateCommunityBranding } from "@/app/actions/communities";
 import { getNeighbors, deleteNeighbor, updateNeighbor } from "@/app/actions/neighbors";
 import { getCommunityResources, createResource, deleteResource } from "@/app/actions/resources";
 import { CreateResourceModal } from "@/components/dashboard/CreateResourceModal";
@@ -762,6 +762,36 @@ export default function AdminPage() {
                                     ))}
                                 </div>
                             </div>
+
+                            <button
+                                onClick={async () => {
+                                    if (!communityId) { alert("No community ID found."); return; }
+                                    const res = await updateCommunityBranding(communityId, {
+                                        primaryColor: theme.primary,
+                                        secondaryColor: theme.secondary,
+                                        accentColor: theme.accent,
+                                        logoUrl: communityLogo || ''
+                                    });
+                                    if (res.success) {
+                                        alert("Branding saved to database!");
+                                    } else {
+                                        alert("Failed to save branding: " + res.error);
+                                    }
+                                }}
+                                style={{
+                                    padding: '0.75rem',
+                                    borderRadius: 'var(--radius)',
+                                    background: 'var(--primary)',
+                                    color: 'white',
+                                    border: 'none',
+                                    fontWeight: 600,
+                                    cursor: 'pointer',
+                                    marginTop: '1rem',
+                                    width: '100%'
+                                }}
+                            >
+                                Save Branding
+                            </button>
                         </div>
                     </div>
 
