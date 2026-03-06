@@ -8,6 +8,61 @@ import {
     announcements, directMessages, serviceProviders,
     localPlaces, resources, reservations
 } from "@/db/schema";
+import { createClient } from "@supabase/supabase-js";
+
+// Helper: create Supabase Auth accounts for seed users when service role key is available.
+// Returns a map of email -> Supabase Auth UID so DB user IDs can match auth IDs.
+async function createAuthAccounts(
+    seedUsers: Array<{ email: string; password: string; name: string }>
+): Promise<Map<string, string>> {
+    const authIdMap = new Map<string, string>();
+
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+
+    if (!serviceRoleKey || !supabaseUrl) {
+        console.log("[SEED] SUPABASE_SERVICE_ROLE_KEY not set - skipping auth account creation.");
+        console.log("[SEED] Seed users will have DB records only (not loginable until auth accounts are created).");
+        return authIdMap;
+    }
+
+    const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey, {
+        auth: { autoRefreshToken: false, persistSession: false },
+    });
+
+    console.log("[SEED] Creating Supabase Auth accounts...");
+
+    // First, list and delete existing auth users that match seed emails
+    // to ensure clean state (idempotent re-seeding)
+    const { data: existingUsers } = await supabaseAdmin.auth.admin.listUsers({ perPage: 1000 });
+
+    const seedEmails = new Set(seedUsers.map(u => u.email));
+    if (existingUsers?.users) {
+        for (const existing of existingUsers.users) {
+            if (existing.email && seedEmails.has(existing.email)) {
+                await supabaseAdmin.auth.admin.deleteUser(existing.id);
+            }
+        }
+    }
+
+    for (const user of seedUsers) {
+        const { data, error } = await supabaseAdmin.auth.admin.createUser({
+            email: user.email,
+            password: user.password,
+            email_confirm: true,
+            user_metadata: { name: user.name },
+        });
+
+        if (error) {
+            console.warn(`[SEED] Auth account failed for ${user.email}: ${error.message}`);
+        } else if (data.user) {
+            authIdMap.set(user.email, data.user.id);
+        }
+    }
+
+    console.log(`[SEED] ${authIdMap.size}/${seedUsers.length} auth accounts created.`);
+    return authIdMap;
+}
 
 export async function resetAndSeed() {
     try {
@@ -136,97 +191,63 @@ export async function resetAndSeed() {
         // ============================================================
         // PHASE 3: CREATE USERS
         // ============================================================
-        // NOTE: These are DB records only. Supabase Auth accounts must be
-        // created separately (via /join flow or Supabase dashboard) with
-        // matching emails and the passwords listed below.
+        // When SUPABASE_SERVICE_ROLE_KEY is set, auth accounts are created
+        // automatically so seed users can log in immediately.
+        // Without it, DB records are created but users won't be loginable
+        // until auth accounts are created via /join or Supabase dashboard.
+
+        const seedUsers = [
+            { email: "sarah.chen@oakhills.example.com", password: "OakAdmin1!", name: "Sarah Chen", avatar: "SC" },
+            { email: "james.wilson@oakhills.example.com", password: "OakRes123!", name: "James Wilson", avatar: "JW" },
+            { email: "maria.garcia@oakhills.example.com", password: "OakBoard1!", name: "Maria Garcia", avatar: "MG" },
+            { email: "tom.bradley@oakhills.example.com", password: "OakRes456!", name: "Tom Bradley", avatar: "TB" },
+            { email: "lina.patel@maplecreek.example.com", password: "MapleAdmin1!", name: "Lina Patel", avatar: "LP" },
+            { email: "derek.nguyen@maplecreek.example.com", password: "MapleRes123!", name: "Derek Nguyen", avatar: "DN" },
+            { email: "amy.foster@maplecreek.example.com", password: "MapleRes456!", name: "Amy Foster", avatar: "AF" },
+            { email: "robert.kim@pinewood.example.com", password: "PineAdmin1!", name: "Robert Kim", avatar: "RK" },
+            { email: "jessica.martinez@pinewood.example.com", password: "PineRes123!", name: "Jessica Martinez", avatar: "JM" },
+            { email: "ben.thompson@pinewood.example.com", password: "PineBoard1!", name: "Ben Thompson", avatar: "BT" },
+            { email: "eva.russo@pinewood.example.com", password: "PineRes456!", name: "Eva Russo", avatar: "ER" },
+            { email: "alex.rivera@example.com", password: "Multi123!", name: "Alex Rivera", avatar: "AR" },
+        ];
+
+        // Create Supabase Auth accounts (if service role key is available)
+        const authIdMap = await createAuthAccounts(seedUsers);
+
+        // Helper to insert a user with auth ID if available
+        async function insertUser(u: typeof seedUsers[number]) {
+            const insertVals: any = {
+                email: u.email,
+                name: u.name,
+                password: u.password,
+                avatar: u.avatar,
+            };
+            const authId = authIdMap.get(u.email);
+            if (authId) insertVals.id = authId;
+
+            const [newUser] = await db.insert(users).values(insertVals).returning();
+            return newUser;
+        }
 
         // --- Oak Hills Users ---
-        const [sarahAdmin] = await db.insert(users).values({
-            name: "Sarah Chen",
-            email: "sarah.chen@oakhills.example.com",
-            password: "OakAdmin1!",
-            avatar: "SC",
-        }).returning();
-
-        const [jamesResident] = await db.insert(users).values({
-            name: "James Wilson",
-            email: "james.wilson@oakhills.example.com",
-            password: "OakRes123!",
-            avatar: "JW",
-        }).returning();
-
-        const [mariaBoard] = await db.insert(users).values({
-            name: "Maria Garcia",
-            email: "maria.garcia@oakhills.example.com",
-            password: "OakBoard1!",
-            avatar: "MG",
-        }).returning();
-
-        const [tomResident] = await db.insert(users).values({
-            name: "Tom Bradley",
-            email: "tom.bradley@oakhills.example.com",
-            password: "OakRes456!",
-            avatar: "TB",
-        }).returning();
+        const [sarahAdmin] = [await insertUser(seedUsers[0])];
+        const [jamesResident] = [await insertUser(seedUsers[1])];
+        const [mariaBoard] = [await insertUser(seedUsers[2])];
+        const [tomResident] = [await insertUser(seedUsers[3])];
 
         // --- Maple Creek Users ---
-        const [linaAdmin] = await db.insert(users).values({
-            name: "Lina Patel",
-            email: "lina.patel@maplecreek.example.com",
-            password: "MapleAdmin1!",
-            avatar: "LP",
-        }).returning();
-
-        const [derekResident] = await db.insert(users).values({
-            name: "Derek Nguyen",
-            email: "derek.nguyen@maplecreek.example.com",
-            password: "MapleRes123!",
-            avatar: "DN",
-        }).returning();
-
-        const [amyResident] = await db.insert(users).values({
-            name: "Amy Foster",
-            email: "amy.foster@maplecreek.example.com",
-            password: "MapleRes456!",
-            avatar: "AF",
-        }).returning();
+        const [linaAdmin] = [await insertUser(seedUsers[4])];
+        const [derekResident] = [await insertUser(seedUsers[5])];
+        const [amyResident] = [await insertUser(seedUsers[6])];
 
         // --- Pinewood Estates Users ---
-        const [robertAdmin] = await db.insert(users).values({
-            name: "Robert Kim",
-            email: "robert.kim@pinewood.example.com",
-            password: "PineAdmin1!",
-            avatar: "RK",
-        }).returning();
-
-        const [jessicaResident] = await db.insert(users).values({
-            name: "Jessica Martinez",
-            email: "jessica.martinez@pinewood.example.com",
-            password: "PineRes123!",
-            avatar: "JM",
-        }).returning();
-
-        const [benBoard] = await db.insert(users).values({
-            name: "Ben Thompson",
-            email: "ben.thompson@pinewood.example.com",
-            password: "PineBoard1!",
-            avatar: "BT",
-        }).returning();
-
-        const [evaResident] = await db.insert(users).values({
-            name: "Eva Russo",
-            email: "eva.russo@pinewood.example.com",
-            password: "PineRes456!",
-            avatar: "ER",
-        }).returning();
+        const [robertAdmin] = [await insertUser(seedUsers[7])];
+        const [jessicaResident] = [await insertUser(seedUsers[8])];
+        const [benBoard] = [await insertUser(seedUsers[9])];
+        const [evaResident] = [await insertUser(seedUsers[10])];
 
         // --- Multi-community user (belongs to Oak Hills AND Maple Creek) ---
-        const [crossUser] = await db.insert(users).values({
-            name: "Alex Rivera",
-            email: "alex.rivera@example.com",
-            password: "Multi123!",
-            avatar: "AR",
-        }).returning();
+        const [crossUser] = [await insertUser(seedUsers[11])];
 
         console.log("[SEED] 12 Users created.");
 
