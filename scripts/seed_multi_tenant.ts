@@ -85,10 +85,20 @@ async function main() {
     const { eq } = await import("drizzle-orm");
     const { createClient } = await import("@supabase/supabase-js");
 
-    const supabase = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    );
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+    const supabaseKey = serviceRoleKey || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+    const useAdmin = !!serviceRoleKey;
+
+    const supabase = createClient(supabaseUrl, supabaseKey, {
+        auth: { autoRefreshToken: false, persistSession: false },
+    });
+
+    if (useAdmin) {
+        console.log("🔑 Using service role key - auth accounts will be fully loginable.");
+    } else {
+        console.log("⚠️  No SUPABASE_SERVICE_ROLE_KEY - using anon key (auth accounts may require email confirmation).");
+    }
 
     console.log("🧹 Wiping existing data...");
     // 1. Deepest Dependencies (Likes, RSVPs, Comments, Messages, Reservations)
@@ -123,8 +133,9 @@ async function main() {
     } else {
         console.log(`👤 Creating Super Admin: ${SUPER_ADMIN_EMAIL}`);
 
-        // Supabase Signup
-        const { data: suData } = await supabase.auth.signUp({ email: SUPER_ADMIN_EMAIL, password: "temp123", options: { data: { name: "Super Admin" } } });
+        const { data: suData } = useAdmin
+            ? await supabase.auth.admin.createUser({ email: SUPER_ADMIN_EMAIL, password: "temp123", email_confirm: true, user_metadata: { name: "Super Admin" } })
+            : await supabase.auth.signUp({ email: SUPER_ADMIN_EMAIL, password: "temp123", options: { data: { name: "Super Admin" } } });
 
         const [newAdmin] = await db.insert(users).values({
             id: suData.user?.id, // Optional depending on schema insert
@@ -168,8 +179,9 @@ async function main() {
             if (exUser) {
                 uid = exUser.id;
             } else {
-                // Supabase Signup
-                const { data: tbUser } = await supabase.auth.signUp({ email: u.email, password: "password123", options: { data: { name: u.name } } });
+                const { data: tbUser } = useAdmin
+                    ? await supabase.auth.admin.createUser({ email: u.email, password: "password123", email_confirm: true, user_metadata: { name: u.name } })
+                    : await supabase.auth.signUp({ email: u.email, password: "password123", options: { data: { name: u.name } } });
 
                 const insertVals: any = {
                     email: u.email,
