@@ -250,6 +250,18 @@ export async function validateInvitation(code: string): Promise<InvitationAction
             };
         }
 
+        // Fetch community name for display
+        let communityName = "Community";
+        try {
+            const [comm] = await db
+                .select({ name: communities.name })
+                .from(communities)
+                .where(eq(communities.id, invitation.communityId));
+            if (comm) communityName = comm.name;
+        } catch (e) {
+            // Non-critical, proceed with default name
+        }
+
         return {
             success: true,
             data: {
@@ -257,6 +269,7 @@ export async function validateInvitation(code: string): Promise<InvitationAction
                 code: invitation.code,
                 email: invitation.email,
                 communityId: invitation.communityId,
+                communityName,
                 role: invitation.role,
             }
         };
