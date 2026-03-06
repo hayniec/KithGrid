@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "craft": {
+      "type": "sse",
+      "url": "https://mcp.craft.do/links/HJG9RKowniA/mcp"
+    }
+  }
+}
