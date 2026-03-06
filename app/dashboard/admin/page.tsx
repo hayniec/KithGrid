@@ -10,6 +10,7 @@ import { getNeighbors, deleteNeighbor, updateNeighbor } from "@/app/actions/neig
 import { getCommunityResources, createResource, deleteResource } from "@/app/actions/resources";
 import { CreateResourceModal } from "@/components/dashboard/CreateResourceModal";
 import { useUser } from "@/contexts/UserContext";
+import { getUserRoles } from "@/utils/roleHelpers";
 import { Upload } from "lucide-react";
 
 type Tab = 'general' | 'users' | 'invites' | 'resources';
@@ -770,7 +771,7 @@ export default function AdminPage() {
                                                 </td>
                                                 <td style={{ padding: '0.5rem' }}>
                                                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.25rem' }}>
-                                                        {(user.roles && user.roles.length > 0 ? user.roles : [user.role || 'Resident']).map((role, idx) => (
+                                                        {getUserRoles(user).map((role, idx) => (
                                                             <span key={idx} style={{
                                                                 padding: '0.25rem 0.5rem',
                                                                 borderRadius: '1rem',

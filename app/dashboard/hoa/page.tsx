@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useUser } from "@/contexts/UserContext";
+import { canUploadDocuments } from "@/utils/roleHelpers";
 import styles from "./hoa.module.css";
 import { FileText, Download, Mail, Phone, MapPin, Upload, MessageSquare, X, ChevronDown } from "lucide-react";
 import { UploadDocumentModal } from "@/components/dashboard/UploadDocumentModal";
@@ -43,8 +44,7 @@ export default function HoaPage() {
     const [communityName, setCommunityName] = useState<string>("Community HOA");
     const [extendedSettings, setExtendedSettings] = useState<any>(null);
 
-    const role = user?.role?.toLowerCase();
-    const canUpload = role === 'admin' || role === 'board member';
+    const canUpload = canUploadDocuments(user);
 
     // Fallback data for amenities, rules, and vendors
     const defaultAmenities = [

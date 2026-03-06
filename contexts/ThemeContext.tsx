@@ -19,6 +19,13 @@ export const THEMES: ThemeColor[] = [
     { name: "Slate", primary: "#475569", ring: "#94a3b8" },
 ];
 
+interface CommunityBranding {
+    primaryColor: string;
+    secondaryColor: string;
+    accentColor: string;
+    logoUrl?: string;
+}
+
 interface ThemeContextType {
     theme: ThemeColor;
     setTheme: (theme: ThemeColor) => void;
@@ -30,6 +37,7 @@ interface ThemeContextType {
     setCommunityName: (name: string) => void;
     communityLogo: string;
     setCommunityLogo: (url: string) => void;
+    applyCommunityBranding: (branding: CommunityBranding) => void;
     enabledModules: {
         marketplace: boolean;
         resources: boolean;
@@ -198,6 +206,28 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         localStorage.setItem("kithGrid_communityLogo", url);
     };
 
+    const applyCommunityBranding = (branding: CommunityBranding) => {
+        const { primaryColor, secondaryColor, accentColor, logoUrl } = branding;
+
+        // Persist to localStorage
+        localStorage.setItem("kithGrid_customPrimary", primaryColor);
+        localStorage.setItem("kithGrid_customSecondary", secondaryColor);
+        localStorage.setItem("kithGrid_customAccent", accentColor);
+        if (logoUrl) {
+            localStorage.setItem("kithGrid_communityLogo", logoUrl);
+            setCommunityLogoState(logoUrl);
+        }
+
+        // Apply CSS variables immediately
+        document.documentElement.style.setProperty("--primary", primaryColor);
+        document.documentElement.style.setProperty("--ring", primaryColor);
+        document.documentElement.style.setProperty("--primary-foreground", getContrastYIQ(primaryColor));
+        document.documentElement.style.setProperty("--secondary", secondaryColor);
+        document.documentElement.style.setProperty("--secondary-foreground", getContrastYIQ(secondaryColor));
+        document.documentElement.style.setProperty("--accent", accentColor);
+        document.documentElement.style.setProperty("--accent-foreground", getContrastYIQ(accentColor));
+    };
+
     // Apply theme on initial load as well to prevent flash
     useEffect(() => {
         // Only apply the "theme" state if there are NO custom overrides in local storage.
@@ -216,6 +246,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
             colorMode, setColorMode,
             communityName, setCommunityName,
             communityLogo, setCommunityLogo,
+            applyCommunityBranding,
             enabledModules, toggleModule,
             showEmergencyOnDesktop, setShowEmergencyOnDesktop
         }}>

@@ -5,6 +5,7 @@ import styles from "@/components/dashboard/dashboard.module.css";
 import hoaStyles from "../hoa/hoa.module.css";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useUser } from "@/contexts/UserContext";
+import { isAdmin, isBoardMember } from "@/utils/roleHelpers";
 import { getCommunityEvents } from "@/app/actions/events";
 import { getCommunityAnnouncements, createAnnouncement, deleteAnnouncement } from "@/app/actions/announcements";
 import { getCommunityDocuments, createDocument } from "@/app/actions/documents";
@@ -18,6 +19,7 @@ import { UploadDocumentModal } from "@/components/dashboard/UploadDocumentModal"
 import { ContactOfficerModal } from "@/components/dashboard/ContactOfficerModal";
 import { CreateServiceModal } from "@/components/dashboard/CreateServiceModal";
 import { DocumentPreviewModal } from "@/components/dashboard/DocumentPreviewModal";
+import { OnboardingChecklist } from "@/components/dashboard/OnboardingChecklist";
 
 interface Announcement {
     id: string;
@@ -91,8 +93,8 @@ export default function DashboardPage() {
     const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
     const [previewDoc, setPreviewDoc] = useState<{ url: string, name: string } | null>(null);
 
-    const isAdmin = user?.role === 'admin' || user?.role === 'board member';
-    const canUpload = isAdmin;
+    const isAdminOrBoard = isAdmin(user) || isBoardMember(user);
+    const canUpload = isAdminOrBoard;
 
     // Fallback data for amenities, rules, and vendors
     const defaultAmenities = [
@@ -320,6 +322,14 @@ export default function DashboardPage() {
                 <p style={{ color: 'var(--muted-foreground)', fontSize: '1.1rem' }}>Here's what's happening in {communityName || 'your community'}.</p>
             </div>
 
+            <OnboardingChecklist communityData={{
+                hasMembers: officers.length > 0,
+                hasEvents: upcomingEvents.length > 0,
+                hasAnnouncements: announcements.length > 0,
+                hasDocuments: documents.length > 0,
+                hasBranding: true,
+            }} />
+
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem' }}>
                 {/* Upcoming Events Widget */}
                 <div style={{
@@ -381,7 +391,7 @@ export default function DashboardPage() {
                             <Megaphone size={18} />
                             Announcements
                         </h3>
-                        {isAdmin && (
+                        {isAdminOrBoard && (
                             <button
                                 onClick={() => setIsAnnouncementModalOpen(true)}
                                 style={{
@@ -428,7 +438,7 @@ export default function DashboardPage() {
                                     )}
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}>
                                         <div style={{ fontWeight: 500, marginBottom: 4 }}>{announcement.title}</div>
-                                        {isAdmin && (
+                                        {isAdminOrBoard && (
                                             <button
                                                 onClick={() => handleDeleteAnnouncement(announcement.id)}
                                                 style={{

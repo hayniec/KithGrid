@@ -22,10 +22,10 @@ export default function DashboardLayoutClient({
     const [sosMessage, setSosMessage] = useState("");
     const router = useRouter();
     const { user } = useUser();
-    const { communityName, setCommunityName } = useTheme();
+    const { communityName, setCommunityName, applyCommunityBranding } = useTheme();
 
     useEffect(() => {
-        const prepareSOS = async () => {
+        const prepareDashboard = async () => {
             if (!user) return;
 
             let message = "";
@@ -37,9 +37,18 @@ export default function DashboardLayoutClient({
                     if (res.success && res.data) {
                         const com = res.data.find((c: any) => c.id === user.communityId);
                         if (com) {
+                            // Apply community name and branding
                             if (com.name && com.name !== communityName) {
                                 setCommunityName(com.name);
                             }
+                            if (com.branding) {
+                                applyCommunityBranding(com.branding);
+                            }
+
+                            // Emergency feature flag
+                            setShowSOSButton(com.features?.emergency ?? true);
+
+                            // Build emergency message
                             if (com.emergency?.accessCode) {
                                 message = `Community Gate Code: ${com.emergency.accessCode}`;
                                 if (com.emergency.instructions) {
@@ -50,7 +59,7 @@ export default function DashboardLayoutClient({
                         }
                     }
                 } catch (err) {
-                    console.error("Failed to fetch emergency info", err);
+                    console.error("Failed to fetch community info", err);
                 }
             }
 
@@ -68,17 +77,8 @@ export default function DashboardLayoutClient({
             }
 
             setSosMessage(message);
-            // Check if emergency feature is enabled
-            if (user.communityId) {
-                const res = await getCommunities();
-                if (res.success && res.data) {
-                    const com = res.data.find((c: any) => c.id === user.communityId);
-                    // Default to true if not set, or use the feature flag
-                    setShowSOSButton(com?.features?.emergency ?? true);
-                }
-            }
         };
-        prepareSOS();
+        prepareDashboard();
     }, [user, user?.communityId]);
 
     const handleSOS = () => {

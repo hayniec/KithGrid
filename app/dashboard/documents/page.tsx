@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import styles from "./documents.module.css";
 import { FileText, Download, Eye, X, Upload, Home, Mail, Phone, MapPin, Link as LinkIcon, ExternalLink } from "lucide-react";
 import { useUser } from "@/contexts/UserContext";
+import { canUploadDocuments } from "@/utils/roleHelpers";
 import { getCommunityDocuments, createDocument } from "@/app/actions/documents";
 import { getNeighbors } from "@/app/actions/neighbors"; // For board members if needed
 
@@ -122,7 +123,7 @@ export default function DocumentsPage() {
             {activeTab === 'documents' && (
                 <div>
                     <div className={styles.flexEndContainer}>
-                        {(user.roles?.some(r => r === 'admin' || r === 'board member') || user.role === 'admin' || user.role === 'board member') && (
+                        {canUploadDocuments(user) && (
                             <button
                                 className={styles.uploadButton}
                                 onClick={() => setIsUploadModalOpen(true)}
