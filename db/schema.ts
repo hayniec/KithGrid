@@ -230,7 +230,21 @@ export const forumLikes = pgTable('forum_likes', {
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
 });
 
-// 15. Announcements
+// 15. Notifications
+export const notifications = pgTable('notifications', {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id').references(() => users.id).notNull(),
+    communityId: uuid('community_id').references(() => communities.id).notNull(),
+    type: text('type', { enum: ['message', 'forum_reply', 'event_reminder', 'announcement'] }).notNull(),
+    title: text('title').notNull(),
+    body: text('body'),
+    relatedId: text('related_id'), // ID of the related entity (message, post, event)
+    relatedUrl: text('related_url'), // URL to navigate to
+    isRead: boolean('is_read').default(false),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+});
+
+// 16. Announcements
 export const announcements = pgTable('announcements', {
     id: uuid('id').primaryKey().defaultRandom(),
     communityId: uuid('community_id').references(() => communities.id).notNull(),

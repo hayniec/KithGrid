@@ -137,6 +137,30 @@ export async function createComment(data: {
             content: data.content
         }).returning();
 
+        // Notify the post author about the reply (non-blocking)
+        import("./notifications").then(async ({ createNotification }) => {
+            try {
+                // Find the post to get the author's member ID
+                const [post] = await db.select().from(forumPosts).where(eq(forumPosts.id, data.postId));
+                if (post && post.authorId !== data.authorId) {
+                    // Get the author's userId from the members table
+                    const [authorMember] = await db.select().from(members).where(eq(members.id, post.authorId));
+                    if (authorMember?.userId) {
+                        await createNotification({
+                            userId: authorMember.userId,
+                            communityId: post.communityId,
+                            type: 'forum_reply',
+                            title: 'New reply to your post',
+                            body: data.content.length > 100 ? data.content.slice(0, 100) + '...' : data.content,
+                            relatedUrl: '/dashboard/forum',
+                        });
+                    }
+                }
+            } catch (e) {
+                console.error("Forum reply notification failed", e);
+            }
+        });
+
         return { success: true, data: newComment };
     } catch (error: any) {
         return { success: false, error: error.message };

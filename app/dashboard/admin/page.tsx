@@ -3,9 +3,9 @@
 import { useState, useEffect, useCallback } from "react";
 import { useTheme, THEMES } from "@/contexts/ThemeContext";
 import styles from "./admin.module.css";
-import { Palette, Shield, Users, FileText, Trash2, CheckCircle, UserPlus, Mail, X, Edit2, Wrench, RefreshCw } from "lucide-react";
+import { Palette, Shield, Users, FileText, Trash2, CheckCircle, UserPlus, Mail, X, Edit2, Wrench, RefreshCw, Plus, Save } from "lucide-react";
 import { createInvitation, getInvitations, deleteInvitation, bulkCreateInvitations, InvitationActionState } from "@/app/actions/invitations";
-import { getCommunityById, updateCommunityHoaSettings } from "@/app/actions/communities";
+import { getCommunityById, updateCommunityHoaSettings, updateHoaExtendedSettings } from "@/app/actions/communities";
 import { getNeighbors, deleteNeighbor, updateNeighbor } from "@/app/actions/neighbors";
 import { getCommunityResources, createResource, deleteResource } from "@/app/actions/resources";
 import { CreateResourceModal } from "@/components/dashboard/CreateResourceModal";
@@ -49,6 +49,13 @@ export default function AdminPage() {
     const [hoaContactEmail, setHoaContactEmail] = useState("");
     const [isSavingHoa, setIsSavingHoa] = useState(false);
 
+    // HOA Extended Settings State
+    const [amenities, setAmenities] = useState<any[]>([]);
+    const [rules, setRules] = useState<any[]>([]);
+    const [vendors, setVendors] = useState<any[]>([]);
+    const [isSavingExtended, setIsSavingExtended] = useState(false);
+    const [extendedDirty, setExtendedDirty] = useState(false);
+
     const [refreshTrigger, setRefreshTrigger] = useState(0);
 
     // Fetch real Community ID and Settings
@@ -74,6 +81,12 @@ export default function AdminPage() {
                             setHoaDuesFrequency(current.hoaSettings.duesFrequency || "Monthly");
                             setHoaDuesDate(current.hoaSettings.duesDate || "1st");
                             setHoaContactEmail(current.hoaSettings.contactEmail || "");
+                        }
+                        // Load extended settings
+                        if (current.hoaExtendedSettings) {
+                            if (current.hoaExtendedSettings.amenities) setAmenities(current.hoaExtendedSettings.amenities);
+                            if (current.hoaExtendedSettings.rules) setRules(current.hoaExtendedSettings.rules);
+                            if (current.hoaExtendedSettings.vendors) setVendors(current.hoaExtendedSettings.vendors);
                         }
                     } else {
                         console.warn("[Admin] Failed to load community:", res.error);
@@ -128,6 +141,87 @@ export default function AdminPage() {
     };
 
 
+
+    const handleSaveExtendedSettings = async () => {
+        if (!communityId) return;
+        setIsSavingExtended(true);
+        const res = await updateHoaExtendedSettings(communityId, { amenities, rules, vendors });
+        setIsSavingExtended(false);
+        if (res.success) {
+            setExtendedDirty(false);
+            alert("Community content saved!");
+        } else {
+            alert("Failed to save: " + res.error);
+        }
+    };
+
+    // Amenity helpers
+    const addAmenity = () => {
+        setAmenities([...amenities, { icon: "🏠", name: "", hours: "", note: "" }]);
+        setExtendedDirty(true);
+    };
+    const updateAmenity = (idx: number, field: string, value: string) => {
+        const updated = [...amenities];
+        updated[idx] = { ...updated[idx], [field]: value };
+        setAmenities(updated);
+        setExtendedDirty(true);
+    };
+    const removeAmenity = (idx: number) => {
+        setAmenities(amenities.filter((_, i) => i !== idx));
+        setExtendedDirty(true);
+    };
+
+    // Rule helpers
+    const addRuleCategory = () => {
+        setRules([...rules, { category: "", icon: "📋", items: [""] }]);
+        setExtendedDirty(true);
+    };
+    const updateRuleCategory = (idx: number, field: string, value: string) => {
+        const updated = [...rules];
+        updated[idx] = { ...updated[idx], [field]: value };
+        setRules(updated);
+        setExtendedDirty(true);
+    };
+    const addRuleItem = (catIdx: number) => {
+        const updated = [...rules];
+        updated[catIdx] = { ...updated[catIdx], items: [...updated[catIdx].items, ""] };
+        setRules(updated);
+        setExtendedDirty(true);
+    };
+    const updateRuleItem = (catIdx: number, itemIdx: number, value: string) => {
+        const updated = [...rules];
+        const items = [...updated[catIdx].items];
+        items[itemIdx] = value;
+        updated[catIdx] = { ...updated[catIdx], items };
+        setRules(updated);
+        setExtendedDirty(true);
+    };
+    const removeRuleItem = (catIdx: number, itemIdx: number) => {
+        const updated = [...rules];
+        updated[catIdx] = { ...updated[catIdx], items: updated[catIdx].items.filter((_: any, i: number) => i !== itemIdx) };
+        setRules(updated);
+        setExtendedDirty(true);
+    };
+    const removeRuleCategory = (idx: number) => {
+        setRules(rules.filter((_, i) => i !== idx));
+        setExtendedDirty(true);
+    };
+
+    // Vendor helpers
+    const addVendor = () => {
+        setVendors([...vendors, { type: "", icon: "🔧", company: "", services: "", contact: "" }]);
+        setExtendedDirty(true);
+    };
+    const updateVendor = (idx: number, field: string, value: string) => {
+        const updated = [...vendors];
+        updated[idx] = { ...updated[idx], [field]: value };
+        setVendors(updated);
+        setExtendedDirty(true);
+    };
+    const removeVendor = (idx: number) => {
+        setVendors(vendors.filter((_, i) => i !== idx));
+        setExtendedDirty(true);
+    };
 
     // CSV Import
     const [csvFile, setCsvFile] = useState<File | null>(null);
@@ -571,16 +665,52 @@ export default function AdminPage() {
                             </div>
 
                             <div className={styles.formGroup}>
-                                <label className={styles.label}>Community Logo URL</label>
-                                <input
-                                    className={styles.input}
-                                    value={communityLogo}
-                                    onChange={(e) => setCommunityLogo(e.target.value)}
-                                    placeholder="https://example.com/logo.png"
-                                    aria-label="Community Logo URL"
-                                />
+                                <label className={styles.label}>Community Logo</label>
+                                {communityLogo && (
+                                    <div style={{ marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                        <img src={communityLogo} alt="Logo preview" style={{ maxHeight: 48, maxWidth: 120, objectFit: 'contain', borderRadius: 'var(--radius)', border: '1px solid var(--border)' }} />
+                                        <button onClick={() => setCommunityLogo('')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', fontSize: '0.8rem' }}>Remove</button>
+                                    </div>
+                                )}
+                                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                                    <input
+                                        className={styles.input}
+                                        value={communityLogo}
+                                        onChange={(e) => setCommunityLogo(e.target.value)}
+                                        placeholder="https://example.com/logo.png"
+                                        aria-label="Community Logo URL"
+                                        style={{ flex: 1 }}
+                                    />
+                                    <label style={{
+                                        display: 'flex', alignItems: 'center', gap: '0.3rem',
+                                        padding: '0.5rem 0.75rem', borderRadius: 'var(--radius)',
+                                        border: '1px solid var(--border)', cursor: 'pointer',
+                                        fontSize: '0.85rem', whiteSpace: 'nowrap'
+                                    }}>
+                                        <Upload size={14} />
+                                        Upload
+                                        <input
+                                            type="file"
+                                            accept="image/*"
+                                            style={{ display: 'none' }}
+                                            onChange={(e) => {
+                                                const file = e.target.files?.[0];
+                                                if (!file) return;
+                                                if (file.size > 500 * 1024) {
+                                                    alert("Logo must be under 500KB");
+                                                    return;
+                                                }
+                                                const reader = new FileReader();
+                                                reader.onload = (ev) => {
+                                                    if (ev.target?.result) setCommunityLogo(ev.target.result as string);
+                                                };
+                                                reader.readAsDataURL(file);
+                                            }}
+                                        />
+                                    </label>
+                                </div>
                                 <div style={{ fontSize: '0.8rem', color: 'var(--muted-foreground)', marginTop: '0.5rem' }}>
-                                    Paste a URL for your community logo. Ideally a PNG with transparent background.
+                                    Upload an image or paste a URL. PNG with transparent background recommended. Max 500KB.
                                 </div>
                             </div>
 
@@ -722,6 +852,109 @@ export default function AdminPage() {
                             >
                                 {isSavingHoa ? 'Saving...' : 'Save HOA Settings'}
                             </button>
+                        </div>
+                    </div>
+
+                    {/* HOA Extended Settings: Amenities, Rules, Vendors */}
+                    <div className={styles.card}>
+                        <div className={styles.cardHeader} style={{ justifyContent: 'space-between' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <Wrench size={20} />
+                                <span className={styles.cardTitle}>Community Content</span>
+                            </div>
+                            <button
+                                onClick={handleSaveExtendedSettings}
+                                disabled={isSavingExtended || !extendedDirty}
+                                style={{
+                                    display: 'flex', alignItems: 'center', gap: '0.4rem',
+                                    padding: '0.5rem 1rem', borderRadius: 'var(--radius)',
+                                    background: extendedDirty ? 'var(--primary)' : 'var(--muted)',
+                                    color: extendedDirty ? 'white' : 'var(--muted-foreground)',
+                                    border: 'none', fontWeight: 600, cursor: extendedDirty ? 'pointer' : 'default',
+                                    fontSize: '0.85rem'
+                                }}
+                            >
+                                <Save size={14} />
+                                {isSavingExtended ? 'Saving...' : 'Save Content'}
+                            </button>
+                        </div>
+                        <div className={styles.cardContent}>
+                            <p style={{ fontSize: '0.85rem', color: 'var(--muted-foreground)', marginBottom: '1rem' }}>
+                                Customize amenities, rules, and service providers shown on your HOA page. Leave empty to use defaults.
+                            </p>
+
+                            {/* Amenities Editor */}
+                            <div style={{ marginBottom: '1.5rem' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+                                    <h4 style={{ fontWeight: 600, fontSize: '0.95rem' }}>Amenities</h4>
+                                    <button onClick={addAmenity} style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', background: 'none', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '0.3rem 0.6rem', cursor: 'pointer', fontSize: '0.8rem' }}>
+                                        <Plus size={14} /> Add
+                                    </button>
+                                </div>
+                                {amenities.map((a, idx) => (
+                                    <div key={idx} style={{ display: 'grid', gridTemplateColumns: '3rem 1fr 1fr auto', gap: '0.5rem', marginBottom: '0.5rem', alignItems: 'center' }}>
+                                        <input className={styles.input} value={a.icon} onChange={(e) => updateAmenity(idx, 'icon', e.target.value)} placeholder="Icon" style={{ textAlign: 'center' }} />
+                                        <input className={styles.input} value={a.name} onChange={(e) => updateAmenity(idx, 'name', e.target.value)} placeholder="Name" />
+                                        <input className={styles.input} value={a.hours || ''} onChange={(e) => updateAmenity(idx, 'hours', e.target.value)} placeholder="Hours" />
+                                        <button onClick={() => removeAmenity(idx)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444' }}><Trash2 size={16} /></button>
+                                    </div>
+                                ))}
+                                {amenities.length === 0 && <p style={{ fontSize: '0.8rem', color: 'var(--muted-foreground)', fontStyle: 'italic' }}>Using default amenities. Add items to customize.</p>}
+                            </div>
+
+                            {/* Rules Editor */}
+                            <div style={{ marginBottom: '1.5rem' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+                                    <h4 style={{ fontWeight: 600, fontSize: '0.95rem' }}>Rules & Guidelines</h4>
+                                    <button onClick={addRuleCategory} style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', background: 'none', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '0.3rem 0.6rem', cursor: 'pointer', fontSize: '0.8rem' }}>
+                                        <Plus size={14} /> Add Category
+                                    </button>
+                                </div>
+                                {rules.map((cat, catIdx) => (
+                                    <div key={catIdx} style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '0.75rem', marginBottom: '0.75rem' }}>
+                                        <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem', alignItems: 'center' }}>
+                                            <input className={styles.input} value={cat.icon} onChange={(e) => updateRuleCategory(catIdx, 'icon', e.target.value)} placeholder="Icon" style={{ width: '3rem', textAlign: 'center' }} />
+                                            <input className={styles.input} value={cat.category} onChange={(e) => updateRuleCategory(catIdx, 'category', e.target.value)} placeholder="Category name" style={{ flex: 1 }} />
+                                            <button onClick={() => removeRuleCategory(catIdx)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444' }}><Trash2 size={16} /></button>
+                                        </div>
+                                        {cat.items.map((item: string, itemIdx: number) => (
+                                            <div key={itemIdx} style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.35rem', paddingLeft: '0.5rem' }}>
+                                                <input className={styles.input} value={item} onChange={(e) => updateRuleItem(catIdx, itemIdx, e.target.value)} placeholder="Rule item" style={{ flex: 1 }} />
+                                                <button onClick={() => removeRuleItem(catIdx, itemIdx)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444' }}><Trash2 size={14} /></button>
+                                            </div>
+                                        ))}
+                                        <button onClick={() => addRuleItem(catIdx)} style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.8rem', color: 'var(--primary)', paddingLeft: '0.5rem', marginTop: '0.25rem' }}>
+                                            <Plus size={12} /> Add rule
+                                        </button>
+                                    </div>
+                                ))}
+                                {rules.length === 0 && <p style={{ fontSize: '0.8rem', color: 'var(--muted-foreground)', fontStyle: 'italic' }}>Using default rules. Add categories to customize.</p>}
+                            </div>
+
+                            {/* Vendors Editor */}
+                            <div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+                                    <h4 style={{ fontWeight: 600, fontSize: '0.95rem' }}>Service Providers</h4>
+                                    <button onClick={addVendor} style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', background: 'none', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '0.3rem 0.6rem', cursor: 'pointer', fontSize: '0.8rem' }}>
+                                        <Plus size={14} /> Add
+                                    </button>
+                                </div>
+                                {vendors.map((v, idx) => (
+                                    <div key={idx} style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '0.75rem', marginBottom: '0.5rem' }}>
+                                        <div style={{ display: 'grid', gridTemplateColumns: '3rem 1fr 1fr auto', gap: '0.5rem', marginBottom: '0.35rem', alignItems: 'center' }}>
+                                            <input className={styles.input} value={v.icon} onChange={(e) => updateVendor(idx, 'icon', e.target.value)} placeholder="Icon" style={{ textAlign: 'center' }} />
+                                            <input className={styles.input} value={v.type} onChange={(e) => updateVendor(idx, 'type', e.target.value)} placeholder="Service type" />
+                                            <input className={styles.input} value={v.company} onChange={(e) => updateVendor(idx, 'company', e.target.value)} placeholder="Company name" />
+                                            <button onClick={() => removeVendor(idx)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444' }}><Trash2 size={16} /></button>
+                                        </div>
+                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+                                            <input className={styles.input} value={v.services || ''} onChange={(e) => updateVendor(idx, 'services', e.target.value)} placeholder="Services provided" />
+                                            <input className={styles.input} value={v.contact || ''} onChange={(e) => updateVendor(idx, 'contact', e.target.value)} placeholder="Contact info" />
+                                        </div>
+                                    </div>
+                                ))}
+                                {vendors.length === 0 && <p style={{ fontSize: '0.8rem', color: 'var(--muted-foreground)', fontStyle: 'italic' }}>Using default vendors. Add providers to customize.</p>}
+                            </div>
                         </div>
                     </div>
 

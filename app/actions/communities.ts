@@ -300,6 +300,22 @@ export async function updateCommunityHoaSettings(id: string, data: { duesAmount:
     }
 }
 
+export async function updateHoaExtendedSettings(id: string, data: { amenities?: any[]; rules?: any[]; vendors?: any[] }) {
+    try {
+        await db.update(communities).set({
+            hoaExtendedSettings: data
+        }).where(eq(communities.id, id));
+
+        revalidatePath('/dashboard/hoa');
+        revalidatePath('/dashboard/admin');
+
+        return { success: true };
+    } catch (e) {
+        console.error("Failed to update HOA extended settings", e);
+        return { success: false, error: "Failed to update HOA extended settings" };
+    }
+}
+
 /**
  * Fetch community by ID without session check
  * Used when we already have the communityId from client context

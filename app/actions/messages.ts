@@ -119,6 +119,18 @@ export async function sendMessage(senderUserId: string, recipientUserId: string,
             content
         }).returning();
 
+        // Fire notification for recipient (non-blocking)
+        import("./notifications").then(({ createNotification }) => {
+            createNotification({
+                userId: recipientUserId,
+                communityId,
+                type: 'message',
+                title: 'New message',
+                body: content.length > 100 ? content.slice(0, 100) + '...' : content,
+                relatedUrl: '/dashboard/messages',
+            }).catch(e => console.error("Notification failed", e));
+        });
+
         return { success: true, data: msg };
     } catch (error: any) {
         return { success: false, error: error.message };
