@@ -31,7 +31,7 @@ export default function LoginPage() {
                 setError(error.message || "Invalid email or password");
             } else if (data.user) {
                 // Successful login
-                router.push("/dashboard");
+                router.push("/select-community");
             }
         } catch (err) {
             console.error(err);
@@ -46,7 +46,7 @@ export default function LoginPage() {
         const { error } = await supabase.auth.signInWithOAuth({
             provider,
             options: {
-                redirectTo: `${window.location.origin}/dashboard`,
+                redirectTo: `${window.location.origin}/select-community`,
             },
         });
         if (error) {

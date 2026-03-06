@@ -12,7 +12,7 @@ export default function Home() {
           </p>
         </div>
         <div className={styles.ctas}>
-          <a className={styles.primary} href="/dashboard">
+          <a className={styles.primary} href="/login">
             Get Started
           </a>
           <a className={styles.secondary} href="#">
