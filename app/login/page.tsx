@@ -60,6 +60,13 @@ export default function LoginPage() {
         <div className={styles.container}>
             <div className={styles.card}>
                 <div className={styles.header}>
+                    <div className={styles.logoBox}>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 28, height: 28 }}>
+                            <path d="M12 2L21 7V17L12 22L3 17V7L12 2Z" />
+                            <path d="M9 7V17" />
+                            <path d="M15 7L9 12L15 17" />
+                        </svg>
+                    </div>
                     <h1 className={styles.title}>Welcome Back</h1>
                     <p className={styles.subtitle}>Sign in to KithGrid</p>
                 </div>

@@ -97,7 +97,7 @@ export default function SelectCommunityPage() {
                             Create a Community
                         </button>
                         <button
-                            onClick={() => router.push("/join")}
+                            onClick={() => router.push("/join-community")}
                             className={styles.button}
                             style={{ backgroundColor: "transparent", color: "var(--primary)", border: "2px solid var(--primary)" }}
                         >

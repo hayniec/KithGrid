@@ -59,11 +59,12 @@ export default function JoinPage() {
 
     const handleRegister = async () => {
         if (!formData.firstName || !formData.lastName || !formData.password) {
-            alert("Please fill in all required fields.");
+            setError("Please fill in all required fields.");
             return;
         }
 
         setIsRegistering(true);
+        setError("");
         try {
             // 1. Create the user account in Supabase
             const { data: authData, error: authError } = await supabase.auth.signUp({
@@ -78,7 +79,7 @@ export default function JoinPage() {
             });
 
             if (authError || !authData.user) {
-                alert(`Registration failed: ${authError?.message || "Unknown error"}`);
+                setError(authError?.message || "Registration failed. Please try again.");
                 setIsRegistering(false);
                 return;
             }
@@ -95,7 +96,7 @@ export default function JoinPage() {
             });
 
             if (!registerResult.success) {
-                alert(`Community linking failed: ${registerResult.error}`);
+                setError(registerResult.error || "Failed to link your account to the community.");
                 setIsRegistering(false);
                 return;
             }
@@ -112,11 +113,10 @@ export default function JoinPage() {
             };
             setUser(newUserProfile);
 
-            alert(`Welcome, ${formData.firstName}! Account created successfully.`);
             router.push("/select-community");
         } catch (error) {
             console.error("Error during registration:", error);
-            alert("Error completing registration");
+            setError("An unexpected error occurred during registration.");
             setIsRegistering(false);
         }
     };
@@ -221,12 +221,15 @@ export default function JoinPage() {
                             />
                         </div>
 
+                        {error && <p className={styles.error}>{error}</p>}
+
                         <button
                             onClick={handleRegister}
                             className={styles.button}
-                            style={{ marginTop: '1rem' }}
+                            style={{ marginTop: '0.5rem' }}
+                            disabled={isRegistering}
                         >
-                            Create Account
+                            {isRegistering ? "Creating Account..." : "Create Account"}
                         </button>
                     </div>
                 )}
