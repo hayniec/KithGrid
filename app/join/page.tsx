@@ -113,7 +113,7 @@ export default function JoinPage() {
             setUser(newUserProfile);
 
             alert(`Welcome, ${formData.firstName}! Account created successfully.`);
-            router.push("/dashboard");
+            router.push("/select-community");
         } catch (error) {
             console.error("Error during registration:", error);
             alert("Error completing registration");
