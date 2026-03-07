@@ -31,6 +31,10 @@ export const communities = pgTable('communities', {
     stripeCustomerId: text('stripe_customer_id'),
     stripeSubscriptionId: text('stripe_subscription_id'),
 
+    // Trial & Plan Management
+    trialEndsAt: timestamp('trial_ends_at', { withTimezone: true }),
+    planStatus: text('plan_status', { enum: ['trial', 'active', 'expired', 'cancelled'] }).default('trial'),
+
     // Emergency Access
     emergencyAccessCode: text('emergency_access_code'),
     emergencyInstructions: text('emergency_instructions'),

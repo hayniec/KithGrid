@@ -11,9 +11,10 @@ import { getCommunityResources, createResource, deleteResource } from "@/app/act
 import { CreateResourceModal } from "@/components/dashboard/CreateResourceModal";
 import { useUser } from "@/contexts/UserContext";
 import { getUserRoles } from "@/utils/roleHelpers";
-import { Upload } from "lucide-react";
+import { Upload, CreditCard } from "lucide-react";
+import { checkMemberLimit, updateCommunityPlan, getCommunityTrialStatus, PLANS, type PlanId } from "@/app/actions/billing";
 
-type Tab = 'general' | 'users' | 'invites' | 'resources';
+type Tab = 'general' | 'users' | 'invites' | 'resources' | 'billing';
 
 type Invitation = {
     id: string;
@@ -58,6 +59,15 @@ export default function AdminPage() {
 
     const [refreshTrigger, setRefreshTrigger] = useState(0);
 
+    // Billing & Plan State
+    const [currentPlan, setCurrentPlan] = useState<string>('starter_100');
+    const [memberCount, setMemberCount] = useState(0);
+    const [maxHomes, setMaxHomes] = useState(100);
+    const [planStatus, setPlanStatus] = useState('trial');
+    const [trialDaysRemaining, setTrialDaysRemaining] = useState<number | null>(null);
+    const [isTrialExpired, setIsTrialExpired] = useState(false);
+    const [isUpdatingPlan, setIsUpdatingPlan] = useState(false);
+
     // Fetch real Community ID and Settings
     useEffect(() => {
         const fetchCommunityDetails = async () => {
@@ -87,6 +97,25 @@ export default function AdminPage() {
                             if (current.hoaExtendedSettings.amenities) setAmenities(current.hoaExtendedSettings.amenities);
                             if (current.hoaExtendedSettings.rules) setRules(current.hoaExtendedSettings.rules);
                             if (current.hoaExtendedSettings.vendors) setVendors(current.hoaExtendedSettings.vendors);
+                        }
+                        // Load billing info
+                        if (current.billing) {
+                            setMaxHomes(current.billing.maxHomes || 100);
+                            setPlanStatus(current.billing.planStatus || 'trial');
+                        }
+                        setCurrentPlan(current.plan || 'starter_100');
+
+                        // Fetch member limit and trial status
+                        const limitRes = await checkMemberLimit(user.communityId);
+                        if (limitRes) {
+                            setMemberCount(limitRes.currentCount);
+                            setMaxHomes(limitRes.maxHomes);
+                        }
+                        const trialRes = await getCommunityTrialStatus(user.communityId);
+                        if (trialRes.success && trialRes.data) {
+                            setTrialDaysRemaining(trialRes.data.daysRemaining);
+                            setIsTrialExpired(trialRes.data.isTrialExpired);
+                            setPlanStatus(trialRes.data.planStatus);
                         }
                     } else {
                         console.warn("[Admin] Failed to load community:", res.error);
@@ -615,6 +644,17 @@ export default function AdminPage() {
             >
                 Resources
             </button>
+            <button
+                onClick={() => setActiveTab('billing')}
+                style={{
+                    padding: '0.75rem 1rem',
+                    borderBottom: activeTab === 'billing' ? '2px solid var(--primary)' : 'none',
+                    fontWeight: activeTab === 'billing' ? 600 : 400,
+                    color: activeTab === 'billing' ? 'var(--foreground)' : 'var(--muted-foreground)'
+                }}
+            >
+                Plan & Billing
+            </button>
         </div>
     );
 
@@ -767,9 +807,9 @@ export default function AdminPage() {
                                 onClick={async () => {
                                     if (!communityId) { alert("No community ID found."); return; }
                                     const res = await updateCommunityBranding(communityId, {
-                                        primaryColor: theme.primary,
-                                        secondaryColor: theme.secondary,
-                                        accentColor: theme.accent,
+                                        primaryColor: localStorage.getItem('kithGrid_customPrimary') || theme.primary,
+                                        secondaryColor: localStorage.getItem('kithGrid_customSecondary') || '#1e1b4b',
+                                        accentColor: localStorage.getItem('kithGrid_customAccent') || '#f59e0b',
                                         logoUrl: communityLogo || ''
                                     });
                                     if (res.success) {
@@ -1349,6 +1389,180 @@ export default function AdminPage() {
                     </div>
                 )
             }
+
+            {activeTab === 'billing' && (
+                <div className={styles.grid}>
+                    {/* Trial Banner */}
+                    {planStatus === 'trial' && (
+                        <div style={{
+                            gridColumn: '1 / -1',
+                            padding: '1rem 1.5rem',
+                            borderRadius: 'var(--radius)',
+                            background: isTrialExpired ? '#fef2f2' : '#fffbeb',
+                            border: `1px solid ${isTrialExpired ? '#fecaca' : '#fde68a'}`,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                        }}>
+                            <div>
+                                <strong style={{ color: isTrialExpired ? '#dc2626' : '#d97706' }}>
+                                    {isTrialExpired ? 'Trial Expired' : `Free Trial: ${trialDaysRemaining} day${trialDaysRemaining !== 1 ? 's' : ''} remaining`}
+                                </strong>
+                                <p style={{ fontSize: '0.85rem', color: '#6b7280', marginTop: '0.25rem' }}>
+                                    {isTrialExpired
+                                        ? 'Your trial has ended. Select a plan below to continue using all features.'
+                                        : 'Enjoy full access during your trial. Choose a plan before it expires to avoid interruptions.'}
+                                </p>
+                            </div>
+                        </div>
+                    )}
+
+                    {planStatus === 'expired' && (
+                        <div style={{
+                            gridColumn: '1 / -1',
+                            padding: '1rem 1.5rem',
+                            borderRadius: 'var(--radius)',
+                            background: '#fef2f2',
+                            border: '1px solid #fecaca',
+                        }}>
+                            <strong style={{ color: '#dc2626' }}>Plan Expired</strong>
+                            <p style={{ fontSize: '0.85rem', color: '#6b7280', marginTop: '0.25rem' }}>
+                                Your plan has expired. New members cannot join until you select a plan.
+                            </p>
+                        </div>
+                    )}
+
+                    {/* Current Usage Card */}
+                    <div className={styles.card}>
+                        <div className={styles.cardHeader}>
+                            <CreditCard size={20} />
+                            <span className={styles.cardTitle}>Current Usage</span>
+                        </div>
+                        <div className={styles.cardContent}>
+                            <div style={{ marginBottom: '1rem' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                                    <span style={{ fontSize: '0.9rem', color: 'var(--muted-foreground)' }}>Members</span>
+                                    <span style={{ fontWeight: 600 }}>{memberCount} / {maxHomes}</span>
+                                </div>
+                                <div style={{ width: '100%', height: 8, borderRadius: 4, background: 'var(--muted)', overflow: 'hidden' }}>
+                                    <div style={{
+                                        width: `${Math.min(100, Math.round((memberCount / maxHomes) * 100))}%`,
+                                        height: '100%',
+                                        borderRadius: 4,
+                                        background: memberCount >= maxHomes ? '#ef4444' : memberCount >= maxHomes * 0.8 ? '#f59e0b' : 'var(--primary)',
+                                        transition: 'width 0.3s',
+                                    }} />
+                                </div>
+                                <p style={{ fontSize: '0.8rem', color: 'var(--muted-foreground)', marginTop: '0.25rem' }}>
+                                    {memberCount >= maxHomes
+                                        ? 'Limit reached — upgrade to add more members'
+                                        : memberCount >= maxHomes * 0.8
+                                            ? 'Approaching limit — consider upgrading'
+                                            : `${maxHomes - memberCount} slots remaining`}
+                                </p>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.75rem 0', borderTop: '1px solid var(--border)' }}>
+                                <span style={{ color: 'var(--muted-foreground)' }}>Current Plan</span>
+                                <span style={{ fontWeight: 600, textTransform: 'uppercase' }}>{currentPlan.replace('_', ' ')}</span>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.75rem 0', borderTop: '1px solid var(--border)' }}>
+                                <span style={{ color: 'var(--muted-foreground)' }}>Status</span>
+                                <span style={{
+                                    fontWeight: 600,
+                                    color: planStatus === 'active' ? '#16a34a' : planStatus === 'trial' && !isTrialExpired ? '#d97706' : '#dc2626',
+                                }}>
+                                    {planStatus === 'active' ? 'Active' : planStatus === 'trial' && !isTrialExpired ? 'Trial' : 'Expired'}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Plan Selection Card */}
+                    <div className={styles.card}>
+                        <div className={styles.cardHeader}>
+                            <Shield size={20} />
+                            <span className={styles.cardTitle}>Choose Plan</span>
+                        </div>
+                        <div className={styles.cardContent}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                                {(Object.entries(PLANS) as [PlanId, typeof PLANS[PlanId]][]).map(([planId, planInfo]) => {
+                                    const isCurrentPlan = currentPlan === planId;
+                                    const tooSmall = memberCount > planInfo.maxHomes;
+                                    return (
+                                        <div
+                                            key={planId}
+                                            style={{
+                                                padding: '1rem',
+                                                borderRadius: 'var(--radius)',
+                                                border: isCurrentPlan ? '2px solid var(--primary)' : '1px solid var(--border)',
+                                                background: isCurrentPlan ? 'rgba(79,70,229,0.05)' : 'var(--card)',
+                                                opacity: tooSmall ? 0.5 : 1,
+                                            }}
+                                        >
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                <div>
+                                                    <div style={{ fontWeight: 600, fontSize: '1rem' }}>{planInfo.name}</div>
+                                                    <div style={{ fontSize: '0.85rem', color: 'var(--muted-foreground)' }}>
+                                                        Up to {planInfo.maxHomes} homes
+                                                    </div>
+                                                    {tooSmall && (
+                                                        <div style={{ fontSize: '0.8rem', color: '#ef4444', marginTop: '0.25rem' }}>
+                                                            Too small — you have {memberCount} members
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                <div>
+                                                    {isCurrentPlan ? (
+                                                        <span style={{
+                                                            padding: '0.4rem 0.75rem',
+                                                            borderRadius: 'var(--radius)',
+                                                            background: 'var(--primary)',
+                                                            color: 'white',
+                                                            fontSize: '0.8rem',
+                                                            fontWeight: 600,
+                                                        }}>
+                                                            Current
+                                                        </span>
+                                                    ) : (
+                                                        <button
+                                                            disabled={tooSmall || isUpdatingPlan}
+                                                            onClick={async () => {
+                                                                if (!communityId) return;
+                                                                setIsUpdatingPlan(true);
+                                                                const res = await updateCommunityPlan(communityId, planId);
+                                                                if (res.success) {
+                                                                    setCurrentPlan(planId);
+                                                                    setMaxHomes(res.maxHomes!);
+                                                                    setPlanStatus('active');
+                                                                    alert(`Plan updated to ${planInfo.name}!`);
+                                                                } else {
+                                                                    alert(res.error || 'Failed to update plan');
+                                                                }
+                                                                setIsUpdatingPlan(false);
+                                                            }}
+                                                            style={{
+                                                                padding: '0.4rem 0.75rem',
+                                                                borderRadius: 'var(--radius)',
+                                                                background: 'var(--card)',
+                                                                border: '1px solid var(--border)',
+                                                                cursor: tooSmall ? 'not-allowed' : 'pointer',
+                                                                fontSize: '0.8rem',
+                                                                fontWeight: 500,
+                                                            }}
+                                                        >
+                                                            {isUpdatingPlan ? 'Updating...' : memberCount > (PLANS[currentPlan as PlanId]?.maxHomes || 0) ? 'Select' : planInfo.maxHomes > (PLANS[currentPlan as PlanId]?.maxHomes || 0) ? 'Upgrade' : 'Downgrade'}
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Success Invitation Modal */}
             {
