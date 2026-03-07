@@ -47,7 +47,12 @@ const mapToUI = (row: any) => {
             duesDate: row.hoaDuesDate || '1st',
             contactEmail: row.hoaContactEmail || ''
         },
-        hoaExtendedSettings: row.hoaExtendedSettings || null
+        hoaExtendedSettings: row.hoaExtendedSettings || null,
+        billing: {
+            maxHomes: row.maxHomes || 100,
+            trialEndsAt: row.trialEndsAt ? new Date(row.trialEndsAt).toISOString() : null,
+            planStatus: row.planStatus || 'trial',
+        }
     };
     return mapped;
 };
@@ -117,6 +122,9 @@ export async function getCommunities() {
                 hoaDuesDate: communities.hoaDuesDate,
                 hoaContactEmail: communities.hoaContactEmail,
                 hoaExtendedSettings: communities.hoaExtendedSettings,
+                maxHomes: communities.maxHomes,
+                trialEndsAt: communities.trialEndsAt,
+                planStatus: communities.planStatus,
             })
             .from(communities)
             .innerJoin(members, eq(communities.id, members.communityId))
@@ -160,7 +168,10 @@ export async function createCommunity(data: any): Promise<CommunityActionState> 
                 primaryColor: data.branding?.primaryColor,
                 secondaryColor: data.branding?.secondaryColor,
                 accentColor: data.branding?.accentColor,
-                logoUrl: data.branding?.logoUrl
+                logoUrl: data.branding?.logoUrl,
+                // 5.5: Set 14-day free trial on creation
+                trialEndsAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
+                planStatus: 'trial',
             }).returning();
 
             if (!inserted) {
@@ -300,6 +311,22 @@ export async function updateCommunityHoaSettings(id: string, data: { duesAmount:
     }
 }
 
+export async function updateHoaExtendedSettings(id: string, data: { amenities?: any[]; rules?: any[]; vendors?: any[] }) {
+    try {
+        await db.update(communities).set({
+            hoaExtendedSettings: data
+        }).where(eq(communities.id, id));
+
+        revalidatePath('/dashboard/hoa');
+        revalidatePath('/dashboard/admin');
+
+        return { success: true };
+    } catch (e) {
+        console.error("Failed to update HOA extended settings", e);
+        return { success: false, error: "Failed to update HOA extended settings" };
+    }
+}
+
 /**
  * Fetch community by ID without session check
  * Used when we already have the communityId from client context
@@ -333,6 +360,9 @@ export async function getCommunityById(id: string) {
                 hoaDuesDate: communities.hoaDuesDate,
                 hoaContactEmail: communities.hoaContactEmail,
                 hoaExtendedSettings: communities.hoaExtendedSettings,
+                maxHomes: communities.maxHomes,
+                trialEndsAt: communities.trialEndsAt,
+                planStatus: communities.planStatus,
             })
             .from(communities)
             .where(eq(communities.id, id));

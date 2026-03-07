@@ -72,6 +72,16 @@ export async function createInvitation(data: {
             return { success: false, error: "Only admins can send invitations." };
         }
 
+        // Enforce max homes limit before creating invitation
+        const { checkMemberLimit } = await import("@/app/actions/billing");
+        const limitCheck = await checkMemberLimit(data.communityId);
+        if (!limitCheck.allowed) {
+            return {
+                success: false,
+                error: `Community has reached its member limit (${limitCheck.currentCount}/${limitCheck.maxHomes}). Upgrade the plan to invite more members.`
+            };
+        }
+
         const code = generateCode();
 
 

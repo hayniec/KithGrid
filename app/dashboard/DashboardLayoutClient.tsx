@@ -20,12 +20,13 @@ export default function DashboardLayoutClient({
     const [showSOSModal, setShowSOSModal] = useState(false);
     const [showSOSButton, setShowSOSButton] = useState(true);
     const [sosMessage, setSosMessage] = useState("");
+    const [trialBanner, setTrialBanner] = useState<{ show: boolean; daysRemaining: number | null; expired: boolean }>({ show: false, daysRemaining: null, expired: false });
     const router = useRouter();
     const { user } = useUser();
-    const { communityName, setCommunityName } = useTheme();
+    const { communityName, setCommunityName, applyCommunityBranding } = useTheme();
 
     useEffect(() => {
-        const prepareSOS = async () => {
+        const prepareDashboard = async () => {
             if (!user) return;
 
             let message = "";
@@ -37,9 +38,28 @@ export default function DashboardLayoutClient({
                     if (res.success && res.data) {
                         const com = res.data.find((c: any) => c.id === user.communityId);
                         if (com) {
+                            // Apply community name and branding
                             if (com.name && com.name !== communityName) {
                                 setCommunityName(com.name);
                             }
+                            if (com.branding) {
+                                applyCommunityBranding(com.branding);
+                            }
+
+                            // Check trial status for banner
+                            if (com.billing?.planStatus === 'trial') {
+                                const trialEnd = com.billing.trialEndsAt ? new Date(com.billing.trialEndsAt) : null;
+                                if (trialEnd) {
+                                    const diff = trialEnd.getTime() - Date.now();
+                                    const days = Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
+                                    setTrialBanner({ show: true, daysRemaining: days, expired: diff <= 0 });
+                                }
+                            }
+
+                            // Emergency feature flag
+                            setShowSOSButton(com.features?.emergency ?? true);
+
+                            // Build emergency message
                             if (com.emergency?.accessCode) {
                                 message = `Community Gate Code: ${com.emergency.accessCode}`;
                                 if (com.emergency.instructions) {
@@ -50,7 +70,7 @@ export default function DashboardLayoutClient({
                         }
                     }
                 } catch (err) {
-                    console.error("Failed to fetch emergency info", err);
+                    console.error("Failed to fetch community info", err);
                 }
             }
 
@@ -68,17 +88,8 @@ export default function DashboardLayoutClient({
             }
 
             setSosMessage(message);
-            // Check if emergency feature is enabled
-            if (user.communityId) {
-                const res = await getCommunities();
-                if (res.success && res.data) {
-                    const com = res.data.find((c: any) => c.id === user.communityId);
-                    // Default to true if not set, or use the feature flag
-                    setShowSOSButton(com?.features?.emergency ?? true);
-                }
-            }
         };
-        prepareSOS();
+        prepareDashboard();
     }, [user, user?.communityId]);
 
     const handleSOS = () => {
@@ -92,6 +103,20 @@ export default function DashboardLayoutClient({
             <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
             <div style={{ display: 'contents' }}>
                 <Header onMenuClick={() => setIsSidebarOpen(true)} />
+                {trialBanner.show && (
+                    <div style={{
+                        padding: '0.5rem 1.5rem',
+                        background: trialBanner.expired ? '#fef2f2' : '#fffbeb',
+                        borderBottom: `1px solid ${trialBanner.expired ? '#fecaca' : '#fde68a'}`,
+                        fontSize: '0.85rem',
+                        textAlign: 'center',
+                        color: trialBanner.expired ? '#dc2626' : '#92400e',
+                    }}>
+                        {trialBanner.expired
+                            ? 'Your free trial has expired. Contact your admin to activate a plan.'
+                            : `Free trial: ${trialBanner.daysRemaining} day${trialBanner.daysRemaining !== 1 ? 's' : ''} remaining`}
+                    </div>
+                )}
                 <main className={styles.main}>
                     {children}
                 </main>

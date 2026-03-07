@@ -364,6 +364,16 @@ export async function joinCommunityWithCode(data: {
             return { success: true, message: "Already a member of this community", data: existing };
         }
 
+        // Enforce max homes limit (5.2)
+        const { checkMemberLimit } = await import("@/app/actions/billing");
+        const limitCheck = await checkMemberLimit(data.communityId);
+        if (!limitCheck.allowed) {
+            return {
+                success: false,
+                error: `This community has reached its member limit (${limitCheck.currentCount}/${limitCheck.maxHomes}). The admin needs to upgrade the plan.`
+            };
+        }
+
         // Create membership
         const roleMap: Record<string, string> = {
             'admin': 'Admin',

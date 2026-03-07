@@ -42,7 +42,8 @@ export async function getUserProfile(userId: string) {
                 email: dbUser.email,
                 name: dbUser.name,
                 communityId: membership.communityId,
-                role: membership.role ? membership.role.toLowerCase() : 'resident'
+                role: membership.role ? membership.role.toLowerCase() : 'resident',
+                roles: membership.roles?.map((r: string) => r.toLowerCase()) || [membership.role ? membership.role.toLowerCase() : 'resident']
             }
         };
 
