@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KithGrid Administrator Guide</title>
+<style>
+  :root { --primary: #4f46e5; --bg: #fff; --text: #1f2937; --muted: #6b7280; --border: #e5e7eb; --code-bg: #f3f4f6; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: var(--text); line-height: 1.7; max-width: 800px; margin: 0 auto; padding: 2rem 1.5rem; }
+  h1 { font-size: 2rem; color: var(--primary); margin-bottom: 0.5rem; border-bottom: 3px solid var(--primary); padding-bottom: 0.75rem; }
+  h2 { font-size: 1.5rem; color: var(--primary); margin-top: 2.5rem; margin-bottom: 0.75rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; }
+  h3 { font-size: 1.15rem; color: var(--text); margin-top: 1.5rem; margin-bottom: 0.5rem; }
+  p { margin-bottom: 0.75rem; }
+  ul, ol { margin-bottom: 0.75rem; padding-left: 1.5rem; }
+  li { margin-bottom: 0.35rem; }
+  li ul { margin-top: 0.25rem; }
+  code { background: var(--code-bg); padding: 0.15rem 0.4rem; border-radius: 4px; font-size: 0.9em; }
+  strong { color: #111827; }
+  .subtitle { font-size: 1.1rem; color: var(--muted); margin-bottom: 2rem; }
+  .path { display: inline-block; background: var(--code-bg); padding: 0.2rem 0.6rem; border-radius: 4px; font-family: monospace; font-size: 0.85rem; color: var(--primary); margin-bottom: 0.5rem; }
+  hr { border: none; border-top: 1px solid var(--border); margin: 2rem 0; }
+  table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.95rem; }
+  th { background: #f9fafb; text-align: left; padding: 0.6rem 0.75rem; border-bottom: 2px solid var(--border); font-weight: 600; }
+  td { padding: 0.5rem 0.75rem; border-bottom: 1px solid var(--border); }
+  tr:last-child td { border-bottom: none; }
+  .note { background: #fffbeb; border-left: 4px solid #f59e0b; padding: 0.75rem 1rem; border-radius: 0 6px 6px 0; margin: 1rem 0; font-size: 0.95rem; }
+  .task-box { background: #f9fafb; border: 1px solid var(--border); border-radius: 8px; padding: 1rem 1.25rem; margin: 1rem 0; }
+  .task-box h3 { margin-top: 0; color: var(--primary); font-size: 1rem; }
+  @media print { body { max-width: 100%; padding: 1rem; } h2 { page-break-after: avoid; } }
+</style>
+</head>
+<body>
+
+<h1>KithGrid Administrator Guide</h1>
+<p class="subtitle">For community administrators who manage a single neighborhood or HOA within KithGrid. You have access to everything a regular resident can do, plus the Admin Console.</p>
+
+<h2>Accessing the Admin Console</h2>
+<span class="path">/dashboard/admin</span>
+<p>The Admin Console is available to users with the <strong>Admin</strong> or <strong>Board Member</strong> role. It contains five tabs:</p>
+<ul>
+  <li>Configuration</li>
+  <li>User Management</li>
+  <li>Invitations</li>
+  <li>Resources</li>
+  <li>Plan &amp; Billing</li>
+</ul>
+
+<hr>
+
+<h2>Configuration Tab</h2>
+
+<h3>Branding &amp; Appearance</h3>
+<p>Customize how your community looks across the platform:</p>
+<ul>
+  <li><strong>Community Logo</strong> &mdash; Upload or set a logo URL</li>
+  <li><strong>Primary Color</strong> &mdash; The main accent color used for buttons, links, and highlights</li>
+  <li><strong>Secondary Color</strong> &mdash; Used for sidebar and secondary UI elements</li>
+  <li><strong>Accent Color</strong> &mdash; Used for progress bars, badges, and emphasis</li>
+</ul>
+<p>Click <strong>Save Branding</strong> to persist changes to the database. All community members will see the updated branding.</p>
+
+<h3>HOA Settings</h3>
+<p>Configure your HOA's financial and contact details:</p>
+<table>
+  <thead><tr><th>Field</th><th>Description</th></tr></thead>
+  <tbody>
+    <tr><td>Dues Amount</td><td>Monthly/quarterly/annual HOA fee</td></tr>
+    <tr><td>Frequency</td><td>Monthly, Quarterly, or Annual</td></tr>
+    <tr><td>Due Date</td><td>Day of the month dues are due</td></tr>
+    <tr><td>Contact Email</td><td>HOA's official contact email</td></tr>
+  </tbody>
+</table>
+<p>Click <strong>Save HOA Settings</strong> to persist.</p>
+
+<h3>Extended Settings</h3>
+<ul>
+  <li><strong>Amenities</strong> &mdash; Add community amenities (pool, gym, clubhouse) with icons, hours, and notes</li>
+  <li><strong>Community Rules</strong> &mdash; Define and publish community rules</li>
+  <li><strong>Approved Vendors</strong> &mdash; Maintain a list of HOA-approved vendors</li>
+</ul>
+
+<hr>
+
+<h2>User Management Tab</h2>
+<p>View and manage all members in your community.</p>
+
+<h3>Member List</h3>
+<ul>
+  <li>See every member's <strong>name, role, address, email, and join date</strong></li>
+  <li><strong>Search</strong> members by name</li>
+</ul>
+
+<h3>Editing Members</h3>
+<p>Click <strong>Edit</strong> on any member to:</p>
+<ul>
+  <li>Change their <strong>role</strong> (Resident, Admin, Board Member, Event Manager)</li>
+  <li>Update their <strong>address</strong></li>
+  <li>Mark them as an <strong>HOA Officer</strong> and assign a position (President, Treasurer, etc.)</li>
+</ul>
+
+<h3>Removing Members</h3>
+<ul>
+  <li>Click <strong>Delete</strong> to remove a member from the community</li>
+  <li>This is permanent &mdash; they would need a new invitation to rejoin</li>
+</ul>
+
+<hr>
+
+<h2>Invitations Tab</h2>
+<p>Control who joins your community.</p>
+
+<h3>Creating Invitations</h3>
+<ol>
+  <li>Enter the <strong>email address</strong> of the person you want to invite</li>
+  <li>Select their <strong>role</strong> (defaults to Resident)</li>
+  <li>Click <strong>Generate Invitation</strong></li>
+  <li>A unique <strong>6-character code</strong> is generated and emailed to them</li>
+  <li>Share the code &mdash; they use it at <code>/join</code> to sign up</li>
+</ol>
+
+<h3>Bulk Import</h3>
+<ol>
+  <li>Click <strong>Import CSV</strong></li>
+  <li>Upload a CSV file with columns: <code>email</code> and optionally <code>name</code></li>
+  <li>Invitations are generated for all rows</li>
+  <li>Each person receives a unique code</li>
+</ol>
+
+<h3>Managing Invitations</h3>
+<ul>
+  <li>View all invitations with their <strong>status</strong>: Pending, Used, or Expired</li>
+  <li><strong>Delete</strong> invitations that are no longer needed</li>
+  <li><strong>Copy</strong> invitation codes to share manually</li>
+</ul>
+
+<div class="note">
+  <strong>Member Limits:</strong> Invitations are blocked when your community reaches its plan's member limit. You'll see an error message indicating the current count vs. the maximum. Upgrade your plan in the Billing tab to allow more members.
+</div>
+
+<hr>
+
+<h2>Resources Tab</h2>
+<p>Manage shared community assets (facilities, tools, vehicles).</p>
+
+<h3>Adding Resources</h3>
+<ol>
+  <li>Click <strong>Add New Resource</strong></li>
+  <li>Fill in:
+    <ul>
+      <li><strong>Name</strong> (e.g., "Community Pool", "Pressure Washer")</li>
+      <li><strong>Type</strong> (Facility, Tool, or Vehicle)</li>
+      <li><strong>Capacity</strong> (for facilities)</li>
+      <li><strong>Description</strong></li>
+    </ul>
+  </li>
+  <li>The resource becomes available for members to reserve</li>
+</ol>
+
+<h3>Deleting Resources</h3>
+<ul>
+  <li>Click <strong>Delete</strong> next to any resource to remove it</li>
+  <li>Existing reservations for that resource are also removed</li>
+</ul>
+
+<hr>
+
+<h2>Plan &amp; Billing Tab</h2>
+<p>Monitor and manage your community's subscription plan.</p>
+
+<h3>Current Usage</h3>
+<ul>
+  <li><strong>Member count</strong> vs. plan limit, shown as a progress bar</li>
+  <li>Color-coded warnings:
+    <ul>
+      <li><strong style="color: #16a34a;">Green</strong> &mdash; plenty of room</li>
+      <li><strong style="color: #d97706;">Yellow</strong> &mdash; approaching limit (80%+)</li>
+      <li><strong style="color: #dc2626;">Red</strong> &mdash; at capacity</li>
+    </ul>
+  </li>
+  <li>Current <strong>plan name</strong> and <strong>status</strong> (Active, Trial, or Expired)</li>
+</ul>
+
+<h3>Trial Period</h3>
+<p>New communities start with a <strong>14-day free trial</strong> with full access. During the trial:</p>
+<ul>
+  <li>A <strong>yellow banner</strong> shows how many days remain</li>
+  <li>All features are fully functional</li>
+  <li>When the trial expires, the banner turns <strong>red</strong> and new members cannot join</li>
+</ul>
+
+<h3>Choosing a Plan</h3>
+<table>
+  <thead><tr><th>Plan</th><th>Max Homes</th><th>Best For</th></tr></thead>
+  <tbody>
+    <tr><td>Starter</td><td>100</td><td>Small neighborhoods</td></tr>
+    <tr><td>Growth</td><td>250</td><td>Mid-size communities</td></tr>
+    <tr><td>Pro</td><td>500</td><td>Large HOAs and condo associations</td></tr>
+  </tbody>
+</table>
+<ul>
+  <li>Click a plan to <strong>upgrade or downgrade</strong></li>
+  <li>You <strong>cannot downgrade</strong> below your current member count (remove members first)</li>
+  <li>Selecting a plan sets your status to <strong>Active</strong> and clears the trial</li>
+</ul>
+
+<h3>Trial Expired?</h3>
+<p>If your trial has expired and no plan is selected:</p>
+<ul>
+  <li>New members <strong>cannot join</strong> (invitations and join requests are blocked)</li>
+  <li>Existing members retain access to all features</li>
+  <li>Select a plan to restore full functionality</li>
+</ul>
+
+<hr>
+
+<h2>Role Reference</h2>
+<table>
+  <thead><tr><th>Role</th><th>Admin Console</th><th>Create Events</th><th>Manage Members</th><th>Send Invites</th></tr></thead>
+  <tbody>
+    <tr><td>Resident</td><td>No</td><td>No</td><td>No</td><td>No</td></tr>
+    <tr><td>Event Manager</td><td>No</td><td>Yes</td><td>No</td><td>No</td></tr>
+    <tr><td>Board Member</td><td>Partial</td><td>Yes</td><td>Yes</td><td>No</td></tr>
+    <tr><td>Admin</td><td>Yes</td><td>Yes</td><td>Yes</td><td>Yes</td></tr>
+  </tbody>
+</table>
+
+<hr>
+
+<h2>Common Tasks</h2>
+
+<div class="task-box">
+  <h3>"A resident needs to be removed"</h3>
+  <ol>
+    <li>Go to <strong>User Management</strong> tab</li>
+    <li>Find the member</li>
+    <li>Click <strong>Delete</strong> and confirm</li>
+  </ol>
+</div>
+
+<div class="task-box">
+  <h3>"We need to change our HOA dues"</h3>
+  <ol>
+    <li>Go to <strong>Configuration</strong> tab</li>
+    <li>Update the dues amount, frequency, or due date</li>
+    <li>Click <strong>Save HOA Settings</strong></li>
+  </ol>
+</div>
+
+<div class="task-box">
+  <h3>"We're running out of member slots"</h3>
+  <ol>
+    <li>Go to <strong>Plan &amp; Billing</strong> tab</li>
+    <li>Review current usage</li>
+    <li>Click <strong>Upgrade</strong> on a higher plan</li>
+  </ol>
+</div>
+
+<div class="task-box">
+  <h3>"A new board member was elected"</h3>
+  <ol>
+    <li>Go to <strong>User Management</strong> tab</li>
+    <li>Find the member and click <strong>Edit</strong></li>
+    <li>Change their role to <strong>Board Member</strong></li>
+    <li>Toggle <strong>HOA Officer</strong> on and enter their position</li>
+    <li>Save changes</li>
+  </ol>
+</div>
+
+</body>
+</html>
