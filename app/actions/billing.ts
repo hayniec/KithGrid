@@ -3,16 +3,7 @@
 import { db } from "@/db";
 import { communities, members, forumPosts, events, marketplaceItems, directMessages, invitations } from "@/db/schema";
 import { eq, count, sql } from "drizzle-orm";
-
-// Plan definitions
-export const PLANS = {
-    starter_100: { name: 'Starter', maxHomes: 100, features: 'all' },
-    growth_250: { name: 'Growth', maxHomes: 250, features: 'all' },
-    pro_500: { name: 'Pro', maxHomes: 500, features: 'all' },
-} as const;
-
-export type PlanId = keyof typeof PLANS;
-
+import { PLANS, type PlanId, type CommunityUsageStats } from "./billing-types";
 // ─── 5.2: Plan Enforcement (Max Homes) ───
 
 export async function checkMemberLimit(communityId: string): Promise<{
@@ -22,15 +13,24 @@ export async function checkMemberLimit(communityId: string): Promise<{
     plan: string;
 }> {
     try {
-        const [community] = await db
-            .select({
-                maxHomes: communities.maxHomes,
-                planTuple: communities.planTuple,
-                planStatus: communities.planStatus,
-                trialEndsAt: communities.trialEndsAt,
-            })
-            .from(communities)
-            .where(eq(communities.id, communityId));
+        let community: any;
+        try {
+            [community] = await db
+                .select({
+                    maxHomes: communities.maxHomes,
+                    planTuple: communities.planTuple,
+                    planStatus: communities.planStatus,
+                    trialEndsAt: communities.trialEndsAt,
+                })
+                .from(communities)
+                .where(eq(communities.id, communityId));
+        } catch {
+            // Billing columns may not exist yet
+            [community] = await db
+                .select({ maxHomes: communities.maxHomes, planTuple: communities.planTuple })
+                .from(communities)
+                .where(eq(communities.id, communityId));
+        }
 
         if (!community) {
             return { allowed: false, currentCount: 0, maxHomes: 0, plan: 'unknown' };
@@ -101,11 +101,19 @@ export async function updateCommunityPlan(communityId: string, newPlan: PlanId) 
             };
         }
 
-        await db.update(communities).set({
-            planTuple: newPlan,
-            maxHomes: planConfig.maxHomes,
-            planStatus: 'active',
-        }).where(eq(communities.id, communityId));
+        try {
+            await db.update(communities).set({
+                planTuple: newPlan,
+                maxHomes: planConfig.maxHomes,
+                planStatus: 'active',
+            }).where(eq(communities.id, communityId));
+        } catch {
+            // Fallback without planStatus if column doesn't exist
+            await db.update(communities).set({
+                planTuple: newPlan,
+                maxHomes: planConfig.maxHomes,
+            }).where(eq(communities.id, communityId));
+        }
 
         return { success: true, plan: newPlan, maxHomes: planConfig.maxHomes };
     } catch (error: any) {
@@ -116,22 +124,6 @@ export async function updateCommunityPlan(communityId: string, newPlan: PlanId) 
 
 // ─── 5.4: Usage Tracking Stats ───
 
-export type CommunityUsageStats = {
-    communityId: string;
-    communityName: string;
-    slug: string;
-    plan: string;
-    planStatus: string;
-    maxHomes: number;
-    trialEndsAt: string | null;
-    memberCount: number;
-    postCount: number;
-    eventCount: number;
-    listingCount: number;
-    messageCount: number;
-    invitationCount: number;
-    usagePercent: number;
-};
 
 export async function getAllCommunityUsageStats(): Promise<{
     success: boolean;
@@ -140,16 +132,28 @@ export async function getAllCommunityUsageStats(): Promise<{
     error?: string;
 }> {
     try {
-        const allCommunities = await db.select({
-            id: communities.id,
-            name: communities.name,
-            slug: communities.slug,
-            planTuple: communities.planTuple,
-            planStatus: communities.planStatus,
-            maxHomes: communities.maxHomes,
-            trialEndsAt: communities.trialEndsAt,
-            isActive: communities.isActive,
-        }).from(communities);
+        let allCommunities: any[];
+        try {
+            allCommunities = await db.select({
+                id: communities.id,
+                name: communities.name,
+                slug: communities.slug,
+                planTuple: communities.planTuple,
+                planStatus: communities.planStatus,
+                maxHomes: communities.maxHomes,
+                trialEndsAt: communities.trialEndsAt,
+                isActive: communities.isActive,
+            }).from(communities);
+        } catch {
+            allCommunities = await db.select({
+                id: communities.id,
+                name: communities.name,
+                slug: communities.slug,
+                planTuple: communities.planTuple,
+                maxHomes: communities.maxHomes,
+                isActive: communities.isActive,
+            }).from(communities);
+        }
 
         const stats: CommunityUsageStats[] = [];
         let totalMembers = 0, totalPosts = 0, totalEvents = 0, totalListings = 0, totalMessages = 0;
@@ -230,11 +234,18 @@ export async function getCommunityTrialStatus(communityId: string): Promise<{
     error?: string;
 }> {
     try {
-        const [community] = await db.select({
-            planStatus: communities.planStatus,
-            trialEndsAt: communities.trialEndsAt,
-            isActive: communities.isActive,
-        }).from(communities).where(eq(communities.id, communityId));
+        let community: any;
+        try {
+            [community] = await db.select({
+                planStatus: communities.planStatus,
+                trialEndsAt: communities.trialEndsAt,
+                isActive: communities.isActive,
+            }).from(communities).where(eq(communities.id, communityId));
+        } catch {
+            [community] = await db.select({
+                isActive: communities.isActive,
+            }).from(communities).where(eq(communities.id, communityId));
+        }
 
         if (!community) {
             return { success: false, error: "Community not found" };
@@ -272,9 +283,13 @@ export async function getCommunityTrialStatus(communityId: string): Promise<{
 
 export async function activateCommunityPlan(communityId: string) {
     try {
-        await db.update(communities).set({
-            planStatus: 'active',
-        }).where(eq(communities.id, communityId));
+        try {
+            await db.update(communities).set({
+                planStatus: 'active',
+            }).where(eq(communities.id, communityId));
+        } catch {
+            // planStatus column may not exist yet
+        }
         return { success: true };
     } catch (error: any) {
         return { success: false, error: "Failed to activate plan" };

@@ -51,7 +51,7 @@ const mapToUI = (row: any) => {
         billing: {
             maxHomes: row.maxHomes || 100,
             trialEndsAt: row.trialEndsAt ? new Date(row.trialEndsAt).toISOString() : null,
-            planStatus: row.planStatus || 'trial',
+            planStatus: row.planStatus || 'active',
         }
     };
     return mapped;
@@ -95,40 +95,54 @@ export async function getCommunities() {
         const userId = dbUser.id;
 
         // Fetch user's communities via membership
-        const userCommunities = await db
-            .select({
-                id: communities.id,
-                name: communities.name,
-                slug: communities.slug,
-                planTuple: communities.planTuple,
-                hasMarketplace: communities.hasMarketplace,
-                hasResources: communities.hasResources,
-                hasEvents: communities.hasEvents,
-                hasDocuments: communities.hasDocuments,
-                hasForum: communities.hasForum,
-                hasMessages: communities.hasMessages,
-                hasServicePros: communities.hasServicePros,
-                hasLocalGuide: communities.hasLocalGuide,
-                hasEmergency: communities.hasEmergency,
-                isActive: communities.isActive,
-                logoUrl: communities.logoUrl,
-                primaryColor: communities.primaryColor,
-                secondaryColor: communities.secondaryColor,
-                accentColor: communities.accentColor,
-                emergencyAccessCode: communities.emergencyAccessCode,
-                emergencyInstructions: communities.emergencyInstructions,
-                hoaDuesAmount: communities.hoaDuesAmount,
-                hoaDuesFrequency: communities.hoaDuesFrequency,
-                hoaDuesDate: communities.hoaDuesDate,
-                hoaContactEmail: communities.hoaContactEmail,
-                hoaExtendedSettings: communities.hoaExtendedSettings,
-                maxHomes: communities.maxHomes,
-                trialEndsAt: communities.trialEndsAt,
-                planStatus: communities.planStatus,
-            })
-            .from(communities)
-            .innerJoin(members, eq(communities.id, members.communityId))
-            .where(eq(members.userId, userId));
+        // Use a base select without billing columns (trial_ends_at, plan_status)
+        // which may not exist if the billing migration hasn't been run yet.
+        const baseSelect = {
+            id: communities.id,
+            name: communities.name,
+            slug: communities.slug,
+            planTuple: communities.planTuple,
+            hasMarketplace: communities.hasMarketplace,
+            hasResources: communities.hasResources,
+            hasEvents: communities.hasEvents,
+            hasDocuments: communities.hasDocuments,
+            hasForum: communities.hasForum,
+            hasMessages: communities.hasMessages,
+            hasServicePros: communities.hasServicePros,
+            hasLocalGuide: communities.hasLocalGuide,
+            hasEmergency: communities.hasEmergency,
+            isActive: communities.isActive,
+            logoUrl: communities.logoUrl,
+            primaryColor: communities.primaryColor,
+            secondaryColor: communities.secondaryColor,
+            accentColor: communities.accentColor,
+            emergencyAccessCode: communities.emergencyAccessCode,
+            emergencyInstructions: communities.emergencyInstructions,
+            hoaDuesAmount: communities.hoaDuesAmount,
+            hoaDuesFrequency: communities.hoaDuesFrequency,
+            hoaDuesDate: communities.hoaDuesDate,
+            hoaContactEmail: communities.hoaContactEmail,
+            hoaExtendedSettings: communities.hoaExtendedSettings,
+            maxHomes: communities.maxHomes,
+        };
+
+        let userCommunities;
+        try {
+            // Try with billing columns first
+            userCommunities = await db
+                .select({ ...baseSelect, trialEndsAt: communities.trialEndsAt, planStatus: communities.planStatus })
+                .from(communities)
+                .innerJoin(members, eq(communities.id, members.communityId))
+                .where(eq(members.userId, userId));
+        } catch {
+            // Fallback without billing columns if migration hasn't run
+            console.warn("[getCommunities] Billing columns not found, falling back without them");
+            userCommunities = await db
+                .select(baseSelect)
+                .from(communities)
+                .innerJoin(members, eq(communities.id, members.communityId))
+                .where(eq(members.userId, userId));
+        }
 
         console.log(`[getCommunities] Found ${userCommunities.length} communities.`);
         return { success: true, data: userCommunities.map(mapToUI) };
@@ -151,7 +165,7 @@ export async function createCommunity(data: any): Promise<CommunityActionState> 
 
         return await db.transaction(async (tx) => {
             // 1. Create Community
-            const [inserted] = await tx.insert(communities).values({
+            const baseValues: any = {
                 name: data.name,
                 slug: data.slug,
                 planTuple: data.plan,
@@ -169,10 +183,20 @@ export async function createCommunity(data: any): Promise<CommunityActionState> 
                 secondaryColor: data.branding?.secondaryColor,
                 accentColor: data.branding?.accentColor,
                 logoUrl: data.branding?.logoUrl,
-                // 5.5: Set 14-day free trial on creation
-                trialEndsAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
-                planStatus: 'trial',
-            }).returning();
+            };
+
+            let inserted;
+            try {
+                // Try with billing columns (5.5: 14-day free trial)
+                [inserted] = await tx.insert(communities).values({
+                    ...baseValues,
+                    trialEndsAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
+                    planStatus: 'trial' as const,
+                }).returning();
+            } catch {
+                // Fallback without billing columns
+                [inserted] = await tx.insert(communities).values(baseValues).returning();
+            }
 
             if (!inserted) {
                 throw new Error("Failed to insert community record");
@@ -333,47 +357,53 @@ export async function updateHoaExtendedSettings(id: string, data: { amenities?: 
  */
 export async function getCommunityById(id: string) {
     try {
-        const [community] = await db
-            .select({
-                id: communities.id,
-                name: communities.name,
-                slug: communities.slug,
-                planTuple: communities.planTuple,
-                hasMarketplace: communities.hasMarketplace,
-                hasResources: communities.hasResources,
-                hasEvents: communities.hasEvents,
-                hasDocuments: communities.hasDocuments,
-                hasForum: communities.hasForum,
-                hasMessages: communities.hasMessages,
-                hasServicePros: communities.hasServicePros,
-                hasLocalGuide: communities.hasLocalGuide,
-                hasEmergency: communities.hasEmergency,
-                isActive: communities.isActive,
-                logoUrl: communities.logoUrl,
-                primaryColor: communities.primaryColor,
-                secondaryColor: communities.secondaryColor,
-                accentColor: communities.accentColor,
-                emergencyAccessCode: communities.emergencyAccessCode,
-                emergencyInstructions: communities.emergencyInstructions,
-                hoaDuesAmount: communities.hoaDuesAmount,
-                hoaDuesFrequency: communities.hoaDuesFrequency,
-                hoaDuesDate: communities.hoaDuesDate,
-                hoaContactEmail: communities.hoaContactEmail,
-                hoaExtendedSettings: communities.hoaExtendedSettings,
-                maxHomes: communities.maxHomes,
-                trialEndsAt: communities.trialEndsAt,
-                planStatus: communities.planStatus,
-            })
-            .from(communities)
-            .where(eq(communities.id, id));
+        const baseSelect = {
+            id: communities.id,
+            name: communities.name,
+            slug: communities.slug,
+            planTuple: communities.planTuple,
+            hasMarketplace: communities.hasMarketplace,
+            hasResources: communities.hasResources,
+            hasEvents: communities.hasEvents,
+            hasDocuments: communities.hasDocuments,
+            hasForum: communities.hasForum,
+            hasMessages: communities.hasMessages,
+            hasServicePros: communities.hasServicePros,
+            hasLocalGuide: communities.hasLocalGuide,
+            hasEmergency: communities.hasEmergency,
+            isActive: communities.isActive,
+            logoUrl: communities.logoUrl,
+            primaryColor: communities.primaryColor,
+            secondaryColor: communities.secondaryColor,
+            accentColor: communities.accentColor,
+            emergencyAccessCode: communities.emergencyAccessCode,
+            emergencyInstructions: communities.emergencyInstructions,
+            hoaDuesAmount: communities.hoaDuesAmount,
+            hoaDuesFrequency: communities.hoaDuesFrequency,
+            hoaDuesDate: communities.hoaDuesDate,
+            hoaContactEmail: communities.hoaContactEmail,
+            hoaExtendedSettings: communities.hoaExtendedSettings,
+            maxHomes: communities.maxHomes,
+        };
+
+        let community;
+        try {
+            [community] = await db
+                .select({ ...baseSelect, trialEndsAt: communities.trialEndsAt, planStatus: communities.planStatus })
+                .from(communities)
+                .where(eq(communities.id, id));
+        } catch {
+            [community] = await db
+                .select(baseSelect)
+                .from(communities)
+                .where(eq(communities.id, id));
+        }
 
         if (!community) {
             return { success: false, error: "Community not found" };
         }
 
-        const mapped = mapToUI(community);
-
-        return { success: true, data: mapped };
+        return { success: true, data: mapToUI(community) };
     } catch (error: any) {
         console.error("Failed to fetch community by ID:", error);
         return { success: false, error: "Failed to fetch community" };
