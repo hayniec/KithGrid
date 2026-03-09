@@ -187,11 +187,10 @@ export async function createCommunity(data: any): Promise<CommunityActionState> 
 
             let inserted;
             try {
-                // Try with billing columns (5.5: 14-day free trial)
+                // Billing/trial disabled for now — default to 'active'
                 [inserted] = await tx.insert(communities).values({
                     ...baseValues,
-                    trialEndsAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
-                    planStatus: 'trial' as const,
+                    planStatus: 'active' as const,
                 }).returning();
             } catch {
                 // Fallback without billing columns
