@@ -36,6 +36,7 @@ const mapToUI = (row: any) => ({
         emergency: row.has_emergency ?? row.hasEmergency,
     },
     isActive: row.is_active ?? row.isActive,
+    archivedAt: (row.archived_at || row.archivedAt) ? new Date(row.archived_at || row.archivedAt).toISOString() : null,
     branding: {
         logoUrl: row.logo_url || row.logoUrl || '',
         primaryColor: row.primary_color || row.primaryColor || '#4f46e5',

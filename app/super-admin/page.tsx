@@ -1,10 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Shield, Plus, Check, PowerOff, Building, Download, Trash2, Database, LogOut, UserPlus, X, Copy, BarChart3 } from "lucide-react";
+import { Shield, Plus, Check, PowerOff, Building, Download, Trash2, Database, LogOut, UserPlus, X, Copy, BarChart3, Archive, RotateCcw } from "lucide-react";
 import styles from "./admin.module.css";
 import { getTenants } from "@/app/actions/super-admin";
-import { createCommunity, toggleCommunityStatus, deleteCommunity, toggleCommunityFeature } from "@/app/actions/communities";
+import { createCommunity, toggleCommunityStatus, deleteCommunity, toggleCommunityFeature, restoreCommunity, permanentlyDeleteCommunity } from "@/app/actions/communities";
 import { createInvitation } from "@/app/actions/invitations";
 import { getAllCommunityUsageStats } from "@/app/actions/billing";
 import type { CommunityUsageStats } from "@/app/actions/billing-types";
@@ -28,8 +28,8 @@ export default function SuperAdminPage() {
         }
     });
 
-    // View mode: tenants or usage
-    const [viewMode, setViewMode] = useState<'tenants' | 'usage'>('tenants');
+    // View mode: tenants, archived, or usage
+    const [viewMode, setViewMode] = useState<'tenants' | 'archived' | 'usage'>('tenants');
 
     // Usage Stats
     const [usageStats, setUsageStats] = useState<CommunityUsageStats[]>([]);
@@ -106,10 +106,26 @@ export default function SuperAdminPage() {
         await toggleCommunityStatus(id, newStatus);
     };
 
-    const handleDelete = async (id: string) => {
-        if (confirm('Are you sure you want to delete this tenant? This action cannot be undone.')) {
-            setCommunities(prev => prev.filter(c => c.id !== id));
+    const handleArchive = async (id: string) => {
+        if (confirm('Archive this tenant? All members and data will be preserved. You can restore it later.')) {
+            setCommunities(prev => prev.map(c =>
+                c.id === id ? { ...c, archivedAt: new Date().toISOString() } : c
+            ));
             await deleteCommunity(id);
+        }
+    };
+
+    const handleRestore = async (id: string) => {
+        setCommunities(prev => prev.map(c =>
+            c.id === id ? { ...c, archivedAt: null } : c
+        ));
+        await restoreCommunity(id);
+    };
+
+    const handlePermanentDelete = async (id: string) => {
+        if (confirm('PERMANENTLY delete this tenant and all associated data? This cannot be undone.')) {
+            setCommunities(prev => prev.filter(c => c.id !== id));
+            await permanentlyDeleteCommunity(id);
         }
     };
 
@@ -290,6 +306,23 @@ export default function SuperAdminPage() {
                     <Building size={16} /> Tenants
                 </button>
                 <button
+                    onClick={() => setViewMode('archived')}
+                    style={{
+                        padding: '0.6rem 1.2rem',
+                        borderRadius: '6px',
+                        border: '1px solid var(--border, #e5e7eb)',
+                        background: viewMode === 'archived' ? '#4f46e5' : '#fff',
+                        color: viewMode === 'archived' ? '#fff' : '#374151',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem',
+                    }}
+                >
+                    <Archive size={16} /> Archived ({communities.filter(c => c.archivedAt).length})
+                </button>
+                <button
                     onClick={() => { setViewMode('usage'); loadUsageStats(); }}
                     style={{
                         padding: '0.6rem 1.2rem',
@@ -415,14 +448,14 @@ export default function SuperAdminPage() {
 
             {viewMode === 'tenants' && loading ? (
                 <div style={{ textAlign: 'center', padding: '2rem' }}>Loading tenants...</div>
-            ) : viewMode === 'tenants' && communities.length === 0 ? (
+            ) : viewMode === 'tenants' && communities.filter(c => !c.archivedAt).length === 0 ? (
                 <div className={styles.emptyState}>
                     <Database size={48} style={{ marginBottom: '1rem', opacity: 0.5 }} />
                     <p>No tenants found. Add a tenant to get started.</p>
                 </div>
             ) : viewMode === 'tenants' ? (
                 <div className={styles.grid}>
-                    {communities.map(comm => (
+                    {communities.filter(c => !c.archivedAt).map(comm => (
                         <div key={comm.id} className={`${styles.card} ${!comm.isActive ? styles.cardInactive : ''}`}>
                             <div className={styles.cardHeader}>
                                 <div className={styles.cardTitleSection}>
@@ -558,11 +591,11 @@ export default function SuperAdminPage() {
                                         Simulate Login
                                     </button>
                                     <button
-                                        onClick={() => handleDelete(comm.id)}
+                                        onClick={() => handleArchive(comm.id)}
                                         className={styles.deleteButton}
                                     >
-                                        <Trash2 size={16} />
-                                        Delete
+                                        <Archive size={16} />
+                                        Archive
                                     </button>
                                 </div>
                                 <span style={{ fontSize: '0.875rem', color: '#6b7280' }}>
@@ -573,6 +606,68 @@ export default function SuperAdminPage() {
                     ))}
                 </div>
             ) : null}
+
+            {/* Archived Communities View */}
+            {viewMode === 'archived' && (
+                <div>
+                    {communities.filter(c => c.archivedAt).length === 0 ? (
+                        <div className={styles.emptyState}>
+                            <Archive size={48} style={{ marginBottom: '1rem', opacity: 0.5 }} />
+                            <p>No archived tenants.</p>
+                        </div>
+                    ) : (
+                        <div className={styles.grid}>
+                            {communities.filter(c => c.archivedAt).map(comm => (
+                                <div key={comm.id} className={styles.card} style={{ opacity: 0.75, borderColor: '#f59e0b' }}>
+                                    <div className={styles.cardHeader}>
+                                        <div className={styles.cardTitleSection}>
+                                            <div className={styles.iconBox} style={{ background: '#fef3c7', color: '#92400e' }}>
+                                                <Archive size={24} />
+                                            </div>
+                                            <div>
+                                                <h2 className={styles.cardTitle}>{comm.name}</h2>
+                                                <div className={styles.cardMeta}>
+                                                    <span style={{ fontFamily: 'monospace' }}>{comm.id.substring(0, 8)}...</span>
+                                                    <span>•</span>
+                                                    <span>{comm.slug}</span>
+                                                </div>
+                                                <div style={{ fontSize: '0.75rem', color: '#92400e', marginTop: '0.25rem' }}>
+                                                    Archived {comm.archivedAt ? new Date(comm.archivedAt).toLocaleDateString() : ''}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className={styles.footer} style={{ justifyContent: 'flex-start' }}>
+                                        <div className={styles.manageButtons}>
+                                            <button
+                                                onClick={() => handleRestore(comm.id)}
+                                                className={styles.simulateButton}
+                                            >
+                                                <RotateCcw size={16} />
+                                                Restore
+                                            </button>
+                                            <button
+                                                onClick={() => handleExport(comm)}
+                                                className={styles.iconButton}
+                                                title="Export Data"
+                                            >
+                                                <Download size={18} />
+                                            </button>
+                                            <button
+                                                onClick={() => handlePermanentDelete(comm.id)}
+                                                className={styles.deleteButton}
+                                            >
+                                                <Trash2 size={16} />
+                                                Delete Forever
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            )}
 
             {showAddModal && (
                 <div className={styles.modalOverlay}>

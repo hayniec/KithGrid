@@ -47,6 +47,7 @@ export const communities = pgTable('communities', {
     hoaExtendedSettings: json('hoa_extended_settings').default({}),
 
     createdAt: timestamp('created_at').defaultNow(),
+    archivedAt: timestamp('archived_at', { withTimezone: true }),
 });
 
 // 1. Users (Global Authentication)

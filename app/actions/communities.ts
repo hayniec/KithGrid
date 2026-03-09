@@ -2,7 +2,7 @@
 
 import { db } from "@/db";
 import { communities } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, isNull, and } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
 // Type definition matching the UI but mapped from DB
@@ -31,6 +31,7 @@ const mapToUI = (row: any) => {
             emergency: row.hasEmergency,
         },
         isActive: row.isActive,
+        archivedAt: row.archivedAt ? new Date(row.archivedAt).toISOString() : null,
         branding: {
             logoUrl: row.logoUrl || '',
             primaryColor: row.primaryColor || '#4f46e5',
@@ -128,12 +129,12 @@ export async function getCommunities() {
 
         let userCommunities;
         try {
-            // Try with billing columns first
+            // Try with billing columns first; exclude archived communities
             userCommunities = await db
                 .select({ ...baseSelect, trialEndsAt: communities.trialEndsAt, planStatus: communities.planStatus })
                 .from(communities)
                 .innerJoin(members, eq(communities.id, members.communityId))
-                .where(eq(members.userId, userId));
+                .where(and(eq(members.userId, userId), isNull(communities.archivedAt)));
         } catch {
             // Fallback without billing columns if migration hasn't run
             console.warn("[getCommunities] Billing columns not found, falling back without them");
@@ -141,7 +142,7 @@ export async function getCommunities() {
                 .select(baseSelect)
                 .from(communities)
                 .innerJoin(members, eq(communities.id, members.communityId))
-                .where(eq(members.userId, userId));
+                .where(and(eq(members.userId, userId), isNull(communities.archivedAt)));
         }
 
         console.log(`[getCommunities] Found ${userCommunities.length} communities.`);
@@ -244,10 +245,33 @@ export async function toggleCommunityStatus(id: string, newStatus: boolean) {
 
 export async function deleteCommunity(id: string) {
     try {
+        // Soft-delete: archive instead of permanently removing
+        await db.update(communities)
+            .set({ archivedAt: new Date() })
+            .where(eq(communities.id, id));
+        return { success: true };
+    } catch (error: any) {
+        return { success: false, error: "Failed to archive community" };
+    }
+}
+
+export async function restoreCommunity(id: string) {
+    try {
+        await db.update(communities)
+            .set({ archivedAt: null })
+            .where(eq(communities.id, id));
+        return { success: true };
+    } catch (error: any) {
+        return { success: false, error: "Failed to restore community" };
+    }
+}
+
+export async function permanentlyDeleteCommunity(id: string) {
+    try {
         await db.delete(communities).where(eq(communities.id, id));
         return { success: true };
     } catch (error: any) {
-        return { success: false, error: "Failed to delete community" };
+        return { success: false, error: "Failed to permanently delete community" };
     }
 }
 
