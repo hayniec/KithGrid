@@ -12,7 +12,8 @@ import { CreateResourceModal } from "@/components/dashboard/CreateResourceModal"
 import { useUser } from "@/contexts/UserContext";
 import { getUserRoles } from "@/utils/roleHelpers";
 import { Upload, CreditCard } from "lucide-react";
-import { checkMemberLimit, updateCommunityPlan, getCommunityTrialStatus, PLANS, type PlanId } from "@/app/actions/billing";
+import { checkMemberLimit, updateCommunityPlan, getCommunityTrialStatus } from "@/app/actions/billing";
+import { PLANS, type PlanId } from "@/app/actions/billing-types";
 
 type Tab = 'general' | 'users' | 'invites' | 'resources' | 'billing';
 

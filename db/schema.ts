@@ -33,7 +33,7 @@ export const communities = pgTable('communities', {
 
     // Trial & Plan Management
     trialEndsAt: timestamp('trial_ends_at', { withTimezone: true }),
-    planStatus: text('plan_status', { enum: ['trial', 'active', 'expired', 'cancelled'] }).default('trial'),
+    planStatus: text('plan_status', { enum: ['trial', 'active', 'expired', 'cancelled'] }).default('active'),
 
     // Emergency Access
     emergencyAccessCode: text('emergency_access_code'),

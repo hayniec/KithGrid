@@ -6,7 +6,8 @@ import styles from "./admin.module.css";
 import { getTenants } from "@/app/actions/super-admin";
 import { createCommunity, toggleCommunityStatus, deleteCommunity, toggleCommunityFeature } from "@/app/actions/communities";
 import { createInvitation } from "@/app/actions/invitations";
-import { getAllCommunityUsageStats, type CommunityUsageStats } from "@/app/actions/billing";
+import { getAllCommunityUsageStats } from "@/app/actions/billing";
+import type { CommunityUsageStats } from "@/app/actions/billing-types";
 import type { Community } from "@/types/community";
 import { createClient } from "@/utils/supabase/client";
 
