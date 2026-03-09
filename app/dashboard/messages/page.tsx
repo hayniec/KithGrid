@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, useRef, useCallback, Suspense } from "react";
 import styles from "./messages.module.css";
 import { Send, User, MessageCircle, Plus } from "lucide-react";
 import { MessageUserModal } from "@/components/dashboard/MessageUserModal";
-import { getConversations, getThread, sendMessage } from "@/app/actions/messages";
+import { getConversations, getThread, sendMessage, markAsRead } from "@/app/actions/messages";
 import { useUser } from "@/contexts/UserContext";
 import { useSearchParams } from "next/navigation";
 
@@ -42,10 +42,22 @@ function MessagesContent() {
     const [isNewMessageModalOpen, setIsNewMessageModalOpen] = useState(false);
     const [tempChatName, setTempChatName] = useState("");
 
+    // Auto-scroll ref
+    const messagesEndRef = useRef<HTMLDivElement>(null);
+
+    const scrollToBottom = useCallback(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }, []);
+
+    // Auto-scroll when messages change
+    useEffect(() => {
+        scrollToBottom();
+    }, [messages, scrollToBottom]);
+
     // Initial load
     useEffect(() => {
         if (user) {
-            loadConversations();
+            loadConversations(true);
         }
     }, [user]);
 
@@ -56,26 +68,46 @@ function MessagesContent() {
         }
     }, [toId, user]);
 
-    // Load thread when activeChatId changes
+    // Load thread when activeChatId changes + mark as read
     useEffect(() => {
         if (activeChatId && user) {
             loadThread(activeChatId);
+            // Mark messages from the other user as read
+            if (user.id && user.communityId) {
+                markAsRead(user.id, activeChatId, user.communityId).then(() => {
+                    // Refresh conversation list to clear unread badges
+                    loadConversations();
+                });
+            }
         }
     }, [activeChatId, user]);
 
-    const loadConversations = async () => {
+    // Poll for new messages every 5 seconds
+    useEffect(() => {
         if (!user?.id || !user?.communityId) return;
-        setLoading(true);
+
+        const interval = setInterval(() => {
+            if (activeChatId) {
+                loadThread(activeChatId);
+            }
+            loadConversations();
+        }, 5000);
+
+        return () => clearInterval(interval);
+    }, [user, activeChatId]);
+
+    const loadConversations = async (isInitial = false) => {
+        if (!user?.id || !user?.communityId) return;
+        if (isInitial) setLoading(true);
         const res = await getConversations(user.id, user.communityId);
         if (res.success && res.data) {
             setConversations(res.data);
             // Default select first if none selected and not directed by URL
-            // Only if we haven't manually selected one via modal (tempChatName check?)
             if (!activeChatId && !toId && res.data.length > 0 && !tempChatName) {
                 setActiveChatId(res.data[0].otherUserId || res.data[0].otherId);
             }
         }
-        setLoading(false);
+        if (isInitial) setLoading(false);
     };
 
     const loadThread = async (otherId: string) => {
@@ -199,6 +231,7 @@ function MessagesContent() {
                                     Start the conversation!
                                 </div>
                             )}
+                            <div ref={messagesEndRef} />
                         </div>
 
                         <div className={styles.inputArea}>

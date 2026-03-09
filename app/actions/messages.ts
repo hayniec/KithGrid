@@ -2,7 +2,7 @@
 
 import { db } from "@/db";
 import { directMessages, members, users } from "@/db/schema";
-import { eq, desc, or, and, inArray } from "drizzle-orm";
+import { eq, desc, or, and, inArray, sql } from "drizzle-orm";
 
 export type MessageActionState = {
     success: boolean;
@@ -99,7 +99,38 @@ export async function getThread(currentUserId: string, otherUserId: string, comm
             )
             .orderBy(desc(directMessages.createdAt));
 
-        return { success: true, data: msgs.reverse() }; // Return ascending
+        // Map memberId-based senderIds back to userIds for frontend comparison
+        const mapped = msgs.reverse().map(msg => ({
+            ...msg,
+            senderId: msg.senderId === currentMemberId ? currentUserId : otherUserId,
+            recipientId: msg.recipientId === currentMemberId ? currentUserId : otherUserId,
+        }));
+
+        return { success: true, data: mapped };
+    } catch (error: any) {
+        return { success: false, error: error.message };
+    }
+}
+
+export async function markAsRead(currentUserId: string, otherUserId: string, communityId: string): Promise<MessageActionState> {
+    try {
+        const currentMemberId = await getMemberId(currentUserId, communityId);
+        const otherMemberId = await getMemberId(otherUserId, communityId);
+
+        if (!currentMemberId || !otherMemberId) return { success: false, error: 'Members not found.' };
+
+        await db
+            .update(directMessages)
+            .set({ isRead: true })
+            .where(
+                and(
+                    eq(directMessages.senderId, otherMemberId),
+                    eq(directMessages.recipientId, currentMemberId),
+                    eq(directMessages.isRead, false)
+                )
+            );
+
+        return { success: true };
     } catch (error: any) {
         return { success: false, error: error.message };
     }
@@ -131,7 +162,8 @@ export async function sendMessage(senderUserId: string, recipientUserId: string,
             }).catch(e => console.error("Notification failed", e));
         });
 
-        return { success: true, data: msg };
+        // Return userId-based IDs so frontend can compare with user.id
+        return { success: true, data: { ...msg, senderId: senderUserId, recipientId: recipientUserId } };
     } catch (error: any) {
         return { success: false, error: error.message };
     }
