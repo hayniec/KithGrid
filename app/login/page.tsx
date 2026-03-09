@@ -1,12 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import styles from "../join/join.module.css";
 import { signInWithPassword, signInWithOAuth } from "@/utils/auth";
 
 export default function LoginPage() {
     const router = useRouter();
+    const searchParams = useSearchParams();
+    const redirectTo = searchParams.get("redirect") || "/select-community";
 
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
@@ -22,14 +24,15 @@ export default function LoginPage() {
         if (!result.success) {
             setError(result.error);
         } else {
-            router.push("/select-community");
+            router.push(redirectTo);
         }
         setIsLoading(false);
     };
 
     const handleSocialLogin = async (provider: "google" | "facebook" | "apple") => {
         setIsLoading(true);
-        const result = await signInWithOAuth(provider, `${window.location.origin}/select-community`);
+        const dest = redirectTo === "/super-admin" ? "/super-admin" : "/select-community";
+        const result = await signInWithOAuth(provider, `${window.location.origin}${dest}`);
         if (!result.success) {
             setError(result.error);
             setIsLoading(false);
@@ -130,6 +133,9 @@ export default function LoginPage() {
                 </div>
                 <p className={styles.footerText} style={{ marginTop: '1.5rem' }}>
                     Don't have an account? <a href="/join" className={styles.link}>Join with Code</a>
+                </p>
+                <p className={styles.footerText} style={{ marginTop: '0.5rem' }}>
+                    <a href="/login?redirect=/super-admin" className={styles.link} style={{ fontSize: '0.8rem', opacity: 0.6 }}>Super Admin</a>
                 </p>
             </div>
         </div>

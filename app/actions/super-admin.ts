@@ -6,10 +6,7 @@ import { createClient } from "@/utils/supabase/server";
 import { eq } from "drizzle-orm";
 
 // Hardcoded Super Admins for now - typically this would be in the DB or env
-// Hardcoded Super Admins for now - typically this would be in the DB or env
 const SUPER_ADMINS = [
-    "sally.johnson@example.com",
-    "erich.haynie@gmail.com",
     "eric.haynie@gmail.com",
     process.env.SUPER_ADMIN_EMAIL
 ].filter((email): email is string => !!email).map(email => email.toLowerCase());

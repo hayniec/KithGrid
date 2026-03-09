@@ -15,6 +15,14 @@ export async function middleware(request: NextRequest) {
     // Check if a community is selected
     const hasCommunity = request.cookies.has('kithgrid_community')
 
+    // Guard: /super-admin requires authentication
+    if (pathname.startsWith('/super-admin') && !hasAuthSession) {
+        const url = request.nextUrl.clone()
+        url.pathname = '/login'
+        url.searchParams.set('redirect', '/super-admin')
+        return NextResponse.redirect(url)
+    }
+
     // Guard: /select-community, /create-community, /join-community require authentication
     const authRequiredPaths = ['/select-community', '/create-community', '/join-community']
     if (authRequiredPaths.some(p => pathname.startsWith(p)) && !hasAuthSession) {
