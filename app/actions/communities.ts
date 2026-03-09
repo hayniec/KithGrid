@@ -228,7 +228,13 @@ export async function createCommunity(data: any): Promise<CommunityActionState> 
         }
 
         const msg = error.message || "Failed to create community";
-        return { success: false, error: msg };
+        // Check for missing column errors (schema/migration mismatch)
+        if (msg.includes('column') && msg.includes('does not exist')) {
+            const colMatch = msg.match(/column "([^"]+)" of relation/);
+            const colName = colMatch ? colMatch[1] : 'unknown';
+            return { success: false, error: `Database column "${colName}" is missing. Please run the latest migration (db/migrations/add_missing_columns.sql) against your database.` };
+        }
+        return { success: false, error: `Failed to create community: ${msg}` };
     }
 }
 
