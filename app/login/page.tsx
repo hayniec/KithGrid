@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import styles from "../join/join.module.css";
 import { signInWithPassword, signInWithOAuth } from "@/utils/auth";
 
-export default function LoginPage() {
+function LoginForm() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const redirectTo = searchParams.get("redirect") || "/select-community";
@@ -112,24 +112,6 @@ export default function LoginPage() {
                     >
                         Sign in with Google
                     </button>
-                    {/* <button
-                        type="button"
-                        onClick={() => handleSocialLogin("facebook")}
-                        className={styles.button}
-                        style={{ backgroundColor: "#4267B2", borderColor: "#4267B2" }}
-                        disabled={isLoading}
-                    >
-                        Sign in with Facebook
-                    </button>
-                    <button
-                        type="button"
-                        onClick={() => handleSocialLogin("apple")}
-                        className={styles.button}
-                        style={{ backgroundColor: "#000000", borderColor: "#000000" }}
-                        disabled={isLoading}
-                    >
-                        Sign in with Apple
-                    </button> */}
                 </div>
                 <p className={styles.footerText} style={{ marginTop: '1.5rem' }}>
                     Don't have an account? <a href="/join" className={styles.link}>Join with Code</a>
@@ -139,5 +121,13 @@ export default function LoginPage() {
                 </p>
             </div>
         </div>
+    );
+}
+
+export default function LoginPage() {
+    return (
+        <Suspense>
+            <LoginForm />
+        </Suspense>
     );
 }
