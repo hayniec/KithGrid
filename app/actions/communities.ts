@@ -166,7 +166,7 @@ export async function createCommunity(data: any): Promise<CommunityActionState> 
 
         return await db.transaction(async (tx) => {
             // 1. Create Community
-            const baseValues: any = {
+            const [inserted] = await tx.insert(communities).values({
                 name: data.name,
                 slug: data.slug,
                 planTuple: data.plan,
@@ -183,58 +183,52 @@ export async function createCommunity(data: any): Promise<CommunityActionState> 
                 primaryColor: data.branding?.primaryColor,
                 secondaryColor: data.branding?.secondaryColor,
                 accentColor: data.branding?.accentColor,
-                logoUrl: data.branding?.logoUrl,
-            };
-
-            let inserted;
-            try {
-                // Billing/trial disabled for now — default to 'active'
-                [inserted] = await tx.insert(communities).values({
-                    ...baseValues,
-                    planStatus: 'active' as const,
-                }).returning();
-            } catch {
-                // Fallback without billing columns
-                [inserted] = await tx.insert(communities).values(baseValues).returning();
-            }
+                logoUrl: data.branding?.logoUrl || null,
+                planStatus: 'active' as const,
+            }).returning();
 
             if (!inserted) {
                 throw new Error("Failed to insert community record");
             }
 
             // 2. Add Creator as Admin
-            try {
-                await tx.insert(members).values({
-                    userId: user.id,
-                    communityId: inserted.id,
-                    role: 'Admin',
-                    address: 'Admin Address',
-                    joinedDate: new Date(),
-                    isOnline: true
-                });
-            } catch (memberError: any) {
-                console.error("Failed to add member:", memberError);
-                throw new Error(`Failed to add admin member: ${memberError.message}`);
-            }
+            await tx.insert(members).values({
+                userId: user.id,
+                communityId: inserted.id,
+                role: 'Admin',
+                address: 'Admin Address',
+                joinedDate: new Date(),
+                isOnline: true
+            });
 
             return { success: true, data: mapToUI(inserted) };
         });
 
     } catch (error: any) {
         console.error("Failed to create community:", error);
+        console.error("Error details:", { code: error.code, detail: error.detail, hint: error.hint, where: error.where });
 
         if (error.code === '23505' || error.message?.includes('unique constraint') || error.message?.includes('duplicate key')) {
             return { success: false, error: "A tenant with this slug already exists. Please choose a distinct slug." };
         }
 
-        const msg = error.message || "Failed to create community";
+        // Extract the actual Postgres error from Drizzle's wrapped message
+        const msg = error.message || "";
+        const pgError = msg.split('\n')[0] || msg;
+
         // Check for missing column errors (schema/migration mismatch)
-        if (msg.includes('column') && msg.includes('does not exist')) {
-            const colMatch = msg.match(/column "([^"]+)" of relation/);
+        if (error.code === '42703' || msg.includes('column') && msg.includes('does not exist')) {
+            const colMatch = msg.match(/column "([^"]+)"/);
             const colName = colMatch ? colMatch[1] : 'unknown';
-            return { success: false, error: `Database column "${colName}" is missing. Please run the latest migration (db/migrations/add_missing_columns.sql) against your database.` };
+            return { success: false, error: `Database column "${colName}" is missing. Run the migration: db/migrations/add_missing_columns.sql` };
         }
-        return { success: false, error: `Failed to create community: ${msg}` };
+
+        // Foreign key violation (e.g. user doesn't exist in users table)
+        if (error.code === '23503') {
+            return { success: false, error: `Foreign key error: ${error.detail || pgError}. The logged-in user may not exist in the users table.` };
+        }
+
+        return { success: false, error: `Failed to create community: ${pgError}` };
     }
 }
 
