@@ -15,6 +15,7 @@ export type Community = {
         emergency: boolean; // emergency access
     };
     isActive: boolean;
+    archivedAt: string | null;
     branding: {
         logoUrl: string;
         primaryColor: string;

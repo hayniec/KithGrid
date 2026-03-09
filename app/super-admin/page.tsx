@@ -1,10 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Shield, Plus, Check, PowerOff, Building, Download, Trash2, Database, LogOut, UserPlus, X, Copy, BarChart3 } from "lucide-react";
+import { Shield, Plus, Check, PowerOff, Building, Download, Trash2, Database, LogOut, UserPlus, X, Copy, BarChart3, Archive, RotateCcw, AlertTriangle } from "lucide-react";
 import styles from "./admin.module.css";
 import { getTenants } from "@/app/actions/super-admin";
-import { createCommunity, toggleCommunityStatus, deleteCommunity, toggleCommunityFeature } from "@/app/actions/communities";
+import { createCommunity, toggleCommunityStatus, deleteCommunity, toggleCommunityFeature, restoreCommunity, permanentlyDeleteCommunity } from "@/app/actions/communities";
 import { createInvitation } from "@/app/actions/invitations";
 import { getAllCommunityUsageStats } from "@/app/actions/billing";
 import type { CommunityUsageStats } from "@/app/actions/billing-types";
@@ -28,8 +28,8 @@ export default function SuperAdminPage() {
         }
     });
 
-    // View mode: tenants or usage
-    const [viewMode, setViewMode] = useState<'tenants' | 'usage'>('tenants');
+    // View mode: tenants, archived, or usage
+    const [viewMode, setViewMode] = useState<'tenants' | 'archived' | 'usage'>('tenants');
 
     // Usage Stats
     const [usageStats, setUsageStats] = useState<CommunityUsageStats[]>([]);
@@ -41,6 +41,11 @@ export default function SuperAdminPage() {
     const [inviteEmail, setInviteEmail] = useState("");
     const [selectedCommunityId, setSelectedCommunityId] = useState<string | null>(null);
     const [generatedCode, setGeneratedCode] = useState<string | null>(null);
+
+    // Delete Confirmation Modal State
+    const [deleteTarget, setDeleteTarget] = useState<Community | null>(null);
+    const [deleteStep, setDeleteStep] = useState<1 | 2 | 3>(1);
+    const [deleteConfirmText, setDeleteConfirmText] = useState("");
 
     useEffect(() => {
         loadCommunities();
@@ -106,11 +111,59 @@ export default function SuperAdminPage() {
         await toggleCommunityStatus(id, newStatus);
     };
 
-    const handleDelete = async (id: string) => {
-        if (confirm('Are you sure you want to delete this tenant? This action cannot be undone.')) {
-            setCommunities(prev => prev.filter(c => c.id !== id));
+    const handleArchive = async (id: string) => {
+        if (confirm('Archive this tenant? All members and data will be preserved. You can restore it later from the Archived tab.')) {
+            setCommunities(prev => prev.map(c =>
+                c.id === id ? { ...c, archivedAt: new Date().toISOString() } : c
+            ));
             await deleteCommunity(id);
         }
+    };
+
+    const handleRestore = async (id: string) => {
+        setCommunities(prev => prev.map(c =>
+            c.id === id ? { ...c, archivedAt: null } : c
+        ));
+        await restoreCommunity(id);
+    };
+
+    // Multi-step delete: open the confirmation modal
+    const openDeleteModal = (comm: Community) => {
+        setDeleteTarget(comm);
+        setDeleteStep(1);
+        setDeleteConfirmText("");
+    };
+
+    const closeDeleteModal = () => {
+        setDeleteTarget(null);
+        setDeleteStep(1);
+        setDeleteConfirmText("");
+    };
+
+    const executeDelete = async () => {
+        if (!deleteTarget) return;
+        setCommunities(prev => prev.filter(c => c.id !== deleteTarget.id));
+        await permanentlyDeleteCommunity(deleteTarget.id);
+        closeDeleteModal();
+    };
+
+    // Helper: check if an archived community is past the 1-year mark
+    const isOverOneYear = (archivedAt: string | null) => {
+        if (!archivedAt) return false;
+        const oneYearAgo = new Date();
+        oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+        return new Date(archivedAt) <= oneYearAgo;
+    };
+
+    const getArchiveAge = (archivedAt: string) => {
+        const archived = new Date(archivedAt);
+        const now = new Date();
+        const months = (now.getFullYear() - archived.getFullYear()) * 12 + (now.getMonth() - archived.getMonth());
+        if (months < 1) return 'Less than a month ago';
+        if (months < 12) return `${months} month${months > 1 ? 's' : ''} ago`;
+        const years = Math.floor(months / 12);
+        const remaining = months % 12;
+        return `${years} year${years > 1 ? 's' : ''}${remaining > 0 ? `, ${remaining} mo` : ''} ago`;
     };
 
     const handleExport = (community: Community) => {
@@ -290,6 +343,23 @@ export default function SuperAdminPage() {
                     <Building size={16} /> Tenants
                 </button>
                 <button
+                    onClick={() => setViewMode('archived')}
+                    style={{
+                        padding: '0.6rem 1.2rem',
+                        borderRadius: '6px',
+                        border: '1px solid var(--border, #e5e7eb)',
+                        background: viewMode === 'archived' ? '#4f46e5' : '#fff',
+                        color: viewMode === 'archived' ? '#fff' : '#374151',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem',
+                    }}
+                >
+                    <Archive size={16} /> Archived ({communities.filter(c => c.archivedAt).length})
+                </button>
+                <button
                     onClick={() => { setViewMode('usage'); loadUsageStats(); }}
                     style={{
                         padding: '0.6rem 1.2rem',
@@ -415,14 +485,14 @@ export default function SuperAdminPage() {
 
             {viewMode === 'tenants' && loading ? (
                 <div style={{ textAlign: 'center', padding: '2rem' }}>Loading tenants...</div>
-            ) : viewMode === 'tenants' && communities.length === 0 ? (
+            ) : viewMode === 'tenants' && communities.filter(c => !c.archivedAt).length === 0 ? (
                 <div className={styles.emptyState}>
                     <Database size={48} style={{ marginBottom: '1rem', opacity: 0.5 }} />
                     <p>No tenants found. Add a tenant to get started.</p>
                 </div>
             ) : viewMode === 'tenants' ? (
                 <div className={styles.grid}>
-                    {communities.map(comm => (
+                    {communities.filter(c => !c.archivedAt).map(comm => (
                         <div key={comm.id} className={`${styles.card} ${!comm.isActive ? styles.cardInactive : ''}`}>
                             <div className={styles.cardHeader}>
                                 <div className={styles.cardTitleSection}>
@@ -558,7 +628,19 @@ export default function SuperAdminPage() {
                                         Simulate Login
                                     </button>
                                     <button
-                                        onClick={() => handleDelete(comm.id)}
+                                        onClick={() => handleArchive(comm.id)}
+                                        style={{
+                                            display: 'flex', alignItems: 'center', gap: '0.4rem',
+                                            padding: '0.4rem 0.8rem', borderRadius: 6,
+                                            border: '1px solid #d97706', background: '#fffbeb',
+                                            color: '#92400e', fontWeight: 600, cursor: 'pointer', fontSize: '0.8rem'
+                                        }}
+                                    >
+                                        <Archive size={14} />
+                                        Archive
+                                    </button>
+                                    <button
+                                        onClick={() => openDeleteModal(comm)}
                                         className={styles.deleteButton}
                                     >
                                         <Trash2 size={16} />
@@ -573,6 +655,83 @@ export default function SuperAdminPage() {
                     ))}
                 </div>
             ) : null}
+
+            {/* Archived Communities View */}
+            {viewMode === 'archived' && (
+                <div>
+                    {communities.filter(c => c.archivedAt).length === 0 ? (
+                        <div className={styles.emptyState}>
+                            <Archive size={48} style={{ marginBottom: '1rem', opacity: 0.5 }} />
+                            <p>No archived tenants.</p>
+                        </div>
+                    ) : (
+                        <div className={styles.grid}>
+                            {communities.filter(c => c.archivedAt).map(comm => (
+                                <div key={comm.id} className={styles.card} style={{
+                                    borderColor: isOverOneYear(comm.archivedAt) ? '#ef4444' : '#f59e0b',
+                                    borderWidth: isOverOneYear(comm.archivedAt) ? 2 : 1,
+                                }}>
+                                    {isOverOneYear(comm.archivedAt) && (
+                                        <div style={{
+                                            display: 'flex', alignItems: 'center', gap: '0.5rem',
+                                            padding: '0.6rem 1rem', background: '#fef2f2',
+                                            borderBottom: '1px solid #fecaca', borderRadius: '8px 8px 0 0',
+                                            fontSize: '0.8rem', color: '#991b1b', fontWeight: 600,
+                                        }}>
+                                            <AlertTriangle size={14} />
+                                            Archived over 1 year — consider deleting or restoring this community
+                                        </div>
+                                    )}
+                                    <div className={styles.cardHeader}>
+                                        <div className={styles.cardTitleSection}>
+                                            <div className={styles.iconBox} style={{ background: '#fef3c7', color: '#92400e' }}>
+                                                <Archive size={24} />
+                                            </div>
+                                            <div>
+                                                <h2 className={styles.cardTitle}>{comm.name}</h2>
+                                                <div className={styles.cardMeta}>
+                                                    <span style={{ fontFamily: 'monospace' }}>{comm.id.substring(0, 8)}...</span>
+                                                    <span>•</span>
+                                                    <span>{comm.slug}</span>
+                                                </div>
+                                                <div style={{ fontSize: '0.75rem', color: '#92400e', marginTop: '0.25rem' }}>
+                                                    Archived {comm.archivedAt ? getArchiveAge(comm.archivedAt) : ''}
+                                                    {comm.archivedAt && <span style={{ color: '#9ca3af' }}> ({new Date(comm.archivedAt).toLocaleDateString()})</span>}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className={styles.footer} style={{ justifyContent: 'flex-start' }}>
+                                        <div className={styles.manageButtons}>
+                                            <button
+                                                onClick={() => handleRestore(comm.id)}
+                                                className={styles.simulateButton}
+                                            >
+                                                <RotateCcw size={16} />
+                                                Restore
+                                            </button>
+                                            <button
+                                                onClick={() => handleExport(comm)}
+                                                className={styles.iconButton}
+                                                title="Export Data"
+                                            >
+                                                <Download size={18} />
+                                            </button>
+                                            <button
+                                                onClick={() => openDeleteModal(comm)}
+                                                className={styles.deleteButton}
+                                            >
+                                                <Trash2 size={16} />
+                                                Delete Forever
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            )}
 
             {showAddModal && (
                 <div className={styles.modalOverlay}>
@@ -675,6 +834,122 @@ export default function SuperAdminPage() {
                             ) : (
                                 <button onClick={closeInviteModal} className={styles.primaryButton}>Done</button>
                             )}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Multi-Step Delete Confirmation Modal */}
+            {deleteTarget && (
+                <div className={styles.modalOverlay}>
+                    <div className={styles.modalContent} style={{ maxWidth: 480 }}>
+                        <div className={styles.modalHeader}>
+                            <h2 style={{ color: '#dc2626', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <AlertTriangle size={22} /> Permanently Delete Tenant
+                            </h2>
+                            <button onClick={closeDeleteModal} className={styles.closeButton}>
+                                <X size={20} />
+                            </button>
+                        </div>
+                        <div className={styles.modalBody}>
+                            {deleteStep === 1 && (
+                                <div>
+                                    <p style={{ color: '#374151', lineHeight: 1.6, marginBottom: '1rem' }}>
+                                        You are about to <strong style={{ color: '#dc2626' }}>permanently delete</strong> the community
+                                        <strong> &quot;{deleteTarget.name}&quot;</strong> and all associated data including:
+                                    </p>
+                                    <ul style={{ color: '#6b7280', lineHeight: 2, paddingLeft: '1.25rem', marginBottom: '1.5rem' }}>
+                                        <li>All member accounts and profiles</li>
+                                        <li>Forum posts and comments</li>
+                                        <li>Events and RSVPs</li>
+                                        <li>Marketplace listings</li>
+                                        <li>Documents and resources</li>
+                                        <li>Messages and invitations</li>
+                                    </ul>
+                                    <p style={{ color: '#dc2626', fontWeight: 600, fontSize: '0.9rem' }}>
+                                        This action cannot be undone. Consider archiving instead if you may need this data later.
+                                    </p>
+                                </div>
+                            )}
+                            {deleteStep === 2 && (
+                                <div>
+                                    <p style={{ color: '#374151', lineHeight: 1.6, marginBottom: '1rem' }}>
+                                        Are you absolutely sure? This will permanently remove
+                                        <strong> &quot;{deleteTarget.name}&quot;</strong> ({deleteTarget.slug}) from the database.
+                                    </p>
+                                    <p style={{ color: '#374151', lineHeight: 1.6 }}>
+                                        Type <strong style={{ fontFamily: 'monospace', background: '#fee2e2', padding: '0.1rem 0.4rem', borderRadius: 4 }}>{deleteTarget.name}</strong> to confirm:
+                                    </p>
+                                    <input
+                                        value={deleteConfirmText}
+                                        onChange={(e) => setDeleteConfirmText(e.target.value)}
+                                        placeholder={deleteTarget.name}
+                                        style={{
+                                            width: '100%', padding: '0.6rem 0.8rem', marginTop: '0.75rem',
+                                            borderRadius: 6, border: '2px solid #fecaca', fontSize: '0.95rem',
+                                            outline: 'none', boxSizing: 'border-box',
+                                        }}
+                                        autoFocus
+                                    />
+                                </div>
+                            )}
+                            {deleteStep === 3 && (
+                                <div style={{ textAlign: 'center' }}>
+                                    <Trash2 size={48} color="#dc2626" style={{ margin: '0 auto 1rem' }} />
+                                    <p style={{ color: '#374151', lineHeight: 1.6, fontSize: '1.05rem', fontWeight: 600 }}>
+                                        Final confirmation
+                                    </p>
+                                    <p style={{ color: '#6b7280', marginTop: '0.5rem' }}>
+                                        Click &quot;Delete Forever&quot; to permanently remove <strong>{deleteTarget.name}</strong>.
+                                        There is no recovery after this step.
+                                    </p>
+                                </div>
+                            )}
+                        </div>
+                        <div className={styles.modalFooter} style={{ justifyContent: 'space-between' }}>
+                            <button onClick={closeDeleteModal} className={styles.secondaryButton}>
+                                Cancel
+                            </button>
+                            <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                {deleteStep === 1 && (
+                                    <button
+                                        onClick={() => setDeleteStep(2)}
+                                        style={{
+                                            padding: '0.6rem 1.2rem', borderRadius: 6, border: 'none',
+                                            background: '#dc2626', color: '#fff', fontWeight: 600, cursor: 'pointer'
+                                        }}
+                                    >
+                                        I understand, continue
+                                    </button>
+                                )}
+                                {deleteStep === 2 && (
+                                    <button
+                                        onClick={() => setDeleteStep(3)}
+                                        disabled={deleteConfirmText !== deleteTarget.name}
+                                        style={{
+                                            padding: '0.6rem 1.2rem', borderRadius: 6, border: 'none',
+                                            background: deleteConfirmText === deleteTarget.name ? '#dc2626' : '#e5e7eb',
+                                            color: deleteConfirmText === deleteTarget.name ? '#fff' : '#9ca3af',
+                                            fontWeight: 600, cursor: deleteConfirmText === deleteTarget.name ? 'pointer' : 'not-allowed'
+                                        }}
+                                    >
+                                        Continue
+                                    </button>
+                                )}
+                                {deleteStep === 3 && (
+                                    <button
+                                        onClick={executeDelete}
+                                        style={{
+                                            padding: '0.6rem 1.2rem', borderRadius: 6, border: 'none',
+                                            background: '#dc2626', color: '#fff', fontWeight: 600, cursor: 'pointer',
+                                            display: 'flex', alignItems: 'center', gap: '0.4rem'
+                                        }}
+                                    >
+                                        <Trash2 size={16} />
+                                        Delete Forever
+                                    </button>
+                                )}
+                            </div>
                         </div>
                     </div>
                 </div>

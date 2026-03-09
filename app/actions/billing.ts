@@ -2,7 +2,7 @@
 
 import { db } from "@/db";
 import { communities, members, forumPosts, events, marketplaceItems, directMessages, invitations } from "@/db/schema";
-import { eq, count, sql } from "drizzle-orm";
+import { eq, count, sql, isNull } from "drizzle-orm";
 import { PLANS, type PlanId, type CommunityUsageStats } from "./billing-types";
 // ─── 5.2: Plan Enforcement (Max Homes) ───
 
@@ -143,7 +143,7 @@ export async function getAllCommunityUsageStats(): Promise<{
                 maxHomes: communities.maxHomes,
                 trialEndsAt: communities.trialEndsAt,
                 isActive: communities.isActive,
-            }).from(communities);
+            }).from(communities).where(isNull(communities.archivedAt));
         } catch {
             allCommunities = await db.select({
                 id: communities.id,
@@ -152,7 +152,7 @@ export async function getAllCommunityUsageStats(): Promise<{
                 planTuple: communities.planTuple,
                 maxHomes: communities.maxHomes,
                 isActive: communities.isActive,
-            }).from(communities);
+            }).from(communities).where(isNull(communities.archivedAt));
         }
 
         const stats: CommunityUsageStats[] = [];
