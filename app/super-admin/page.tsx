@@ -15,6 +15,7 @@ export default function SuperAdminPage() {
     const supabase = createClient();
     const [communities, setCommunities] = useState<Community[]>([]);
     const [loading, setLoading] = useState(true);
+    const [authError, setAuthError] = useState<string | null>(null);
     const [isCreating, setIsCreating] = useState(false);
     const [showAddModal, setShowAddModal] = useState(false);
     const [newCommunity, setNewCommunity] = useState<Partial<Community>>({
@@ -47,17 +48,18 @@ export default function SuperAdminPage() {
 
     const loadCommunities = async () => {
         setLoading(true);
+        setAuthError(null);
         try {
             const res = await getTenants();
             if (res.success && res.data) {
                 setCommunities(res.data);
             } else {
                 console.error(res.error);
-                alert(`Failed to load communities: ${res.error}`);
+                setAuthError(res.error || "Failed to load communities");
             }
         } catch (e: any) {
             console.error("Failed to load communities", e);
-            alert(`Unexpected error loading communities: ${e.message || e}`);
+            setAuthError(e.message || "Unexpected error");
         } finally {
             setLoading(false);
         }
@@ -202,6 +204,43 @@ export default function SuperAdminPage() {
         await supabase.auth.signOut();
         window.location.href = '/login';
     };
+
+    if (authError) {
+        return (
+            <div className={styles.container}>
+                <div style={{
+                    maxWidth: 480, margin: '4rem auto', padding: '2rem',
+                    background: '#fff', borderRadius: 12, border: '1px solid #e5e7eb',
+                    textAlign: 'center'
+                }}>
+                    <Shield size={48} color="#ef4444" style={{ margin: '0 auto 1rem' }} />
+                    <h1 style={{ fontSize: '1.5rem', fontWeight: 700, marginBottom: '0.75rem' }}>Access Denied</h1>
+                    <p style={{ color: '#6b7280', marginBottom: '1.5rem', lineHeight: 1.6 }}>{authError}</p>
+                    <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center' }}>
+                        <button
+                            onClick={() => window.location.href = '/login?redirect=/super-admin'}
+                            style={{
+                                padding: '0.6rem 1.5rem', borderRadius: 6, border: 'none',
+                                background: '#4f46e5', color: '#fff', fontWeight: 600, cursor: 'pointer'
+                            }}
+                        >
+                            Sign In as Super Admin
+                        </button>
+                        <button
+                            onClick={() => loadCommunities()}
+                            style={{
+                                padding: '0.6rem 1.5rem', borderRadius: 6,
+                                border: '1px solid #e5e7eb', background: '#fff',
+                                color: '#374151', fontWeight: 600, cursor: 'pointer'
+                            }}
+                        >
+                            Retry
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className={styles.container}>
