@@ -12,7 +12,8 @@
     "lint": "eslint",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
-    "db:generate": "drizzle-kit generate"
+    "db:generate": "drizzle-kit generate",
+    "db:seed": "npx tsx scripts/seed_full.ts"
   },
   "dependencies": {
     "@capacitor/android": "^8.0.2",
