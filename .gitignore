@@ -48,3 +48,7 @@ db-out*.json
 
 # IDE
 *.code-workspace
+
+# Generated docs
+docs/*.docx
+docs/*.html

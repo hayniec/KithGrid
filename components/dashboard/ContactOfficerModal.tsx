@@ -33,10 +33,6 @@ export function ContactOfficerModal({ isOpen, onClose, officer, sender }: Contac
         // Simulate API call
         await new Promise(resolve => setTimeout(resolve, 1000));
 
-        console.log("Message sent to:", officer.email);
-        console.log("Subject:", subject);
-        console.log("Message:", message);
-
         setIsSending(false);
         setIsSent(true);
 

@@ -52,7 +52,7 @@ export async function registerNeighbor(data: {
             const insertValues: any = {
                 email: data.email,
                 name: data.name,
-                password: data.password || 'temp123',
+                password: data.password || '',
             };
             if (data.authId) {
                 insertValues.id = data.authId;
@@ -176,13 +176,11 @@ export async function getNeighbors(communityId: string): Promise<NeighborActionS
 
         const [community] = await db.select().from(communities).where(eq(communities.id, communityId));
 
-        // Define hardcoded super admins to exclude
-        const SUPER_ADMINS = [
-            "sally.johnson@example.com",
-            "erich.haynie@gmail.com",
-            "eric.haynie@gmail.com",
-            (process.env.SUPER_ADMIN_EMAIL || "").toLowerCase()
-        ];
+        // Exclude super admins from neighbor directory
+        const SUPER_ADMINS = (process.env.SUPER_ADMIN_EMAILS || process.env.SUPER_ADMIN_EMAIL || "")
+            .split(',')
+            .map(e => e.trim().toLowerCase())
+            .filter(Boolean);
 
         // Filter out Super Admins and the user themselves from showing up
         const activeNeighbors = results.filter(n => {
