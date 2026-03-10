@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import styles from "./settings.module.css";
-import { User, Bell, Wrench, X, Save, Stethoscope, Phone, Plus, Trash2, Palette, Key, Moon, Sun, Monitor, Laptop, Smartphone } from "lucide-react";
+import { User, Bell, Wrench, X, Save, Stethoscope, Phone, Plus, Trash2, Palette, Key, Moon, Sun, Monitor, Laptop } from "lucide-react";
 
 import { useTheme, THEMES } from "@/contexts/ThemeContext";
 import { useUser } from "@/contexts/UserContext";

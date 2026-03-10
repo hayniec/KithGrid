@@ -25,8 +25,6 @@ function generateCode(): string {
  */
 async function isAdmin(userId: string, communityId: string): Promise<boolean> {
     if (!userId || !communityId) return false;
-    // Allow mock super admin
-    if (userId === "mock-super-admin-id") return true;
 
     try {
         const [member] = await db
@@ -146,13 +144,10 @@ export async function bulkCreateInvitations(data: {
 
         // Permission Check
         if (!adminMember || adminMember.role !== 'Admin') {
-            // Allow mock super admin bypass if needed, but for now strict check unless mock ID
-            if (userId !== "mock-super-admin-id") {
-                return { success: false, error: "Only admins can perform bulk import." };
-            }
+            return { success: false, error: "Only admins can perform bulk import." };
         }
 
-        const safeCreatedBy = userId === "mock-super-admin-id" ? null : (adminMember?.id || null);
+        const safeCreatedBy = adminMember?.id || null;
 
         const values = data.invitations.map(inv => ({
             communityId: data.communityId,
