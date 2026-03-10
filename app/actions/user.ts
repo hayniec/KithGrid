@@ -3,18 +3,29 @@
 import { db } from "@/db";
 import { users, members, communities } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
+import { createClient } from "@/utils/supabase/server";
 
 export async function getUserProfile(userId: string) {
     try {
-        // Fetch User
-        const [dbUser] = await db.select().from(users).where(eq(users.id, userId));
+        // Fetch User by ID first, then fall back to email lookup
+        let [dbUser] = await db.select().from(users).where(eq(users.id, userId));
+
+        if (!dbUser) {
+            // ID mismatch between Supabase Auth and DB — try email lookup
+            const supabase = await createClient();
+            const { data: { user: authUser } } = await supabase.auth.getUser();
+            if (authUser?.email) {
+                [dbUser] = await db.select().from(users).where(eq(users.email, authUser.email));
+            }
+        }
+
         if (!dbUser) return { success: false, error: "User not found" };
 
-        // Fetch Membership (First one found)
+        // Fetch Membership (First one found) — try both DB user ID and auth ID
         let [membership] = await db
             .select()
             .from(members)
-            .where(eq(members.userId, userId));
+            .where(eq(members.userId, dbUser.id));
 
         if (!membership) {
             return {

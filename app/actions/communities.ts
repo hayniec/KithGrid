@@ -75,10 +75,19 @@ export async function getCommunities() {
             return { success: false, error: "Unauthorized: No email found in session" };
         }
 
-        // Cross-reference DB user by email
-        const [dbUser] = await db.select().from(users).where(eq(users.email, user.email));
+        // Cross-reference DB user by email; auto-create if missing
+        let [dbUser] = await db.select().from(users).where(eq(users.email, user.email));
         if (!dbUser) {
-            return { success: false, error: "Database user not found" };
+            // User authenticated via Supabase Auth but has no DB record yet.
+            // Auto-create so they can proceed to create/join a community.
+            const meta = user.user_metadata || {};
+            const [created] = await db.insert(users).values({
+                id: user.id,
+                email: user.email,
+                name: meta.name || meta.full_name || user.email.split('@')[0],
+                avatar: meta.avatar_url || null,
+            }).returning();
+            dbUser = created;
         }
 
         const userId = dbUser.id;
