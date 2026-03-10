@@ -67,20 +67,9 @@ export async function getCommunities() {
         const supabase = await createClient();
         const { data: { user } } = await supabase.auth.getUser();
 
-        console.log("[getCommunities] Session check:", {
-            hasSession: !!user,
-            hasUser: !!user,
-            hasUserId: !!user?.id,
-            userId: user?.id,
-            userEmail: user?.email
-        });
-
         if (!user?.id) {
-            console.error("[getCommunities] UNAUTHORIZED: No valid session found");
             return { success: false, error: "Unauthorized" };
         }
-
-        console.log("[getCommunities] Fetching communities for user:", user.email);
 
         if (!user.email) {
             return { success: false, error: "Unauthorized: No email found in session" };
@@ -89,7 +78,6 @@ export async function getCommunities() {
         // Cross-reference DB user by email
         const [dbUser] = await db.select().from(users).where(eq(users.email, user.email));
         if (!dbUser) {
-            console.error("[getCommunities] DB user not found for email:", user.email);
             return { success: false, error: "Database user not found" };
         }
 
@@ -145,7 +133,6 @@ export async function getCommunities() {
                 .where(and(eq(members.userId, userId), isNull(communities.archivedAt)));
         }
 
-        console.log(`[getCommunities] Found ${userCommunities.length} communities.`);
         return { success: true, data: userCommunities.map(mapToUI) };
     } catch (error: any) {
         console.error("Failed to fetch communities:", error);
@@ -338,8 +325,6 @@ export async function updateCommunityHoaSettings(id: string, data: { duesAmount:
                 amount = parsed.toFixed(2);
             }
         }
-
-        console.log('[updateCommunityHoaSettings] Saving amount:', amount, 'from input:', data.duesAmount);
 
         await db.update(communities).set({
             hoaDuesAmount: amount,

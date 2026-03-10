@@ -6,8 +6,6 @@ import { eq, and } from "drizzle-orm";
 
 export async function getUserProfile(userId: string) {
     try {
-        console.log("[getUserProfile] Fetching for userId:", userId);
-
         // Fetch User
         const [dbUser] = await db.select().from(users).where(eq(users.id, userId));
         if (!dbUser) return { success: false, error: "User not found" };
@@ -19,7 +17,6 @@ export async function getUserProfile(userId: string) {
             .where(eq(members.userId, userId));
 
         if (!membership) {
-            console.log("[getUserProfile] User has no memberships.");
             return {
                 success: true,
                 data: {
@@ -31,8 +28,6 @@ export async function getUserProfile(userId: string) {
                 }
             };
         }
-
-        console.log("[getUserProfile] Found membership:", membership);
 
         // SAFE RETURN: Return ONLY simple strings to guarantee no serialization errors (No Date objects!)
         return {
@@ -87,8 +82,6 @@ export async function getMembershipForCommunity(userId: string, communityId: str
  */
 export async function switchCommunity(userId: string, newCommunityId: string) {
     try {
-        console.log(`[switchCommunity] Request: User ${userId} -> Comm ${newCommunityId}`);
-
         // Verify user exists
         const [user] = await db.select().from(users).where(eq(users.id, userId));
         if (!user) {
@@ -105,7 +98,6 @@ export async function switchCommunity(userId: string, newCommunityId: string) {
             return { success: false, error: "You are not a member of this community" };
         }
 
-        console.log("[switchCommunity] Verified membership, switch allowed.");
         return { success: true, message: "Switched" };
 
     } catch (e: any) {

@@ -69,7 +69,6 @@ export default function EmergencyPage() {
                         if (contacts.length > 0 && (contactMethod === 'call' || contactMethod === 'both')) {
                             const targetContact = contacts.find(c => c.id === primaryId) || contacts[0];
                             if (targetContact) {
-                                console.log(`Initiating call to ${targetContact.name} (${targetContact.phone})...`);
                                 window.location.href = `tel:${targetContact.phone}`;
                             }
                         }

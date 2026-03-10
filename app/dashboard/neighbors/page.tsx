@@ -154,9 +154,7 @@ export default function NeighborsPage() {
 
                             try {
                                 setIsFixing(true);
-                                console.log("Starting Auto-Fix for User ID:", user.id);
                                 const res = await getUserProfile(user.id);
-                                console.log("Auto-Fix Response:", res);
 
                                 if (res.success && res.data && res.data.communityId) {
                                     alert(`Found Community: ${res.data.communityId}. Updating...`);

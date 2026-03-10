@@ -75,19 +75,15 @@ export default function AdminPage() {
             try {
                 // Ignore dummy/initial community ID
                 if (user.communityId && user.communityId !== "00000000-0000-0000-0000-000000000000") {
-                    console.log("[Admin] Using user.communityId:", user.communityId);
                     setCommunityId(user.communityId);
 
                     // Fetch community details by ID to load HOA settings
                     const res = await getCommunityById(user.communityId);
-                    console.log("[Admin] getCommunityById response:", res);
 
                     if (res.success && res.data) {
                         const current = res.data;
-                        console.log("[Admin] Current community:", current);
                         // Set HOA Settings locally
                         if (current.hoaSettings) {
-                            console.log("[Admin] Loading HOA settings:", current.hoaSettings);
                             setHoaDuesAmount(current.hoaSettings.duesAmount || "");
                             setHoaDuesFrequency(current.hoaSettings.duesFrequency || "Monthly");
                             setHoaDuesDate(current.hoaSettings.duesDate || "1st");
@@ -136,7 +132,6 @@ export default function AdminPage() {
     };
 
     const handleSaveHoaSettings = async () => {
-        console.log("[Admin] Attempting to save HOA settings. CommunityId:", communityId);
 
         if (!communityId) {
             alert("Error: No community ID found. Please refresh the page and try again.");
@@ -145,7 +140,6 @@ export default function AdminPage() {
         }
 
         setIsSavingHoa(true);
-        console.log("[Admin] Saving HOA settings:", {
             duesAmount: hoaDuesAmount,
             duesFrequency: hoaDuesFrequency,
             duesDate: hoaDuesDate,
@@ -159,7 +153,6 @@ export default function AdminPage() {
             contactEmail: hoaContactEmail
         });
 
-        console.log("[Admin] Save HOA settings response:", res);
         setIsSavingHoa(false);
 
         if (res.success) {

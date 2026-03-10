@@ -28,7 +28,6 @@ export async function registerNeighbor(data: {
     authId?: string;
 }): Promise<NeighborActionState> {
     try {
-        console.log("[registerNeighbor] Registering neighbor:", data.email);
 
         // 0. Verify Invitation
         const invResult = await validateInvitation(data.invitationCode);
