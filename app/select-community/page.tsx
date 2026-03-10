@@ -11,6 +11,7 @@ export default function SelectCommunityPage() {
     const { user, setUser, status } = useUser();
     const [communities, setCommunities] = useState<CommunityInfo[]>([]);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
         if (status === "loading") return;
@@ -36,9 +37,12 @@ export default function SelectCommunityPage() {
                         selectCommunity(list[0].id);
                         return;
                     }
+                } else if (!res.success && res.error) {
+                    setError(res.error);
                 }
             } catch (err) {
                 console.error("Failed to fetch communities:", err);
+                setError("Failed to load communities. Please try again.");
             } finally {
                 setLoading(false);
             }
@@ -88,6 +92,12 @@ export default function SelectCommunityPage() {
                         <h1 className={styles.title}>Welcome to KithGrid</h1>
                         <p className={styles.subtitle}>You&apos;re not part of any community yet. Get started below.</p>
                     </div>
+
+                    {error && (
+                        <p style={{ color: "var(--destructive, #ef4444)", fontSize: "0.875rem", textAlign: "center", margin: "0.5rem 0" }}>
+                            {error}
+                        </p>
+                    )}
 
                     <div className={styles.formCol}>
                         <button

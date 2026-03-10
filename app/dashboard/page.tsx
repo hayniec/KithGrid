@@ -147,19 +147,15 @@ export default function DashboardPage() {
 
     const fetchCommunitySettings = async () => {
         if (!user?.communityId) return;
-        console.log("[Dashboard] Fetching community settings for:", user.communityId);
         try {
             const res = await getCommunityById(user.communityId);
-            console.log("[Dashboard] getCommunityById response:", res);
             if (res.success && res.data) {
                 const current = res.data;
-                console.log("[Dashboard] Community data:", current);
                 // Set community name
                 setDbCommunityName(current.name || "Community HOA");
 
                 // Set basic HOA settings
                 if (current.hoaSettings) {
-                    console.log("[Dashboard] Setting HOA settings:", current.hoaSettings);
                     setHoaSettings(current.hoaSettings);
                 } else {
                     console.warn("[Dashboard] No hoaSettings found in response");
@@ -549,7 +545,6 @@ export default function DashboardPage() {
                                     <div style={{ fontSize: '0.85rem', color: 'var(--muted-foreground)', marginBottom: '0.5rem' }}>HOA Dues</div>
                                     <div style={{ fontSize: '1.25rem', fontWeight: 600 }}>
                                         {(() => {
-                                            console.log('[Dashboard Render] hoaSettings:', hoaSettings, 'duesAmount:', hoaSettings?.duesAmount, 'type:', typeof hoaSettings?.duesAmount);
                                             return hoaSettings?.duesAmount && hoaSettings.duesAmount !== 'null' && hoaSettings.duesAmount !== '' ? `$${hoaSettings.duesAmount}` : 'Not set';
                                         })()}
                                         {hoaSettings?.duesAmount && hoaSettings.duesAmount !== 'null' && hoaSettings.duesAmount !== '' && hoaSettings?.duesFrequency && <span style={{ fontSize: '0.85rem', fontWeight: 400, color: 'var(--muted-foreground)' }}> / {hoaSettings.duesFrequency}</span>}

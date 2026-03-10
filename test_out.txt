@@ -1,4 +1,0 @@
-Failed for eric.haynie@gmail.com with temp123: Invalid login credentials
-Failed for eric.haynie@gmail.com with password123: Invalid login credentials
-Failed for erich.haynie@gmail.com with temp123: Email not confirmed
-Failed for erich.haynie@gmail.com with password123: Invalid login credentials

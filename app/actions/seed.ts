@@ -9,6 +9,12 @@ import {
     localPlaces, resources, reservations
 } from "@/db/schema";
 import { createClient } from "@supabase/supabase-js";
+import { createClient as createServerClient } from "@/utils/supabase/server";
+
+const SUPER_ADMINS = (process.env.SUPER_ADMIN_EMAILS || process.env.SUPER_ADMIN_EMAIL || "")
+    .split(',')
+    .map(e => e.trim().toLowerCase())
+    .filter(Boolean);
 
 // Helper: create Supabase Auth accounts for seed users when service role key is available.
 // Returns a map of email -> Supabase Auth UID so DB user IDs can match auth IDs.
@@ -66,6 +72,13 @@ async function createAuthAccounts(
 
 export async function resetAndSeed() {
     try {
+        // Guard: only super admins can reset the database
+        const supabase = await createServerClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user?.email || !SUPER_ADMINS.includes(user.email.toLowerCase())) {
+            return { success: false, error: "Unauthorized: super admin access required" };
+        }
+
         console.log("[SEED] Starting Full Database Reset...");
 
         // ============================================================

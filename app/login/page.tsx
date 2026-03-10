@@ -78,7 +78,7 @@ function LoginForm() {
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
                             required
-                            placeholder="Example: temp123"
+                            placeholder="Enter your password"
                             className={styles.input}
                         />
                     </div>

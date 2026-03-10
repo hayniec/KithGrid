@@ -3,11 +3,11 @@
 import { createClient } from "@/utils/supabase/server";
 import { createServiceRoleClient } from "@/utils/supabase/service-role";
 
-// Hardcoded Super Admins for now - typically this would be in the DB or env
-const SUPER_ADMINS = [
-    "eric.haynie@gmail.com",
-    process.env.SUPER_ADMIN_EMAIL
-].filter((email): email is string => !!email).map(email => email.toLowerCase());
+// Super admin emails from environment variables
+const SUPER_ADMINS = (process.env.SUPER_ADMIN_EMAILS || process.env.SUPER_ADMIN_EMAIL || "")
+    .split(',')
+    .map(e => e.trim().toLowerCase())
+    .filter(Boolean);
 
 // Helper to check Super Admin capabilities
 async function isSuperAdmin() {
@@ -51,7 +51,6 @@ const mapToUI = (row: any) => ({
 
 export async function getTenants() {
     try {
-        console.log("[SuperAdmin] getTenants called");
 
         const supabase = await createClient();
         const { data: { user } } = await supabase.auth.getUser();
@@ -63,7 +62,6 @@ export async function getTenants() {
             return { success: false, error: `Unauthorized: User '${email || 'Unknown'}' does not have Super Admin access.` };
         }
 
-        console.log("[SuperAdmin] Fetching all tenants via service role...");
         const adminClient = createServiceRoleClient();
         const { data: rows, error } = await adminClient
             .from('communities')
@@ -74,7 +72,6 @@ export async function getTenants() {
             return { success: false, error: "Failed to fetch tenants: " + error.message };
         }
 
-        console.log(`[SuperAdmin] Found ${rows?.length ?? 0} tenants.`);
         return { success: true, data: (rows || []).map(mapToUI) };
     } catch (error: any) {
         console.error("Failed to fetch tenants (Critical Error):", error);

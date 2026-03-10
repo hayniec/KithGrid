@@ -1,38 +1,100 @@
 # KithGrid
 
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+Multi-tenant community management platform for HOAs, condos, and neighborhoods. Built with Next.js, Supabase Auth, Drizzle ORM, and PostgreSQL.
+
+## Features
+
+- **Multi-tenancy** — tenant-first architecture with community selection, switching, and cookie-based persistence
+- **Forum** — categorized discussion board with comments and likes
+- **Events** — community calendar with RSVP tracking
+- **Marketplace** — buy/sell/trade listings with 30-day auto-expiry
+- **Direct messaging** — private 1-on-1 conversations between members
+- **Neighbor directory** — searchable by name, skills, and equipment
+- **Community resources** — reservable facilities and shared equipment
+- **HOA management** — documents, dues info, board member directory
+- **Service providers** — neighbor-recommended local professionals
+- **Local guide** — curated nearby restaurants, parks, and amenities
+- **Emergency SOS** — one-tap alert system with medical neighbor lookup
+- **Admin console** — branding, user management, invitations, billing
+- **Super admin panel** — platform-wide tenant management and usage tracking
+
+## Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Framework | Next.js 16 (App Router) |
+| Language | TypeScript |
+| Auth | Supabase Auth |
+| Database | PostgreSQL (Neon or Supabase) |
+| ORM | Drizzle |
+| Email | Resend |
+| UI | React 19, CSS Modules, Lucide icons |
 
 ## Getting Started
 
-First, run the development server:
-
 ```bash
+# Install dependencies
+npm install
+
+# Set up environment variables
+cp .env.example .env.local  # then fill in your values
+
+# Push schema to database
+npx drizzle-kit push
+
+# Seed sample data (optional)
+npm run db:seed
+
+# Start development server
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Environment Variables
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+See the [Deployment & Environment Guide](https://www.craft.do/) in Craft.do for the full list. Key variables:
 
-## Learn More
+- `DATABASE_URL` — PostgreSQL connection string
+- `NEXT_PUBLIC_SUPABASE_URL` — Supabase project URL
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY` — Supabase anonymous key
+- `SUPABASE_SERVICE_ROLE_KEY` — Supabase service role key
+- `RESEND_API_KEY` — Resend email API key
 
-To learn more about Next.js, take a look at the following resources:
+## Project Structure
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```
+app/              Next.js App Router pages and server actions
+  actions/        Server actions (data layer)
+  dashboard/      Authenticated community pages
+  super-admin/    Platform admin panel
+components/       Reusable UI components
+contexts/         React context providers (User, Theme)
+db/               Drizzle schema and database connection
+docs/             User, admin, and super-admin guides
+lib/              Shared utilities (Supabase clients, email)
+scripts/          Dev scripts (seed, migration, setup)
+types/            TypeScript type definitions
+utils/            Auth helpers and role utilities
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Scripts
 
-## Deploy on Vercel
+| Command | Description |
+|---|---|
+| `npm run dev` | Start development server |
+| `npm run build` | Production build |
+| `npm run db:push` | Push schema to database |
+| `npm run db:seed` | Seed sample data |
+| `npm run db:studio` | Open Drizzle Studio |
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Documentation
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Project documentation lives in [Craft.do](https://www.craft.do/):
+- Multi-Tenancy First Architecture
+- Tenant Onboarding Flow
+- Feature Completion Roadmap
+- API & Data Isolation Specification
+- Deployment & Environment Guide
+
+Generated user guides are in `docs/`.
