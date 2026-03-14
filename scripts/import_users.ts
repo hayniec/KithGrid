@@ -73,7 +73,6 @@ async function main() {
                 [user] = await db.insert(users).values({
                     email,
                     name: name || email.split("@")[0],
-                    password: password || "password123", // Default password
                 }).returning();
             } else {
                 console.log(`User exists: ${email}`);

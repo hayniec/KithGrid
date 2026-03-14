@@ -5,6 +5,9 @@ import { invitations, members, communities } from "@/db/schema";
 import { eq, and, inArray } from "drizzle-orm";
 import { sendInvitationEmail } from "@/app/lib/email";
 import { createClient } from "@/utils/supabase/server";
+import { requireAdminInCommunity } from "@/utils/auth/permissions";
+import { generateSecureInvitationCode } from "@/utils/auth/codeGeneration";
+import { validateEmail, validateCommunityId } from "@/utils/validation";
 
 export type InvitationActionState = {
     success: boolean;
@@ -13,32 +16,7 @@ export type InvitationActionState = {
     error?: string;
 };
 
-// Generate a random 6-character code
-function generateCode(): string {
-    return Math.random().toString(36).substring(2, 8).toUpperCase();
-}
-
 // ...
-
-/**
- * Helper to verify admin status
- */
-async function isAdmin(userId: string, communityId: string): Promise<boolean> {
-    if (!userId || !communityId) return false;
-
-    try {
-        const [member] = await db
-            .select()
-            .from(members)
-            .where(and(
-                eq(members.userId, userId),
-                eq(members.communityId, communityId)
-            ));
-        return !!(member && (member.role === 'Admin' || (member.roles && member.roles.includes('Admin'))));
-    } catch {
-        return false;
-    }
-}
 
 /**
  * Create a new invitation (Admin only)
@@ -50,6 +28,15 @@ export async function createInvitation(data: {
     createdBy?: string; // Legacy parameter, ignored in favor of session
 }): Promise<InvitationActionState> {
     try {
+        // Validate inputs
+        if (!validateEmail(data.email)) {
+            return { success: false, error: "Invalid email format" };
+        }
+
+        if (!validateCommunityId(data.communityId)) {
+            return { success: false, error: "Invalid community ID" };
+        }
+
         const supabase = await createClient();
         const { data: { user } } = await supabase.auth.getUser();
 
@@ -57,18 +44,8 @@ export async function createInvitation(data: {
             return { success: false, error: "Unauthorized" };
         }
 
-        // Feature Requirement: Only Admins can create invitations
-        const [adminMember] = await db
-            .select()
-            .from(members)
-            .where(and(
-                eq(members.userId, user.id),
-                eq(members.communityId, data.communityId)
-            ));
-
-        if (!adminMember || (adminMember.role !== 'Admin' && (!adminMember.roles || !adminMember.roles.includes('Admin')))) {
-            return { success: false, error: "Only admins can send invitations." };
-        }
+        // Use centralized permission check - throws if not admin
+        const adminMember = await requireAdminInCommunity(user.id, data.communityId);
 
         // Enforce max homes limit before creating invitation
         const { checkMemberLimit } = await import("@/app/actions/billing");
@@ -80,15 +57,14 @@ export async function createInvitation(data: {
             };
         }
 
-        const code = generateCode();
-
+        const code = generateSecureInvitationCode();
 
         const [invitation] = await db.insert(invitations).values({
             communityId: data.communityId,
             email: data.email,
             code,
             role: data.role || 'Resident',
-            createdBy: adminMember.id, // Use the resolved Admin Member ID
+            createdBy: adminMember.id,
             status: 'pending',
         }).returning();
 
@@ -112,6 +88,12 @@ export async function createInvitation(data: {
         };
     } catch (error: any) {
         console.error("Failed to create invitation:", error);
+        
+        // Check if it's an authorization error
+        if (error.message?.includes("Unauthorized")) {
+            return { success: false, error: error.message };
+        }
+
         const detail = error.detail ? ` (Detail: ${error.detail})` : '';
         const code = error.code ? ` (Code: ${error.code})` : '';
         const msg = error.message || "Failed to create invitation";
@@ -128,37 +110,43 @@ export async function bulkCreateInvitations(data: {
     createdBy: string;
 }): Promise<InvitationActionState> {
     try {
-        const supabase = await createClient();
-        const { data: { user } } = await supabase.auth.getUser();
-        // Fallback to data.createdBy if user is missing (e.g. mock user), but prefer session
-        const userId = user?.id || data.createdBy;
-
-        // Resolve Admin Member
-        const [adminMember] = await db
-            .select()
-            .from(members)
-            .where(and(
-                eq(members.userId, userId),
-                eq(members.communityId, data.communityId)
-            ));
-
-        // Permission Check
-        if (!adminMember || adminMember.role !== 'Admin') {
-            return { success: false, error: "Only admins can perform bulk import." };
+        // Validate inputs
+        if (!validateCommunityId(data.communityId)) {
+            return { success: false, error: "Invalid community ID" };
         }
 
-        const safeCreatedBy = adminMember?.id || null;
+        if (!Array.isArray(data.invitations) || data.invitations.length === 0) {
+            return { success: false, error: "No invitations provided" };
+        }
+
+        // Validate all emails first
+        const invalidEmails = data.invitations.filter(inv => !validateEmail(inv.email));
+        if (invalidEmails.length > 0) {
+            return { 
+                success: false, 
+                error: `Invalid email format for: ${invalidEmails.map(e => e.email).join(", ")}` 
+            };
+        }
+
+        const supabase = await createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        const userId = user?.id || data.createdBy;
+
+        if (!userId) {
+            return { success: false, error: "Unauthorized" };
+        }
+
+        // Use centralized permission check - throws if not admin
+        const adminMember = await requireAdminInCommunity(userId, data.communityId);
 
         const values = data.invitations.map(inv => ({
             communityId: data.communityId,
             email: inv.email,
             invitedName: inv.name || null,
-            code: generateCode(), // Generate unique code for each
-            createdBy: safeCreatedBy,
+            code: generateSecureInvitationCode(), // Generate unique secure code for each
+            createdBy: adminMember.id,
             status: 'pending' as const
         }));
-
-        if (values.length === 0) return { success: false, error: "No emails provided" };
 
         const inserted = await db.insert(invitations).values(values).returning();
 
@@ -170,7 +158,12 @@ export async function bulkCreateInvitations(data: {
 
     } catch (error: any) {
         console.error("Failed to bulk create invitations:", error);
-        return { success: false, error: error.message || "Failed to bulk create" };
+        
+        if (error.message?.includes("Unauthorized")) {
+            return { success: false, error: error.message };
+        }
+
+        return { success: false, error: error.message || "Failed to bulk create invitations" };
     }
 }
 

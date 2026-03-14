@@ -323,10 +323,10 @@ async function main() {
             ? await supabase.auth.admin.createUser({ email: SUPER_ADMIN_EMAIL, password: "temp123", email_confirm: true, user_metadata: { name: "Eric Haynie" } })
             : await supabase.auth.signUp({ email: SUPER_ADMIN_EMAIL, password: "temp123", options: { data: { name: "Eric Haynie" } } });
 
+        // Note: Password is managed by Supabase Auth, NOT stored in database
         const insertVals: any = {
             email: SUPER_ADMIN_EMAIL,
             name: "Eric Haynie",
-            password: "temp123",
             avatar: "EH",
         };
         if (suData?.user?.id) insertVals.id = suData.user.id;
@@ -401,10 +401,10 @@ async function main() {
                     ? await supabase.auth.admin.createUser({ email: u.email, password: "password123", email_confirm: true, user_metadata: { name: u.name } })
                     : await supabase.auth.signUp({ email: u.email, password: "password123", options: { data: { name: u.name } } });
 
+                // Note: Password is managed by Supabase Auth, NOT stored in database
                 const insertVals: any = {
                     email: u.email,
                     name: u.name,
-                    password: "password123",
                     avatar: u.name.split(" ").map(w => w[0]).join(""),
                 };
                 if (suData?.user?.id) insertVals.id = suData.user.id;
@@ -639,7 +639,7 @@ async function main() {
     console.log("");
     console.log("Super Admin (all communities):");
     console.log(`  Email: ${SUPER_ADMIN_EMAIL}`);
-    console.log("  Password: temp123");
+    console.log("  Password: temp123 (set during creation, use Supabase password reset for actual login)");
     console.log("");
     console.log("Communities:");
     for (let ci = 0; ci < COMMUNITIES.length; ci++) {
@@ -650,7 +650,8 @@ async function main() {
         console.log(`    Admin/Officer: ${COMMUNITY_USERS[ci][0].name} (${COMMUNITY_USERS[ci][0].hoaPosition})`);
     }
     console.log("");
-    console.log("All regular users password: password123");
+    console.log("All regular users password: password123 (set during creation, use Supabase password reset for actual login)");
+    console.log("Note: Passwords are managed by Supabase Auth, not stored in the database");
     console.log("════════════════════════════════════════════════════");
 
     process.exit(0);

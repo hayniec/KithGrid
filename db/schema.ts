@@ -51,10 +51,10 @@ export const communities = pgTable('communities', {
 });
 
 // 1. Users (Global Authentication)
+// Password authentication handled exclusively via Supabase Auth
 export const users = pgTable('users', {
     id: uuid('id').primaryKey().defaultRandom(),
     email: text('email').notNull().unique(),
-    password: text('password'), // Simple password for now
     name: text('name').notNull(),
     avatar: text('avatar'),
     createdAt: timestamp('created_at').defaultNow(),
@@ -259,4 +259,32 @@ export const announcements = pgTable('announcements', {
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
     activateAt: timestamp('activate_at', { withTimezone: true }).defaultNow(),
     expiresAt: timestamp('expires_at', { withTimezone: true }),
+});
+
+// 17. Craft.do Integrations
+export const craftIntegrations = pgTable('craft_integrations', {
+    id: uuid('id').primaryKey().defaultRandom(),
+    communityId: uuid('community_id').references(() => communities.id).notNull().unique(),
+    
+    // OAuth Token Management
+    accessToken: text('access_token').notNull(),
+    refreshToken: text('refresh_token'),
+    tokenExpiresAt: timestamp('token_expires_at', { withTimezone: true }).notNull(),
+    
+    // Craft Workspace Settings
+    craftSpaceId: text('craft_space_id').notNull(), // Which Craft space is connected
+    craftFolderId: text('craft_folder_id'), // Optional: specific folder for synced docs
+    
+    // Sync Configuration
+    autoSyncDocuments: boolean('auto_sync_documents').default(true),
+    syncedDocumentIds: json('synced_document_ids').default({}) as any, // Maps KithGrid doc IDs to Craft doc IDs
+    
+    // Metadata
+    connectedAt: timestamp('connected_at', { withTimezone: true }).defaultNow(),
+    lastSyncAt: timestamp('last_sync_at', { withTimezone: true }),
+    isActive: boolean('is_active').default(true),
+    
+    // Craft User Info (for display)
+    craftUserEmail: text('craft_user_email'),
+    craftSpaceName: text('craft_space_name'),
 });

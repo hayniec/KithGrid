@@ -14,8 +14,9 @@ import { getUserRoles } from "@/utils/roleHelpers";
 import { Upload, CreditCard } from "lucide-react";
 import { checkMemberLimit, updateCommunityPlan, getCommunityTrialStatus } from "@/app/actions/billing";
 import { PLANS, type PlanId } from "@/app/actions/billing-types";
+import { CraftIntegrationPanel } from "@/components/dashboard/CraftIntegrationPanel";
 
-type Tab = 'general' | 'users' | 'invites' | 'resources' | 'billing';
+type Tab = 'general' | 'users' | 'invites' | 'resources' | 'billing' | 'integrations';
 
 type Invitation = {
     id: string;
@@ -140,11 +141,6 @@ export default function AdminPage() {
         }
 
         setIsSavingHoa(true);
-            duesAmount: hoaDuesAmount,
-            duesFrequency: hoaDuesFrequency,
-            duesDate: hoaDuesDate,
-            contactEmail: hoaContactEmail
-        });
 
         const res = await updateCommunityHoaSettings(communityId, {
             duesAmount: hoaDuesAmount,
@@ -648,6 +644,17 @@ export default function AdminPage() {
                 }}
             >
                 Plan & Billing
+            </button>
+            <button
+                onClick={() => setActiveTab('integrations')}
+                style={{
+                    padding: '0.75rem 1rem',
+                    borderBottom: activeTab === 'integrations' ? '2px solid var(--primary)' : 'none',
+                    fontWeight: activeTab === 'integrations' ? 600 : 400,
+                    color: activeTab === 'integrations' ? 'var(--foreground)' : 'var(--muted-foreground)'
+                }}
+            >
+                Integrations
             </button>
         </div>
     );
@@ -1553,6 +1560,30 @@ export default function AdminPage() {
                                     );
                                 })}
                             </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {activeTab === 'integrations' && (
+                <div className={styles.grid}>
+                    <div className={styles.card} style={{ gridColumn: '1 / -1' }}>
+                        <div className={styles.cardHeader}>
+                            <Wrench size={20} className="text-primary" />
+                            <span className={styles.cardTitle}>External Integrations</span>
+                        </div>
+                        <div className={styles.cardContent}>
+                            <p style={{ fontSize: '0.9rem', color: 'var(--muted-foreground)', marginBottom: '1.5rem' }}>
+                                Connect your KithGrid community with external platforms to sync documents, notifications, and more.
+                            </p>
+                            {communityId && (
+                                <CraftIntegrationPanel 
+                                    communityId={communityId}
+                                    onStatusChange={(connected) => {
+                                        console.log('Craft integration status changed:', connected);
+                                    }}
+                                />
+                            )}
                         </div>
                     </div>
                 </div>

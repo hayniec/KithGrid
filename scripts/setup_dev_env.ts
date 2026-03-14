@@ -32,10 +32,11 @@ async function main() {
 
         if (!user) {
             console.log(`Creating Dev User (${devEmail})...`);
+            // Note: Password is managed by Supabase Auth (would need to use signUp/createUser)
+            // For dev purposes, manually insert user record only
             [user] = await db.insert(users).values({
                 email: devEmail,
                 name: "Dev Admin",
-                password: "password123",
                 avatar: "DA"
             }).returning();
         }
