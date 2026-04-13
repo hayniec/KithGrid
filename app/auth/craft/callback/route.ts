@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 import { handleCraftCallback } from '@/app/actions/craft';
 
 /**
  * OAuth 2.0 Callback handler for Craft.do
- * 
+ *
  * This endpoint is called by Craft.do after user authorizes KithGrid
  * URL: /auth/craft/callback?code=AUTH_CODE&state=STATE&communityId=COMMUNITY_ID
  */
@@ -28,14 +29,23 @@ export async function GET(request: NextRequest) {
             );
         }
 
-        // Validate state (CSRF protection)
-        // In production, verify against stored state in session/cache
-        if (!state) {
-            console.warn('Warning: No state parameter in Craft OAuth callback');
+        // Validate state against stored cookie (CSRF protection)
+        const cookieStore = await cookies();
+        const storedState = cookieStore.get('craft_oauth_state')?.value;
+
+        if (!state || !storedState || state !== storedState) {
+            console.error('[Craft OAuth] State mismatch — possible CSRF attempt');
+            return NextResponse.json(
+                { error: 'Invalid OAuth state. Please try connecting again.' },
+                { status: 403 }
+            );
         }
 
+        // Clear the state cookie now that it's been validated
+        cookieStore.delete('craft_oauth_state');
+
         // Exchange code for token and save integration
-        const result = await handleCraftCallback(communityId, code, state || '');
+        const result = await handleCraftCallback(communityId, code, state);
 
         if (!result.success) {
             return NextResponse.json(

@@ -40,17 +40,19 @@ export interface CraftSyncConfig {
 
 /**
  * Generate OAuth authorization URL for user to connect Craft.do
+ * Returns both the URL and the generated state for server-side storage/verification
  */
-export function generateCraftAuthUrl(clientId: string, redirectUri: string): string {
+export function generateCraftAuthUrl(clientId: string, redirectUri: string): { url: string; state: string } {
+    const state = generateRandomState();
     const params = new URLSearchParams({
         client_id: clientId,
         redirect_uri: redirectUri,
         response_type: "code",
         scope: "documents:write documents:read spaces:read",
-        state: generateRandomState(),
+        state,
     });
 
-    return `${CRAFT_OAUTH_URL}?${params.toString()}`;
+    return { url: `${CRAFT_OAUTH_URL}?${params.toString()}`, state };
 }
 
 /**
@@ -232,11 +234,12 @@ export async function getCraftSpaces(accessToken: string): Promise<any[]> {
 }
 
 /**
- * Generate random state for OAuth CSRF protection
+ * Generate cryptographically secure random state for OAuth CSRF protection
  */
 function generateRandomState(): string {
-    return Math.random().toString(36).substring(2, 15) +
-        Math.random().toString(36).substring(2, 15);
+    const array = new Uint8Array(32);
+    crypto.getRandomValues(array);
+    return Array.from(array, b => b.toString(16).padStart(2, '0')).join('');
 }
 
 /**

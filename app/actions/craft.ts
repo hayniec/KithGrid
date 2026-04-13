@@ -3,6 +3,7 @@
 import { db } from "@/db";
 import { craftIntegrations, documents, members } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
+import { cookies } from "next/headers";
 import { createClient } from "@/utils/supabase/server";
 import { requireAdminInCommunity } from "@/utils/auth/permissions";
 import {
@@ -45,10 +46,19 @@ export async function getCraftAuthUrl(communityId: string): Promise<CraftIntegra
         // Verify admin access
         await requireAdminInCommunity(user.id, communityId);
 
-        // Generate authorization URL
-        const authUrl = generateCraftAuthUrl(CRAFT_CLIENT_ID, CRAFT_REDIRECT_URI);
+        // Generate authorization URL with CSRF state
+        const { url: authUrl, state } = generateCraftAuthUrl(CRAFT_CLIENT_ID, CRAFT_REDIRECT_URI);
 
-        // Store state in session for verification (in real app, use Redis or database)
+        // Store state in a secure HTTP-only cookie for verification in the callback
+        const cookieStore = await cookies();
+        cookieStore.set('craft_oauth_state', state, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            maxAge: 600, // 10 minutes — generous window for OAuth flow
+            path: '/',
+        });
+
         return {
             success: true,
             redirectUrl: authUrl,

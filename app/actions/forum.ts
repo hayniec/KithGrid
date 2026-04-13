@@ -159,6 +159,8 @@ export async function createComment(data: {
             } catch (e) {
                 console.error("Forum reply notification failed", e);
             }
+        }).catch((e) => {
+            console.error("Failed to load notifications module", e);
         });
 
         return { success: true, data: newComment };
