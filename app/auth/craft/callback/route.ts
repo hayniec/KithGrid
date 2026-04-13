@@ -63,10 +63,9 @@ export async function GET(request: NextRequest) {
     } catch (error: any) {
         console.error('[Craft OAuth] Callback error:', error);
 
-        // Redirect back to admin with error
+        // Redirect back to admin with generic error indicator (no internal details in URL)
         const errorUrl = new URL('/dashboard/admin', request.nextUrl.origin);
         errorUrl.searchParams.set('craft', 'error');
-        errorUrl.searchParams.set('message', error.message || 'Failed to connect Craft.do');
 
         return NextResponse.redirect(errorUrl.toString());
     }

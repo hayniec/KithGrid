@@ -3,6 +3,7 @@
 import { db } from "@/db";
 import { resources, reservations } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
+import { createClient } from "@/utils/supabase/server";
 
 export type ResourceActionState = {
     success: boolean;
@@ -12,6 +13,9 @@ export type ResourceActionState = {
 
 export async function getCommunityResources(communityId: string): Promise<ResourceActionState> {
     try {
+        const supabase = await createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user?.id) return { success: false, error: "Unauthorized" };
         const result = await db
             .select()
             .from(resources)
@@ -32,6 +36,9 @@ export async function createResource(data: {
     isReservable: boolean;
 }): Promise<ResourceActionState> {
     try {
+        const supabase = await createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user?.id) return { success: false, error: "Unauthorized" };
         const [newResource] = await db.insert(resources).values({
             communityId: data.communityId,
             name: data.name,
@@ -49,6 +56,9 @@ export async function createResource(data: {
 
 export async function deleteResource(id: string): Promise<ResourceActionState> {
     try {
+        const supabase = await createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user?.id) return { success: false, error: "Unauthorized" };
         await db.delete(resources).where(eq(resources.id, id));
         return { success: true };
     } catch (error: any) {
@@ -65,6 +75,9 @@ export async function createReservation(data: {
     endTime: string;
 }): Promise<ResourceActionState> {
     try {
+        const supabase = await createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user?.id) return { success: false, error: "Unauthorized" };
         const conflicting = await db.select().from(reservations).where(and(
             eq(reservations.resourceId, data.resourceId),
             eq(reservations.date, data.date)
@@ -99,6 +112,9 @@ export async function createReservation(data: {
 
 export async function getReservations(communityId: string, resourceId: string, date: string): Promise<ResourceActionState> {
     try {
+        const supabase = await createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user?.id) return { success: false, error: "Unauthorized" };
         const result = await db.select().from(reservations).where(and(
             eq(reservations.resourceId, resourceId),
             eq(reservations.date, date)

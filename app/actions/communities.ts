@@ -205,26 +205,18 @@ export async function createCommunity(data: any): Promise<CommunityActionState> 
         console.error("Error details:", { code: error.code, detail: error.detail, hint: error.hint, where: error.where });
 
         if (error.code === '23505' || error.message?.includes('unique constraint') || error.message?.includes('duplicate key')) {
-            return { success: false, error: "A tenant with this slug already exists. Please choose a distinct slug." };
+            return { success: false, error: "A community with this slug already exists. Please choose a different slug." };
         }
 
-        // Extract the actual Postgres error from Drizzle's wrapped message
-        const msg = error.message || "";
-        const pgError = msg.split('\n')[0] || msg;
-
-        // Check for missing column errors (schema/migration mismatch)
-        if (error.code === '42703' || msg.includes('column') && msg.includes('does not exist')) {
-            const colMatch = msg.match(/column "([^"]+)"/);
-            const colName = colMatch ? colMatch[1] : 'unknown';
-            return { success: false, error: `Database column "${colName}" is missing. Run the migration: db/migrations/add_missing_columns.sql` };
+        if (error.code === '42703') {
+            return { success: false, error: "Database schema is out of date. Please run pending migrations." };
         }
 
-        // Foreign key violation (e.g. user doesn't exist in users table)
         if (error.code === '23503') {
-            return { success: false, error: `Foreign key error: ${error.detail || pgError}. The logged-in user may not exist in the users table.` };
+            return { success: false, error: "Failed to create community. The logged-in user may not exist in the users table." };
         }
 
-        return { success: false, error: `Failed to create community: ${pgError}` };
+        return { success: false, error: "Failed to create community. Please try again or contact support." };
     }
 }
 

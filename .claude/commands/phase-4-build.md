@@ -87,12 +87,21 @@ Update `apps/mobile/app.json` with full store metadata:
   },
   "submit": {
     "production": {
-      "ios": { "appleId": "APPLE_ID_HERE", "ascAppId": "ASC_APP_ID_HERE", "appleTeamId": "TEAM_ID_HERE" },
-      "android": { "serviceAccountKeyPath": "./google-service-account.json", "track": "internal" }
+      "ios": {
+        "appleId": "APPLE_ID_HERE",
+        "ascAppId": "ASC_APP_ID_HERE",
+        "appleTeamId": "TEAM_ID_HERE"
+      },
+      "android": {
+        "serviceAccountKeyPath": "./google-service-account.json",
+        "track": "internal"
+      }
     }
   }
 }
 ```
+
+**SECURITY:** Never commit real Apple/Google credentials to git. Replace the placeholders above with environment variables (e.g. `EXPO_APPLE_ID`, `EXPO_APPLE_TEAM_ID`) or use `eas credentials` to manage them securely. Add `google-service-account.json` to `.gitignore`.
 
 ### 3. Generate Asset Placeholders
 Create placeholder instructions for required store assets:
