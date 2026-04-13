@@ -3,6 +3,7 @@
 import { db } from "@/db";
 import { directMessages, members, users } from "@/db/schema";
 import { eq, desc, or, and, inArray, sql } from "drizzle-orm";
+import { createClient } from "@/utils/supabase/server";
 
 export type MessageActionState = {
     success: boolean;
@@ -138,6 +139,12 @@ export async function markAsRead(currentUserId: string, otherUserId: string, com
 
 export async function sendMessage(senderUserId: string, recipientUserId: string, content: string, communityId: string): Promise<MessageActionState> {
     try {
+        // Verify the authenticated user matches the sender
+        const supabase = await createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user?.id) return { success: false, error: "Unauthorized" };
+        if (user.id !== senderUserId) return { success: false, error: "Unauthorized: sender mismatch" };
+
         const senderMemberId = await getMemberId(senderUserId, communityId);
         if (!senderMemberId) return { success: false, error: 'Sender member not found in this community.' };
 
@@ -160,7 +167,7 @@ export async function sendMessage(senderUserId: string, recipientUserId: string,
                 body: content.length > 100 ? content.slice(0, 100) + '...' : content,
                 relatedUrl: '/dashboard/messages',
             }).catch(e => console.error("Notification failed", e));
-        });
+        }).catch(e => console.error("Failed to load notifications module", e));
 
         // Return userId-based IDs so frontend can compare with user.id
         return { success: true, data: { ...msg, senderId: senderUserId, recipientId: recipientUserId } };

@@ -3,6 +3,7 @@
 import { db } from "@/db";
 import { notifications } from "@/db/schema";
 import { eq, and, desc } from "drizzle-orm";
+import { createClient } from "@/utils/supabase/server";
 
 export async function getNotifications(userId: string, communityId: string) {
     try {
@@ -54,9 +55,14 @@ export async function getUnreadCount(userId: string, communityId: string) {
 
 export async function markNotificationRead(notificationId: string) {
     try {
+        const supabase = await createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user?.id) return { success: false, error: "Unauthorized" };
+
+        // Only allow marking notifications owned by the authenticated user
         await db.update(notifications)
             .set({ isRead: true })
-            .where(eq(notifications.id, notificationId));
+            .where(and(eq(notifications.id, notificationId), eq(notifications.userId, user.id)));
         return { success: true };
     } catch (e: any) {
         return { success: false, error: e.message };

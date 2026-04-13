@@ -1,7 +1,11 @@
 -- ============================================================
 -- KithGrid Full Seed (paste into Supabase SQL Editor)
 -- 3 communities, HOA officers, all tables populated
--- eric.haynie@gmail.com = Super Admin in every community
+--
+-- IMPORTANT: Before running, find-and-replace these placeholders:
+--   YOUR_ADMIN_EMAIL  → your real super admin email
+--   YOUR_ADMIN_NAME   → your full name
+--   YOUR_PASSWORD      → a secure password
 -- ============================================================
 
 BEGIN;
@@ -30,7 +34,7 @@ DELETE FROM communities;
 INSERT INTO users (id, email, password, name, avatar)
 VALUES (
   'a0000000-0000-0000-0000-000000000001',
-  'eric.haynie@gmail.com', 'temp123', 'Eric Haynie', 'EH'
+  'YOUR_ADMIN_EMAIL', 'YOUR_PASSWORD', 'YOUR_ADMIN_NAME', 'SA'
 )
 ON CONFLICT (email) DO UPDATE SET name = EXCLUDED.name, avatar = EXCLUDED.avatar;
 
@@ -461,7 +465,7 @@ COMMIT;
 -- ════════════════════════════════════════════════════════════
 -- SEED COMPLETE!
 -- ════════════════════════════════════════════════════════════
--- Super Admin: eric.haynie@gmail.com (password: temp123)
+-- Super Admin: YOUR_ADMIN_EMAIL (password: YOUR_PASSWORD)
 --   -> Admin in Valley Cove, Maple Grove, and Sunset Ridge
 --
 -- Valley Cove HOA (/valley-cove) - $250/mo

@@ -3,6 +3,7 @@
 import { db } from "@/db";
 import { documents, members, users } from "@/db/schema";
 import { eq, desc, and } from "drizzle-orm";
+import { createClient } from "@/utils/supabase/server";
 
 export type DocumentActionState = {
     success: boolean;
@@ -12,6 +13,9 @@ export type DocumentActionState = {
 
 export async function getCommunityDocuments(communityId: string): Promise<DocumentActionState> {
     try {
+        const supabase = await createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user?.id) return { success: false, error: "Unauthorized" };
         const results = await db
             .select({
                 doc: documents,
@@ -51,6 +55,9 @@ export async function createDocument(data: {
     uploadedBy: string;
 }): Promise<DocumentActionState> {
     try {
+        const supabase = await createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user?.id) return { success: false, error: "Unauthorized" };
         // Resolve member ID first
         const [member] = await db
             .select({ id: members.id })

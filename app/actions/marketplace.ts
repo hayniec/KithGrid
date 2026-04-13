@@ -3,6 +3,7 @@
 import { db } from "@/db";
 import { marketplaceItems, members, users } from "@/db/schema";
 import { eq, desc } from "drizzle-orm";
+import { createClient } from "@/utils/supabase/server";
 
 export type MarketplaceActionState = {
     success: boolean;
@@ -12,6 +13,9 @@ export type MarketplaceActionState = {
 
 export async function getCommunityMarketplaceItems(communityId: string): Promise<MarketplaceActionState> {
     try {
+        const supabase = await createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user?.id) return { success: false, error: "Unauthorized" };
         const results = await db
             .select({
                 item: marketplaceItems,
@@ -59,6 +63,10 @@ export async function createMarketplaceItem(data: {
     sellerId: string;
 }): Promise<MarketplaceActionState> {
     try {
+        const supabase = await createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user?.id) return { success: false, error: "Unauthorized" };
+
         const [newItem] = await db.insert(marketplaceItems).values({
             communityId: data.communityId,
             title: data.title,
