@@ -2,11 +2,10 @@
 import dotenv from "dotenv";
 dotenv.config({ path: ".env.local" });
 
-const SUPER_ADMIN_EMAIL = process.env.SUPER_ADMIN_EMAIL;
-if (!SUPER_ADMIN_EMAIL) {
+const SUPER_ADMIN_EMAIL: string = process.env.SUPER_ADMIN_EMAIL ?? (() => {
     console.error("SUPER_ADMIN_EMAIL environment variable is required. Set it in .env.local");
     process.exit(1);
-}
+})();
 
 // --- 3 Communities with realistic HOA data ---
 
